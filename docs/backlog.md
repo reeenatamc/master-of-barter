@@ -34,6 +34,10 @@ Objetivo: el momento estrella y clipeable. Criterios: al aceptar, se desenvuelve
 > **Re-verificación heredada de A2.1 — no dar por probado lo que no se probó.** El `runFinishRaceCheck` de A2.1 pasa, pero cubre menos de lo que parece: hoy el segundo camino terminal queda frenado por el **registro** (`duels[id]` ya está en nil cuando llega), no por el claim de `resolving`. Son dos garantías distintas y hoy solo se ejercita una. Un PASS significa "los dos caminos no se pisaron en la resolución", **no** "el claim está probado".
 > El claim existe para proteger el broadcast si alguna vez aparece un yield entre entrar en la fase y emitirla. Hoy no hay ninguno, así que nunca llega a actuar. **En cuanto A3 introduzca un yield en el camino de Reveal** — transferencias, DataStore, cualquier espera entre `phase = "Reveal"` y el broadcast — el claim pasa de decorativo a load-bearing, y `runFinishRaceCheck` tiene que volver a correrse **con el yield presente**, que es el único momento en que esa ventana se prueba de verdad.
 > Sin esta nota, en A3 nadie se acuerda de que el test de A2.1 no cubría ese caso y se da por probado algo que no lo está.
+>
+> **A3 no salda esta deuda.** Tal como quedó escrita, la revelación **no introduce ningún yield** en el camino de `Reveal`: el `RevealResult` se construye de forma síncrona y viaja dentro del `DuelState` final, y la pausa dramática la maneja el cliente, no el servidor. O sea que el claim de `resolving` sigue sin ejercitarse. La nota queda **viva**: se salda cuando B1/B3 metan un `await` real ahí (guardado de perfil, transferencias persistentes).
+>
+> **Marcador crudo de A3, con su límite conocido.** Genuino = `baseValue`, falsificación = 0, gana quien recibió más. Con solo esto la estrategia dominante es "falsificá todo siempre", y los testers lo aprenden en tres partidas. Lo frenan dos cosas que todavía no existen: el costo en Clips (B2) y sobre todo la ficha ¡ES FAKE! (A4). **No se metió ninguna penalización inventada en A3** para tapar eso: sería adelantar la mecánica de A4 y después habría que quitarla. Consecuencia: A3 cierra "la revelación emociona y hay gané/perdí", pero **el dilema del bluff no se puede juzgar hasta A4**, y por eso el punto de control de diversión está después de A4.
 
 **A4 · Como jugador quiero una ficha ¡ES FAKE! única por duelo** — P0 · S
 Criterios: usable una vez, solo en fase de negociación; acierto → me llevo la oferta rival; fallo → pierdo mi apuesta; queda registrada en analítica. Dependencias: A2. Riesgo: es la mecánica 🧪 más incierta — instrumentarla bien para decidir su futuro con datos.
@@ -141,9 +145,9 @@ Trade-Up Run · mesas 4–6 · espectadores · torneos · trading libre entre ju
 
 ---
 
-## Verificación pendiente — punto de control tras A3
+## Verificación pendiente — punto de control tras A4
 
-Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en Studio**. Al terminar A3 el duelo se juega de punta a punta, y una sola sesión cubre todo esto de una vez. Ninguna se da por buena hasta entonces.
+Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en Studio**. El punto de control estaba fijado tras A3, y se corrió a **tras A4**: A3 da la revelación y un gané/perdí, pero con el marcador crudo la estrategia dominante es "falsificá todo siempre", y eso solo se frena con la ficha ¡ES FAKE!. Juzgar la diversión antes de A4 sería juzgar media mecánica. Al terminar A4 el bucle se juega entero —ofertar, negociar, aceptar, revelar, acusar— y una sola sesión cubre todo esto de una vez. Ninguna se da por buena hasta entonces.
 
 | Qué | De dónde viene | Por qué importa |
 |---|---|---|
@@ -153,5 +157,8 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 | Timeout de `Negotiating` → `Cancelled` con contador en 0 | A2.1 | Lógica de juego pura, agrupable. |
 | `runFinishRaceCheck()` → PASS | A2.1 | Cubre menos de lo que parece: ver la nota en A3 sobre el claim de `resolving`. |
 | Pedir más: límite de 3 por lado, enmienda validada por cantidad | A2.2 | Lógica de juego pura, agrupable. |
+| Revelación: `isFake` aparece **solo** al aceptar, igual para los dos, y nunca antes | A3 | Es el momento en que la regla de oro se levanta. Mirar que en ninguna fase previa llegue `reveal` al cliente. |
+| Marcador: genuino = `baseValue`, fake = 0, gana quien recibió más | A3 | Crudo a propósito. Se espera que "falsificá todo" domine hasta que exista A4. |
+| Watchdog por generación: tras un raise + enmienda, el duelo **no** se cancela antes de tiempo por el timer viejo | A2.2 | Sutil. El fallo se ve como un duelo que muere solo a mitad de negociación, y es fácil confundirlo con otra cosa. Hacer al menos un raise + enmienda y esperar a que el reloj pase el deadline original. |
 
 **No agrupable** (regla de CLAUDE.md): nada que toque ProfileStore, guardado o `ProcessReceipt` entra en esta lista. Eso se prueba cuando se escribe.

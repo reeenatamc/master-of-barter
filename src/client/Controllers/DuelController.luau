@@ -66,6 +66,25 @@ local function dump(state: Types.DuelState)
 		end
 	end
 
+	if state.reveal then
+		print("  ── THE REVEAL ──")
+		for _, side in state.reveal.sides do
+			local marker = if side.slot == state.yourSlot then " (you)" else ""
+			print(`  slot{side.slot}{marker} offered:`)
+			for _, wrapped in side.offered do
+				local truth = if wrapped.isFake then "FAKE" else "real"
+				print(`    "{nameOf(wrapped.claim)}" was {truth}`)
+			end
+			print(`    walks away with {side.valueReceived} in value, slipped {side.fakesPassed} fake(s)`)
+		end
+		if state.reveal.winner then
+			local who = if state.reveal.winner == state.yourSlot then "YOU WIN" else "you lose"
+			print(`  {who}`)
+		else
+			print("  a tie")
+		end
+	end
+
 	if state.yourOffer then
 		print("  your offer (with the truth, because it is yours):")
 		for _, wrapped in state.yourOffer do

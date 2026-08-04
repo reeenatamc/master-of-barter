@@ -117,6 +117,41 @@ export type OfferView = {
 	wrapped: { WrappedItemView },
 }
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Reveal
+--
+-- These are the only replicated types in the project that carry `isFake`, and
+-- they exist for exactly one instant: when a duel enters Reveal. They are never
+-- produced by the code that builds DuelPlayerView or OfferView -- those types
+-- have nowhere to put the truth, which is precisely the point.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- What was really inside one wrapper.
+export type RevealedWrap = {
+	wrappedId: string,
+	claim: ItemId,
+	isFake: boolean,
+}
+
+export type RevealSide = {
+	slot: Slot,
+	--- What this side put on the table, uncovered.
+	offered: { RevealedWrap },
+	--- What this side walks away with: the rival's wrappers.
+	received: { RevealedWrap },
+	--- Sum of baseValue over the genuine wrappers received. Forgeries count 0.
+	valueReceived: number,
+	--- Forgeries this side managed to pass to the rival.
+	fakesPassed: number,
+}
+
+export type RevealResult = {
+	--- Indexed by slot.
+	sides: { RevealSide },
+	--- nil means a tie.
+	winner: Slot?,
+}
+
 export type DuelPlayerView = {
 	slot: Slot,
 	userId: number,
@@ -153,6 +188,10 @@ export type DuelState = {
 	yourOffer: { WrappedItem }?,
 	--- Indexed by slot: players[1] and players[2].
 	players: { DuelPlayerView },
+	--- Only ever present once the duel has reached Reveal, and identical for
+	--- both recipients. Until then it is nil, which is what keeps the golden
+	--- rule from lifting one instant early.
+	reveal: RevealResult?,
 }
 
 return Types

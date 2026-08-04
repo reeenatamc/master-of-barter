@@ -68,6 +68,8 @@ type Duel = {
 	--- Bumped every time the phase deadline is re-armed, so timers from an
 	--- earlier arming can tell they are stale. See `armPhaseWatchdog`.
 	watchdogGeneration: number,
+	--- nil until the duel enters Reveal. See `buildReveal`.
+	reveal: Types.RevealResult?,
 }
 
 --- 1 <-> 2. Duels are always two-sided (docs/gdd.md §32).
@@ -161,6 +163,11 @@ local function stateFor(duel: Duel, slot: Slot): DuelState
 		yourHand = duel.sides[slot].hand,
 		yourOffer = duel.sides[slot].offer,
 		players = views,
+		-- Gated on the phase, not just on the field being set. Even if some
+		-- future change filled duel.reveal early, this is where it would still
+		-- be stopped from leaving the server. Both recipients get the exact
+		-- same object: a reveal that differed per player would not be a reveal.
+		reveal = if duel.phase == "Reveal" then duel.reveal else nil,
 	}
 end
 
@@ -275,6 +282,7 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		trove = Trove.new(),
 		resolving = false,
 		watchdogGeneration = 0,
+		reveal = nil,
 	}
 
 	duels[duel.id] = duel
@@ -561,6 +569,77 @@ local IMPLEMENTED: { [string]: boolean } = {
 	RaiseOffer = true,
 }
 
+--- The whole truth of the duel, built at the instant it enters Reveal and not
+--- one moment earlier. This is the ONLY place `isFake` becomes public, and it
+--- deliberately does not go anywhere near `stateFor`: the view types that
+--- function produces have nowhere to put the truth, and that is what makes the
+--- golden rule structural instead of a habit.
+---
+--- Scoring is crude on purpose. A genuine wrapper is worth its baseValue, a
+--- forgery is worth nothing, and whoever received more wins.
+---
+--- Known and accepted: with only this, "forge everything, always" is dominant.
+--- Two things that do not exist yet are what hold it back -- the Clips cost of
+--- forging (B2) and above all the FakeCall token (A4). No invented penalty has
+--- been added here to paper over that: inventing one would be smuggling in A4's
+--- mechanic and then having to remove it. The bluff dilemma cannot be judged
+--- until A4 lands, which is why the play-test checkpoint sits after A4, not
+--- after A3.
+local function buildReveal(duel: Duel): Types.RevealResult
+	local function uncover(wrapped: WrappedItem): Types.RevealedWrap
+		return {
+			wrappedId = wrapped.wrappedId,
+			claim = wrapped.claim,
+			isFake = wrapped.isFake,
+		}
+	end
+
+	local sides: { Types.RevealSide } = {}
+
+	for _, side in duel.sides do
+		-- Annotated because `x or {}` infers a union with the empty-table type,
+		-- which is not iterable.
+		local own: { WrappedItem } = side.offer or {}
+		local theirs: { WrappedItem } = duel.sides[otherSlot(side.slot)].offer or {}
+
+		local offered: { Types.RevealedWrap } = {}
+		local fakesPassed = 0
+		for _, wrapped in own do
+			table.insert(offered, uncover(wrapped))
+			if wrapped.isFake then
+				fakesPassed += 1
+			end
+		end
+
+		local received: { Types.RevealedWrap } = {}
+		local valueReceived = 0
+		for _, wrapped in theirs do
+			table.insert(received, uncover(wrapped))
+			if not wrapped.isFake then
+				local def = Items.catalog[wrapped.claim]
+				valueReceived += if def then def.baseValue else 0
+			end
+		end
+
+		sides[side.slot] = {
+			slot = side.slot,
+			offered = offered,
+			received = received,
+			valueReceived = valueReceived,
+			fakesPassed = fakesPassed,
+		}
+	end
+
+	local winner: Slot? = nil
+	if sides[1].valueReceived > sides[2].valueReceived then
+		winner = 1
+	elseif sides[2].valueReceived > sides[1].valueReceived then
+		winner = 2
+	end
+
+	return { sides = sides, winner = winner }
+end
+
 --- One of the three negotiation buttons. Validated in the four layers of
 --- docs/arquitectura.md §8, same as offers.
 ---
@@ -597,12 +676,18 @@ function DuelService.negotiate(player: Player, action: unknown)
 	end
 
 	if action == "Accept" then
-		-- The trade is agreed. Reveal exists as a phase so that A3 has a state
-		-- to hang the unwrapping and the transfers on; right now it carries no
-		-- content and the duel ends immediately after.
+		-- The trade is agreed, so the truth becomes public. Built here, at the
+		-- transition itself, from the duel's own tables.
 		--
-		-- >>> A3 inserts the reveal and the item/Clips transfers HERE, between
-		-- >>> entering Reveal and ending the duel. <<<
+		-- The server does not hold the duel open through a dramatic pause: the
+		-- reveal travels inside the final DuelState, and the client owns the
+		-- timing of the unwrapping animation. Nothing is waiting on the server,
+		-- so nothing can hang there. Holding Reveal and Results open for their
+		-- configured seconds is Etapa 4 polish, if it is ever needed at all.
+		--
+		-- Transfers are still in-memory only: the permanent collection is B3
+		-- and Clips are B2, both Etapa 2.
+		duel.reveal = buildReveal(duel)
 		resolve(duel, "Reveal", `slot {side.slot} accepted`)
 	elseif action == "Decline" then
 		resolve(duel, "Cancelled", `slot {side.slot} declined`)
