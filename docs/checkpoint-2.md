@@ -1,0 +1,96 @@
+---
+sidebar_label: Checkpoint 2 · revisión visual
+---
+
+# Checkpoint 2 — revisión visual (C2 + E2)
+
+Esto es lo único que necesita tus ojos ahora. Todo lo demás siguió sin vos.
+
+**Tiempo estimado: 15 minutos.** Diez de mirar, cinco de decir qué está mal.
+
+---
+
+## Lo primero, y es un pedido
+
+**`docs/mockups` está vacía.** La instrucción decía mirar tus imágenes de referencia antes de diseñar; no había ninguna, así que la paleta salió de la **descripción escrita** del GDD (§25 marcador sobre hoja cuadriculada, §28 colores planos e imperfección deliberada).
+
+Si ponés las imágenes ahí, rederivo la paleta contra ellas. **No hace falta rehacer E2**: lo que cambia son valores en `Theme.luau`, no estructura.
+
+---
+
+## Cómo verlo
+
+1. `rojo serve` corriendo, plugin conectado.
+2. Studio → **Test** → **2** jugadores → **Start**.
+3. Cada ventana: **click sobre el juego** una vez.
+
+Ya no hay panel flotando: **la cámara te pone en la mesa**, con la hoja de papel parada enfrente y el rival del otro lado. Todo se toca sobre la hoja.
+
+Jugá un duelo entero: elegí **Real** o **Falso** en unos objetos, **OFERTAR**, y después **Aceptar** para llegar a la revelación.
+
+**Si algo se rompe y no ves nada:** abrí `src/shared/Config/Theme.luau`, buscá `screen = "table"` y ponelo en `"flat"`. Vuelve la pantalla vieja de E0, que sigue funcionando. Esa salida existe justamente para que un checkpoint no te deje sin juego.
+
+---
+
+## Qué mirar, en orden de importancia
+
+**1. ¿Se parece a lo que tenés en la cabeza?** Es la pregunta del checkpoint. Papel crema, cuadrícula tenue, marcador oscuro, recortes torcidos, cinta. Si no se parece, describime qué está mal y ajusto `Theme.luau` — la estructura aguanta cualquier paleta.
+
+**2. La Revelación™.** Los envoltorios se destapan **de a uno**, no todos juntos, con un rebote al caer. ¿Se siente un momento, o se siente una lista?
+
+**3. Que nada esté perfectamente derecho.** Cada recorte está rotado un poco distinto, a propósito (§28). ¿Se lee como papel, o como un error?
+
+**4. Móvil.** Test → **Device** → un teléfono. **Es criterio de cierre de E2**, no un extra. Y decime especialmente si los botones sobre la hoja **se pueden tocar bien con el dedo** — es el riesgo que más me preocupa de poner los botones en el mundo en vez de en la pantalla.
+
+**5. Ventana de PC.** Achicá y agrandá la ventana. Nada debería descolocarse: todo está en escala.
+
+---
+
+## Decisiones `[propuesta]` que esperan tu sí o tu no
+
+### El catálogo — 12 objetos originales
+
+Reemplazan a los 6 squishies de prueba. La gracia es que son cosas de tu casa tratadas como reliquias — el tono de §22 sin tomar prestado el personaje de nadie:
+
+| | Objeto | Valor | Línea |
+|---|---|---|---|
+| Común | Sopa Maruchan Dorada | 12 | *Sabor camarón. Nunca la vas a cocinar.* |
+| Común | Piedra que Parece Papa | 15 | *O una papa que parece piedra. Nadie mordió.* |
+| Común | Control de la Abuela | 18 | *Forrado en plástico desde 1994. Impecable.* |
+| Común | Lápiz Mordido | 22 | *Mordido por alguien famoso. Eso dicen.* |
+| Común | La Media Que Falta | 26 | *La otra está en la secadora. Desde siempre.* |
+| Raro | Yogur Vencido en 2011 | 48 | *Sin abrir. Técnicamente sigue siendo yogur.* |
+| Raro | Tu Primer Diente | 62 | *El ratón nunca vino. Vos te lo quedaste.* |
+| Raro | Pizza del Fondo | 78 | *Del fondo del freezer. Tiene escarcha propia.* |
+| Raro | Módem Que Sí Andaba | 96 | *Lo desenchufaste una vez y nunca más fue igual.* |
+| Legendario | Destornillador de Papá | 210 | *No es para tornillos. Es para todo lo demás.* |
+| Legendario | El Cargador Perdido | 270 | *Nadie sabe de quién es. Todos lo reclaman.* |
+| Legendario | La Última Empanada | 340 | *Estaba en la bandeja. Ahora es tuya. Ganaste.* |
+
+Cambiar cualquiera es una línea en tres archivos y cero código, como prometía C1. Si alguno no te causa gracia, decilo y lo cambio: **el humor es la mitad del producto**, no es decoración.
+
+### Otras que quiero que veas
+
+- **Paleta y fuentes** — `PermanentMarker` para títulos y botones, `PatrickHand` para texto. Verificadas contra la API real; `Caveat`, `Amatic` y `ArchitectsDaughter` **no existen** en Roblox aunque suenen a que sí.
+- **Tiempos del juice** — en `Theme.motion`. Si la revelación se siente lenta o apurada, es un número ahí.
+- **Sonidos: no hay ninguno.** Están todos vacíos a propósito. Un id inventado apunta al sonido de otra persona o a nada. Los nombres describen qué necesita cada hueco (papel arrugándose, cinta, sello, "ohhh" de chicos), así que llenarlos es ir de compras, no diseñar.
+
+---
+
+## Lo que NO decide este checkpoint
+
+**La ficha ¡ES FAKE! sigue esperando el checkpoint 1** (`prueba-diversion-2.md`), que nunca se corrió. Mientras tanto no construí nada que dependa de que exista **ni** de que no exista: sigue gobernada por un número en Config.
+
+---
+
+## Deudas abiertas, marcadas para que no pasen por no vistas
+
+- **`DuelService` está en 927 líneas**, tres veces el límite de 300. No lo dividí en medio de E2 porque es un refactor grande y arriesga romper un juego que funciona. Toca antes de B1.
+- **`DuelSkin` en 360 líneas** — la pantalla vieja de E0, que ahora es solo el plan B. Se borra cuando E2 esté aprobada.
+- **Rate limiting general** sigue sin existir. El único que hay es el cooldown de emotes.
+
+---
+
+## Mientras esperás
+
+Sigo con **B1** (ProfileStore y persistencia), que no depende de este checkpoint. El checkpoint 3 va a ser el de persistencia, y ese sí es obligatorio antes de seguir: los datos que se guardan no se auto-certifican.
