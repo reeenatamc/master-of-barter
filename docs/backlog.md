@@ -163,7 +163,7 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 
 | Qué | De dónde viene | Por qué importa |
 |---|---|---|
-| **Camino de desconexión** — el jugador que se queda recibe `Cancelled` en vez de quedar mirando un estado muerto | commit `72114f7` | 🔴 **Prioridad alta.** Es un camino de desconexión que cambió. Un bug acá no da error visible y en Etapa 2 corrompe datos. Se prueba en el primer punto de control sí o sí. |
+| ~~**Camino de desconexión**~~ | commit `72114f7` | ✅ **2026-08-04.** Cerrando la ventana del rival a mitad de `Negotiating`, el cliente que quedó vivo recibió `phase=Cancelled`. Falta confirmar el `got 0` del contador de Trove en la ventana del servidor. |
 | ~~Payload del rival: solo `appearance`, `claim`, `wrappedId`~~ | A1.3 | ✅ **Verificado en runtime el 2026-08-04.** Los dos envoltorios, real y falso, llegaron con los mismos tres campos. |
 | ~~Bucle completo: ofertar → negociar → aceptar → revelar~~ | A2.1+A3 | ✅ **2026-08-04.** Mentir ganó 210 a 10. Ambos clientes vieron la misma revelación. |
 | ~~Pedir más + ficha ¡ES FAKE! acertando~~ | A2.2+A4 | ✅ **2026-08-04.** `shouted ES FAKE and was RIGHT`; el tramposo quedó en 0 y `slipped 0` pese a que sus envoltorios cambiaron de manos. |
