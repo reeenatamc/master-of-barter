@@ -7,18 +7,20 @@
 	through the active theme, so changing trend means writing a new theme and
 	touching no logic at all. Card C2.
 
-	THE PALETTE IS [propuesta]. docs/mockups is empty, so everything visual here
-	was derived from the GDD's written description rather than from Renata's
-	reference images:
+	RE-DERIVED FROM THE REFERENCE IMAGES (mockups/, 2026-08-04). The first pass
+	guessed from the GDD's written description; these values come from the
+	images themselves, and they differ in ways guessing would never have found:
 
-	  §25 "todo parece dibujado con marcador en hojas cuadriculadas, botones
-	       como recortes pegados con cinta"
-	  §28 "colores planos, la imperfección del trazo es estética, no defecto"
-	  §26 "foley casero: papel arrugándose, cinta adhesiva, marcador escribiendo"
+	  - The ink is BLUE BALLPOINT, not dark marker. Everything is drawn in the
+	    same biro blue: borders, grid, icons, the world.
+	  - The paper is warm KRAFT, tanner and browner than the cream first
+	    guessed, and visibly crumpled.
+	  - The three buttons are pale FILLED panels -- red, green, blue -- with a
+	    sketchy double-stroke outline, not outlined cut-outs.
+	  - The whole world is papercraft, not just the interface.
 
-	The STRUCTURE is not provisional. What E2 reads -- which keys exist and what
-	they mean -- is built to survive the palette being replaced wholesale once
-	the reference images land. See docs/decisiones.md.
+	That the structure survived the change is the point of C2: the palette was
+	replaced wholesale and nothing that reads it needed touching.
 ]]
 
 local Types = require(script.Parent.Parent.Types)
@@ -33,32 +35,46 @@ type ItemId = Types.ItemId
 --- colours. Deliberately few: §28 asks for flat colour, and a paper aesthetic
 --- falls apart the moment it gains gradients and a dozen hues.
 local palette = {
-	--- The page itself. Off-white and warm, never pure white -- pure white
-	--- reads as "screen", and the whole point is that this reads as "paper".
-	paper = Color3.fromRGB(247, 243, 232),
-	--- Squared-paper ruling. Barely there; it should be felt, not read.
-	grid = Color3.fromRGB(206, 216, 228),
-	--- Marker ink for text and outlines.
-	ink = Color3.fromRGB(38, 36, 34),
-	--- Pencil grey for anything secondary.
-	inkSoft = Color3.fromRGB(126, 120, 112),
-	--- Masking tape holding the cut-outs down.
-	tape = Color3.fromRGB(233, 219, 186),
+	--- The board itself: warm kraft paper, visibly crumpled. Browner than the
+	--- first guess -- the references are lit by afternoon sun, and pure white
+	--- would read as "screen" where this reads as "a thing on a table".
+	paper = Color3.fromRGB(228, 210, 176),
+	--- Squared ruling. Blue like everything else, and barely there: felt, not
+	--- read.
+	grid = Color3.fromRGB(178, 188, 204),
+	--- BALLPOINT BLUE. The single most defining choice in the references: every
+	--- line in that world -- borders, icons, trees, houses -- is the same biro.
+	--- Not marker, not black.
+	ink = Color3.fromRGB(42, 78, 158),
+	--- The same pen pressed lighter, for anything secondary.
+	inkSoft = Color3.fromRGB(112, 140, 192),
+	--- Masking tape, and the strip a cut-out sits on.
+	tape = Color3.fromRGB(226, 206, 164),
 
-	--- The three negotiation buttons, in marker colours. They are the visual
-	--- signature of the game (§25), so they get the three strongest hues and
-	--- nothing else competes with them.
-	accept = Color3.fromRGB(74, 143, 88),
-	decline = Color3.fromRGB(126, 120, 112),
-	raise = Color3.fromRGB(62, 106, 170),
-	--- Red marker, reserved. Nothing else in the interface may use it, so that
-	--- red always means the accusation.
-	fakeCall = Color3.fromRGB(198, 62, 54),
+	--- The three negotiation buttons. In the references they are pale FILLED
+	--- panels with a sketchy outline, not outlined cut-outs, and their colours
+	--- carry the meaning before the icon does: red refuses, green agrees, blue
+	--- asks for more.
+	accept = Color3.fromRGB(58, 132, 62),
+	acceptFill = Color3.fromRGB(202, 216, 154),
+	decline = Color3.fromRGB(196, 60, 52),
+	declineFill = Color3.fromRGB(234, 180, 170),
+	raise = Color3.fromRGB(46, 96, 176),
+	raiseFill = Color3.fromRGB(178, 202, 230),
 
-	good = Color3.fromRGB(74, 143, 88),
-	bad = Color3.fromRGB(198, 62, 54),
-	--- Soft pencil shadow under a taped cut-out.
-	shadow = Color3.fromRGB(198, 190, 176),
+	--- The accusation. Deliberately NOT the same red as Rechazar: they are
+	--- opposite moves and sharing a colour would make the loudest button in the
+	--- game look like the mildest.
+	---
+	--- docs/gdd.md §29 wants this stamped rather than pressed, so this colour is
+	--- ink for a rubber stamp, and the shape it belongs on is still open.
+	fakeCall = Color3.fromRGB(156, 30, 38),
+	fakeCallFill = Color3.fromRGB(226, 150, 142),
+
+	good = Color3.fromRGB(58, 132, 62),
+	bad = Color3.fromRGB(196, 60, 52),
+	--- Soft shadow under something resting on the board.
+	shadow = Color3.fromRGB(186, 168, 138),
 }
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -232,6 +248,17 @@ local camera = {
 	settle = 0.8,
 }
 
+--- How much bigger the invisible touch target is than the drawn button.
+---
+--- 1.5 means the hit area is half again as wide and tall as what you can see.
+--- Buttons live in world space on the sheet, where a thumb is less precise than
+--- a mouse and the surface is seen at an angle; the drawing can stay the size
+--- the composition wants while the target stays the size a thumb needs.
+---
+--- Nothing about this is visible, which is the point: a button that looks right
+--- and misses is worse than one that looks slightly wrong.
+local touchPadding = 1.5
+
 --- How much a taped cut-out is rotated, in degrees. Nothing is ever perfectly
 --- straight: §28 says the imperfection is the aesthetic, not a defect, and a
 --- perfectly aligned grid of paper cards stops reading as paper immediately.
@@ -247,6 +274,7 @@ return {
 	defaultItem = defaultItem,
 	motion = motion,
 	tiltDegrees = tiltDegrees,
+	touchPadding = touchPadding,
 	table = tableSpec,
 	camera = camera,
 	--- Which duel screen is used. "table" is the card E2 scene: a paper sheet

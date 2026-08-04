@@ -101,3 +101,27 @@ Las marcadas **`[propuesta]`** esperan su sí o su no en un checkpoint.
 **Por qué:** al escribirlo salió natural una cuarta ("Épico") para los valores del medio. `gdd.md` §18 fija tres. Agregar una es **alterar** una mecánica del GDD, no agregarle detalle — el caso (c) donde la autonomía se suspende. Se redistribuyó en tres en vez de preguntar, porque tres alcanzan.
 
 **Alternativa descartada:** proponer la cuarta rareza en el checkpoint. Se descartó porque no hacía falta: el catálogo funciona con tres, y el cambio habría arrastrado economía, kiosco y frecuencias de sorteo.
+
+---
+
+## 2026-08-04 · Confirmación: la separación cerebro/piel se pagó sola
+
+**No es una decisión nueva, es el resultado de una vieja.** En E0 se pagó el costo de dividir la pantalla en tres —contrato, cerebro, piel— cuando lo barato era escribir un archivo y seguir.
+
+En E2 se cambió **la apariencia entera** del juego: de un panel plano sobre el mundo a una hoja de papel en una mesa 3D, con cámara sobre el hombro, cuadrícula, recortes torcidos y revelación escalonada. Costó **un archivo nuevo**. `DuelScreen`, `DuelPanels` y el razonamiento de `UIController` no se tocaron: cuándo se habilita Aceptar, cuándo se gastó la ficha, qué ve el rival — nada de eso se volvió a escribir.
+
+Y se repitió al llegar los mockups: la paleta se reemplazó **entera** —de marcador oscuro sobre crema a birome azul sobre kraft— y nada de lo que la lee necesitó tocarse.
+
+**Lo que compró:** la condición que se puso en E0 ("si E0 mezcla lógica y piel, E2 reescribe todo y E0 fue trabajo tirado") era correcta, y este checkpoint es la prueba. La inversión de estructura de hace semanas es la razón de que este haya sido barato.
+
+---
+
+## 2026-08-04 · Zonas táctiles más grandes que el dibujo
+
+**Decidido:** cada botón de la hoja tiene una zona de toque invisible 1.5× más grande que el recorte visible (`Theme.touchPadding`), centrada sobre él.
+
+**Por qué:** los botones viven en espacio-mundo, vistos en ángulo, y móvil es la plataforma principal (§5). Una zona del tamaño del dibujo exige una puntería que el dedo gordo no tiene. Un botón que se ve bien y falla es peor que uno que se ve un poco peor.
+
+**Alternativa descartada:** agrandar los botones dibujados. Se descartó porque la composición de los mockups tiene tamaños concretos, y engordarlos para que el dedo acierte deforma el diseño para resolver un problema que es de entrada, no de dibujo.
+
+**Cómo está hecho:** el contenedor conserva el tamaño visual, así que ningún sitio de llamada cambió; la zona de toque desborda ese contenedor por igual en los cuatro lados.

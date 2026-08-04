@@ -195,19 +195,34 @@ function DuelPaperSkin.mount(
 		end
 	end
 
-	--- A taped cut-out. Everything on the page is one of these.
-	local function cutout(spec: DuelViewModel.Button, size: UDim2, seed: number): TextButton
-		local element = Instance.new("TextButton")
-		element.Size = size
+	--- A taped cut-out. Everything pressable on the page is one of these.
+	---
+	--- Returns a container the caller sizes and places exactly as it would a
+	--- plain button. Inside it, the DRAWING is the size the composition wants,
+	--- and an invisible TOUCH TARGET sits over it, `Theme.touchPadding` times
+	--- larger and overflowing the container on every side.
+	---
+	--- These buttons live in world space on the sheet, seen at an angle, pressed
+	--- with a thumb on the primary platform. A target the size of the drawing
+	--- would demand aim that a thumb does not have -- and a button that looks
+	--- right and misses is worse than one that looks slightly wrong.
+	local function cutout(spec: DuelViewModel.Button, size: UDim2, seed: number): Frame
+		local pad = Theme.touchPadding
+
+		local container = Instance.new("Frame")
+		container.Size = size
+		container.BackgroundTransparency = 1
+
+		local element = Instance.new("TextLabel")
+		element.Size = UDim2.fromScale(1, 1)
 		element.BackgroundColor3 = if spec.enabled then Theme.palette.paper else Theme.palette.grid
 		element.TextColor3 = if spec.enabled then TONE_COLORS[spec.tone] else Theme.palette.inkSoft
 		element.Text = spec.label
 		element.TextScaled = true
 		element.Font = Theme.fonts.marker
 		element.Rotation = tiltFor(seed)
-		element.AutoButtonColor = spec.enabled
-		element.Active = spec.enabled
 		element.BorderSizePixel = 0
+		element.Parent = container
 		corner(element, 0.12)
 
 		local edge = Instance.new("UIStroke")
@@ -216,9 +231,21 @@ function DuelPaperSkin.mount(
 		edge.Transparency = if spec.enabled then 0 else 0.6
 		edge.Parent = element
 
+		-- Centred on the drawing and larger than it, so the extra reach is even
+		-- on all four sides. On top, so it takes the press.
+		local target = Instance.new("TextButton")
+		target.Size = UDim2.fromScale(pad, pad)
+		target.Position = UDim2.fromScale((1 - pad) / 2, (1 - pad) / 2)
+		target.BackgroundTransparency = 1
+		target.Text = ""
+		target.Active = spec.enabled
+		target.AutoButtonColor = false
+		target.ZIndex = element.ZIndex + 1
+		target.Parent = container
+
 		if spec.enabled then
-			trove:Connect(element.Activated, function()
-				-- The press itself answers, before the server has said anything.
+			trove:Connect(target.Activated, function()
+				-- The press answers before the server has said anything.
 				-- plan-etapas.md Etapa 2: every action reports immediately.
 				TweenService:Create(element, TweenInfo.new(Theme.motion.snap), {
 					Rotation = tiltFor(seed) + 4,
@@ -228,7 +255,7 @@ function DuelPaperSkin.mount(
 			end)
 		end
 
-		return element
+		return container
 	end
 
 	--- One line of a panel: an object with its shape, or plain text.
