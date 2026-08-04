@@ -1,0 +1,12 @@
+{
+  "name": "master-of-barter-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Documentation-site tooling only. The game itself does not depend on npm; see rokit.toml for the Roblox toolchain.",
+  "scripts": {
+    "docs": "./docs.sh"
+  },
+  "devDependencies": {
+    "moonwave": "1.4.2"
+  }
+}

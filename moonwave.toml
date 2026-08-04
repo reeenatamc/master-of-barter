@@ -1,0 +1,38 @@
+# Documentation site. Run ./docs.sh to read it locally.
+#
+# The site is local-only today, but the GitHub Pages fields below are already
+# filled in, so opening it up to a team later is `./docs.sh publish` -- no
+# restructuring, no migration.
+
+title = "Master of Barter"
+gitRepoUrl = "https://github.com/reeenatamc/master-of-barter"
+gitSourceBranch = "main"
+
+[docusaurus]
+# "warn" instead of "throw": the docs cross-reference each other by section
+# ("§39 del GDD") rather than by link, and a broken link should not be able to
+# stop us from reading the rest.
+onBrokenLinks = "warn"
+organizationName = "reeenatamc"
+projectName = "master-of-barter"
+url = "https://reeenatamc.github.io"
+baseUrl = "/master-of-barter/"
+tagline = "Negociación y bluff 1v1, con estética de papel dibujado a mano"
+# Renders the ```mermaid blocks in arquitectura.md as actual diagrams. The
+# package itself is added to the site template by docs.sh; see the note there.
+themes = ["@docusaurus/theme-mermaid"]
+
+# Docusaurus 3 parses .md as MDX by default, which reads any `<` as the start of
+# a JSX tag -- so "completable en <4 min" in the backlog crashed the build.
+# "detect" means .md is plain CommonMark and only .mdx gets JSX. The docs stay
+# ordinary Markdown, readable on GitHub and in any editor.
+[docusaurus.markdown]
+format = "detect"
+mermaid = true
+
+[docusaurus.markdown.hooks]
+onBrokenMarkdownLinks = "warn"
+
+[home]
+enabled = true
+includeReadme = true

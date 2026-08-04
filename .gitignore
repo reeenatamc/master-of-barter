@@ -25,5 +25,9 @@ Thumbs.db
 # Herramientas locales de verificacion (se descargan solas con ./check.sh)
 /.tools/
 
+# Sitio de documentacion: se reconstruye solo con ./docs.sh
+/node_modules/
+/build/
+
 # Instrucciones para el agente: privadas, no son parte del juego.
 /CLAUDE.md
