@@ -33,6 +33,7 @@ local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 
 local DuelViewModel = require(script.Parent.DuelViewModel)
+local SoundController = require(script.Parent.SoundController)
 
 local DuelPaperSkin = {}
 
@@ -42,6 +43,18 @@ local TONE_COLORS: { [DuelViewModel.Tone]: Color3 } = {
 	danger = Theme.palette.fakeCall,
 	good = Theme.palette.good,
 	bad = Theme.palette.bad,
+}
+
+--- Which sound each action makes. plan-etapas.md Etapa 2 raised juice to
+--- required and applied it to EVERY meaningful action, not only the reveal: a
+--- duel where only the ending moves is silent for ninety percent of its length.
+local SOUND_FOR: { [string]: string } = {
+	send = "offerSent",
+	clear = "offerCleared",
+	accept = "accept",
+	decline = "decline",
+	raise = "raise",
+	fakecall = "fakeCall",
 }
 
 --- Every cut-out is rotated a little, and never all by the same amount.
@@ -210,6 +223,7 @@ function DuelPaperSkin.mount(
 				TweenService:Create(element, TweenInfo.new(Theme.motion.snap), {
 					Rotation = tiltFor(seed) + 4,
 				}):Play()
+				SoundController.play(SOUND_FOR[spec.id] or "offerPlaced")
 				onAction(spec.id)
 			end)
 		end
@@ -218,7 +232,7 @@ function DuelPaperSkin.mount(
 	end
 
 	--- One line of a panel: an object with its shape, or plain text.
-	local function drawRow(container: Instance, row: DuelViewModel.Row, index: number, height: number)
+	local function drawRow(container: Instance, row: DuelViewModel.Row, index: number, height: number): Frame
 		local line = Instance.new("Frame")
 		line.Size = UDim2.fromScale(1, height)
 		line.Position = UDim2.fromScale(0, (index - 1) * height)
@@ -269,6 +283,40 @@ function DuelPaperSkin.mount(
 				element.Parent = line
 			end
 		end
+
+		return line
+	end
+
+	--- The Revelación™ (docs/gdd.md §29, plan-etapas.md Etapa 4). One wrapper
+	--- comes off at a time, because everything arriving at once is a list and
+	--- everything arriving in order is a reveal.
+	---
+	--- Each row starts invisible and slightly off, then snaps into place on its
+	--- own delay. Timings come from Theme: how fast a thing lands is part of how
+	--- the game feels, and another theme may want another rhythm.
+	local function revealRow(line: Frame, index: number)
+		local target = line.Position
+		line.Position = target + UDim2.fromScale(0, 0.04)
+
+		for _, element in line:GetDescendants() do
+			if element:IsA("TextLabel") or element:IsA("Frame") then
+				(element :: any).Visible = false
+			end
+		end
+
+		-- Registered in the trove, like every other timer this file starts: a
+		-- duel that ends mid-reveal must not leave animations running.
+		trove:Delay((index - 1) * Theme.motion.revealStagger, function()
+			for _, element in line:GetDescendants() do
+				if element:IsA("TextLabel") or element:IsA("Frame") then
+					(element :: any).Visible = true
+				end
+			end
+			TweenService:Create(line, TweenInfo.new(Theme.motion.place, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Position = target,
+			}):Play()
+			SoundController.play("revealTear")
+		end)
 	end
 
 	local function drawPanel(container: Frame, panel: DuelViewModel.Panel)
@@ -277,7 +325,10 @@ function DuelPaperSkin.mount(
 
 		local rowHeight = 0.2
 		for index, row in panel.rows do
-			drawRow(container, row, index + 1, rowHeight)
+			local line = drawRow(container, row, index + 1, rowHeight)
+			if panel.kind == "reveal" then
+				revealRow(line, index)
+			end
 		end
 	end
 
@@ -321,6 +372,7 @@ function DuelPaperSkin.mount(
 	local flashGeneration = 0
 
 	local function flashEmote(symbol: string, mine: boolean)
+		SoundController.play("emote")
 		flash.Text = symbol
 		flash.Position = UDim2.fromScale(if mine then 0.55 else 0.2, 0.4)
 
