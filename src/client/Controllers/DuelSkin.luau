@@ -20,6 +20,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 
 ReplicatedStorage:WaitForChild("Shared")
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
@@ -51,6 +52,31 @@ local function corner(parent: Instance, scale: number)
 	local ui = Instance.new("UICorner")
 	ui.CornerRadius = UDim.new(scale, 0)
 	ui.Parent = parent
+end
+
+--- Symbols for the keys likely to open the chat. Anything else falls back to
+--- the enum name, which is ugly but always true.
+local KEY_SYMBOLS: { [Enum.KeyCode]: string } = {
+	[Enum.KeyCode.Slash] = "/",
+	[Enum.KeyCode.Quote] = "'",
+	[Enum.KeyCode.Semicolon] = ";",
+	[Enum.KeyCode.Backquote] = "`",
+}
+
+--- Which key actually opens the chat, asked to the engine rather than assumed.
+---
+--- The chat input bar auto-hides and nothing exposed lets us pin it open, so
+--- the only honest affordance is telling the player the exact key. Reading
+--- KeyboardKeyCode means the hint stays true if Roblox changes the default or
+--- if this place reconfigures it -- a hardcoded "/" would silently start lying.
+local function chatKeyLabel(): string
+	local config = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+	if not config then
+		return "/"
+	end
+
+	local code = config.KeyboardKeyCode
+	return KEY_SYMBOLS[code] or code.Name
 end
 
 local function label(text: string, size: UDim2, color: Color3, align: Enum.TextXAlignment): TextLabel
@@ -108,8 +134,11 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 	subheader.Position = UDim2.fromScale(0, 0.09)
 	subheader.Parent = root
 
-	-- Pointing up at the chat, which lives above this panel now.
-	local talkHint = label(Strings.duelScreen.talkHint, UDim2.fromScale(1, 0.045), DIM, Enum.TextXAlignment.Center)
+	-- Pointing up at the chat, which lives above this panel now. The hint names
+	-- the real key because the bar itself is invisible until it is opened, and
+	-- an arrow pointing at empty sky helps nobody.
+	local hintText = string.format(Strings.duelScreen.talkHint, chatKeyLabel())
+	local talkHint = label(hintText, UDim2.fromScale(1, 0.045), DIM, Enum.TextXAlignment.Center)
 	talkHint.Position = UDim2.fromScale(0, 0.145)
 	talkHint.TextTransparency = 0.35
 	talkHint.Parent = root

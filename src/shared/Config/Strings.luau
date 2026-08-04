@@ -71,7 +71,8 @@ local duelButtons = {
 ]=]
 local duelScreen = {
 	waitingForRival = "Esperando al rival…",
-	talkHint = "Podés escribir arriba para venderle tu oferta 👆",
+	--- %s se reemplaza con la tecla real que abre el chat, leída del engine.
+	talkHint = "Apretá %s para hablarle al rival y venderle tu oferta",
 	buildYourOffer = "Armá tu oferta",
 	yourTurn = "Te toca",
 	theirTurn = "Turno del rival",
