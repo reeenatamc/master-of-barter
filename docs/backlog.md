@@ -83,13 +83,23 @@ Criterios: zoom táctil/click; 3 tipos de imperfección (tono, costura, errata) 
 
 ### A7 · Como jugador quiero emotes para la guerra psicológica
 
-**Prioridad:** P1 · S
+**Prioridad:** ~~P1~~ → **P0** · S — subida el 2026-08-04
 
 Criterios: 6 emotes prediseñados, visibles por el rival, con cooldown anti-spam.
+
+> **Por qué subió.** En la primera sesión con personas, los dos testers pidieron poder hablarse durante el duelo, para venderse el objeto y hacerse los graciosos. Eso confirma lo que `gdd.md` §8 anotaba como hipótesis: la diversión vive en la **actuación de venta**, y el prototipo tenía el trueque pero no el escenario.
+> Los emotes no son un adorno de esa actuación, son su forma práctica en móvil —la plataforma principal—: escribir a mitad de un duelo cronometrado es incómodo, y seis botones de reacción venden más rápido que un párrafo. Entra en la iteración corta posterior a la Etapa 1.
 
 ---
 
 ## ÉPICA B — Datos y economía
+
+> **Orden de la épica: B1 antes que B2.** Corrige una decisión previa de arrancar por B2 (el costo en Clips de fabricar fakes), y se deja escrito el porqué:
+> 1. **Dependencia técnica.** `EconomyService` necesita dónde persistir los Clips. Sin B1 no hay dónde guardarlos.
+> 2. **Dependencia de producto.** Sin colección permanente no hay razón para volver mañana, y eso es lo primero que la retención necesita — antes que cualquier ajuste de balance.
+> 3. **Por la regla de verificación** de `CLAUDE.md`: los datos persistentes no se agrupan ni se difieren. B1 se prueba en su momento, con su propio cuidado, porque un bug ahí no da error visible: corrompe en silencio.
+>
+> B2 va inmediatamente después, como el freno que hoy le falta al balance (hoy falsificar es gratis).
 
 ### B1 · Como jugadora quiero que mi progreso se guarde de forma segura
 
@@ -163,10 +173,39 @@ Criterios: agresivo y tímido difieren medible en ratio de fakes, uso de Pedir m
 
 ## ÉPICA E — Lobby, UI y sonido
 
-> **⚠️ Hueco detectado el 2026-08-04.** `plan-etapas.md` Etapa 1 lista como 🟥 *"Mesa de duelo con UI fea: 3 botones + lista de objetos como texto plano"*, pero en el backlog la UI vive solo en E2, que es Etapa 2. Al seguir el orden A1 → A2 → A4 de CLAUDE.md, esa UI mínima quedó sin hacer.
-> Consecuencia real, encontrada al terminar el punto de control: **la pregunta de la Etapa 1 no se puede contestar sin ella.** Nadie juzga si negociar con fakes divierte leyendo líneas de Output y apretando teclas de debug; eso prueba mecánicas, no diversión. Y el criterio de aceptación de la etapa es "dos personas que no eres tú piden otra partida", que además necesita gente de fuera.
-> Falta una tarjeta **E0 — mesa de duelo fea**: los tres botones, la lista de objetos como texto plano, y el resultado de la revelación en pantalla. Sin pulido, sin tema de papel: eso es E2. Es lo que convierte el prototipo en algo jugable por una persona que no escribió el código.
+> **Hueco detectado y cerrado el 2026-08-04.** `plan-etapas.md` Etapa 1 pedía una mesa de duelo fea que en el backlog no existía como tarjeta, porque la UI vivía sólo en E2 (Etapa 2). Sin ella, la pregunta de la Etapa 1 no se podía contestar: nadie juzga si algo divierte leyendo el Output. **E0 se construyó y la etapa cerró con ella.**
 
+---
+
+## Iteración corta post-prueba (Etapa 1) — ⏱️ TIMEBOX: 1–2 semanas de ratos
+
+Sale de la primera sesión con personas (`prueba-diversion.md`): el concepto engancha, pero **los dos testers pidieron poder hablarse** para venderse el objeto y hacerse los graciosos, y la pantalla parece una planilla.
+
+**Objetivo:** llegar a la segunda sesión —la del experimento de la ficha— con un prototipo donde la actuación de venta sea posible. Nada más.
+
+**Regla de esta iteración:** cualquier otra cosa que salga de las pruebas va al backlog, **no acá**. El timebox es duro; se cierra por tiempo, no por completitud.
+
+### E0.1 · Hacerle sitio al chat en la pantalla de duelo
+
+**Prioridad:** P0 · S
+
+Criterios: la conversación se ve **mientras** negociás, no en otra pantalla ni tapada por la UI del duelo. **Cero features de chat propias** — el filtro, la ventana y la moderación son de Roblox (`TextChatService`, ya habilitado por defecto en places nuevos). Esto es una tarjeta de *layout*, no de chat.
+
+Diagnóstico previo obligatorio: comprobar en Play si el chat ya aparece. Lo más probable es que exista y que la pantalla de E0 —que ocupa el 94% del ancho con `IgnoreGuiInset`— simplemente lo tape. Si es eso, la tarjeta es encoger un frame.
+
+### A7 · Emotes — **sube de P1 a P0**
+
+Ver la tarjeta en la ÉPICA A. Sube por el dato de la primera sesión: en móvil, que es la plataforma principal, **seis botones de reacción venden más rápido que escribir**, y escribir a mitad de un duelo cronometrado es incómodo. Seis emotes prediseñados, visibles por el rival, con cooldown anti-spam.
+
+### E0.2 · Objetos que parezcan objetos
+
+**Prioridad:** P0 · S
+
+Criterios: cada objeto se ve como una cosa y no como una fila de texto — **placeholder**: forma simple + color + nombre grande. Suficiente para que los testers juzguen el juego y no la planilla.
+
+**Límite explícito: NO es arte.** El arte de verdad, con estética de papel, es E2. Si alguien se encuentra dibujando una Sopa Maruchan Dorada bonita, se pasó de la raya de esta iteración y hay que parar.
+
+---
 
 ### E1 · Lobby "El Patio de Trades" con mesas, kiosco y flujo de cola
 
