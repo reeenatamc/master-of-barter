@@ -60,6 +60,8 @@ type Duel = {
 	--- Owns every connection and timer this duel creates. Cleaned on finish,
 	--- whichever way the duel ends.
 	trove: Trove.Trove,
+	--- Set by the first terminal path to claim the duel. See `resolve`.
+	resolving: boolean,
 }
 
 local DuelService = {}
@@ -67,6 +69,21 @@ local DuelService = {}
 local duels: { [string]: Duel } = {}
 --- Reverse index so a disconnect can find the duel without scanning.
 local duelIdOf: { [Player]: string } = {}
+
+--- Debug-only tallies, so tests can state facts instead of hopes. Same
+--- principle as the Trove live count: "1 real, 1 blocked" is a result,
+--- "nothing exploded" is not. Only written when DuelRules.debugLogs is on.
+local counters = {
+	--- Terminal transitions that actually took effect.
+	resolved = 0,
+	--- Terminal paths that arrived second and were turned away.
+	blocked = 0,
+	--- Phase broadcasts sent by a terminal transition.
+	terminalBroadcasts = 0,
+	--- finish() calls that did the work, and calls that hit the no-op.
+	finished = 0,
+	finishIgnored = 0,
+}
 
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -169,6 +186,37 @@ local function armPhaseWatchdog(duel: Duel)
 	end)
 end
 
+--- The single exit for a duel, whichever way it ends: accept, decline, a phase
+--- watchdog or a disconnect. All four can fire in the same instant.
+---
+--- The registry no-op inside finish() stops the CLEANUP from running twice, but
+--- it does nothing for the broadcast that happens before it: two winners would
+--- push two contradictory phase changes at the clients, and whichever arrived
+--- last would win on screen. So the first path here claims the duel and every
+--- other one backs off without emitting anything.
+---
+--- Nothing yields between the check and the write, so the claim is atomic.
+local function resolve(duel: Duel, phase: DuelPhase, reason: string)
+	if duel.resolving then
+		if DuelRules.debugLogs then
+			counters.blocked += 1
+			print(`[DuelService] duel {duel.id}: second terminal path blocked ({reason})`)
+		end
+		return
+	end
+	duel.resolving = true
+
+	duel.phase = phase
+	broadcast(duel)
+
+	if DuelRules.debugLogs then
+		counters.resolved += 1
+		counters.terminalBroadcasts += 1
+	end
+
+	DuelService.finish(duel.id, reason)
+end
+
 --- Both sides have committed an offer, so negotiation can begin.
 local function beginNegotiating(duel: Duel)
 	duel.phase = "Negotiating"
@@ -207,6 +255,7 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 			{ slot = 2, player = playerB, hand = buildStarterHand(), offer = nil, raisesLeft = raises, fakeCallUsed = false },
 		},
 		trove = Trove.new(),
+		resolving = false,
 	}
 
 	duels[duel.id] = duel
@@ -219,20 +268,21 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 end
 
 --- Phase watchdog: no phase may hang forever (docs/arquitectura.md §5).
---- A1.2 scope is deliberately one transition only -- BuildingOffers expires
---- into Cancelled and the duel ends. Reaching Negotiating requires offers,
---- which is A1.3.
+--- Any phase that runs out of time cancels the duel. §5 used to say "timeout
+--- doble"; that was premature sophistication and the doc has been corrected.
+--- If cancelling on the first timeout turns out to punish honest lag, that is a
+--- number to recalibrate, not a state machine to redesign.
 function DuelService.expirePhase(duelId: string)
 	local duel = duels[duelId]
 	if not duel then
+		if DuelRules.debugLogs then
+			counters.blocked += 1
+			print(`[DuelService] expirePhase({duelId}) blocked: duel already gone`)
+		end
 		return
 	end
 
-	local expired = duel.phase
-	duel.phase = "Cancelled"
-	broadcast(duel)
-
-	DuelService.finish(duelId, `{expired} timed out`)
+	resolve(duel, "Cancelled", `{duel.phase} timed out`)
 end
 
 --- Ends a duel, releases everything it owned, and forgets it. `reason` is for
@@ -246,9 +296,14 @@ function DuelService.finish(duelId: string, reason: string)
 	local duel = duels[duelId]
 	if not duel then
 		if DuelRules.debugLogs then
+			counters.finishIgnored += 1
 			print(`[DuelService] finish({duelId}) ignored: already finished`)
 		end
 		return
+	end
+
+	if DuelRules.debugLogs then
+		counters.finished += 1
 	end
 
 	-- Forget the duel BEFORE cleaning up, so anything that cleanup triggers and
@@ -292,7 +347,7 @@ end
 --- Feeding these to analytics, so spam patterns become exploit candidates, is
 --- card F3.
 local function reject(player: Player, why: string)
-	warn(`[DuelService] offer from {player.Name} rejected: {why}`)
+	warn(`[DuelService] request from {player.Name} rejected: {why}`)
 end
 
 local function sideOf(duel: Duel, player: Player): Side?
@@ -456,10 +511,15 @@ function DuelService.init()
 
 	-- docs/gdd.md §32: leaving mid-duel is a loss. Scoring is A3; for now the
 	-- duel simply ends so neither side is stuck in a dead duel.
+	--
+	-- Goes through `resolve` like every other ending, so the player who stayed
+	-- is actually told the duel is over instead of being left staring at a
+	-- state that will never change again.
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local duelId = duelIdOf[player]
-		if duelId then
-			DuelService.finish(duelId, `{player.Name} disconnected`)
+		local duel = if duelId then duels[duelId] else nil
+		if duel then
+			resolve(duel, "Cancelled", `{player.Name} disconnected`)
 		end
 	end)
 end

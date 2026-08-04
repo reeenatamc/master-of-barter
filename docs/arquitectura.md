@@ -83,7 +83,7 @@ stateDiagram-v2
     ArmandoOfertas --> Negociando: ambas ofertas listas / timeout
     Negociando --> Negociando: PEDIR MÁS (máx 3 por lado)
     Negociando --> Revelacion: ACEPTAR o ¡ES FAKE!
-    Negociando --> Cancelado: RECHAZAR / timeout doble
+    Negociando --> Cancelado: RECHAZAR / timeout
     Revelacion --> Resultados: transferencias aplicadas
     Cancelado --> Resultados
     Resultados --> [*]: recompensas + analítica
