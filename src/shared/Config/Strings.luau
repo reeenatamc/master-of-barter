@@ -73,6 +73,7 @@ local duelScreen = {
 	waitingForRival = "Esperando al rival…",
 	--- %s se reemplaza con la tecla real que abre el chat, leída del engine.
 	talkHint = "Apretá %s para hablarle al rival y venderle tu oferta",
+	emotes = "Reacciones",
 	buildYourOffer = "Armá tu oferta",
 	yourTurn = "Te toca",
 	theirTurn = "Turno del rival",
@@ -103,6 +104,18 @@ local duelScreen = {
 	owesBigger = "Debe mejorar su oferta",
 }
 
+--- What each reaction of DuelRules.emotes looks like. Symbols rather than
+--- words: they cross languages, they read at a glance, and they fit a button
+--- a thumb can hit.
+local emoteSymbols: { [string]: string } = {
+	hype = "🤩",
+	doubt = "🤨",
+	laugh = "😂",
+	beg = "🙏",
+	dead = "💀",
+	fire = "🔥",
+}
+
 local currencyName = "Clips"
 
 return {
@@ -110,5 +123,6 @@ return {
 	rarityNames = rarityNames,
 	duelButtons = duelButtons,
 	duelScreen = duelScreen,
+	emoteSymbols = emoteSymbols,
 	currencyName = currencyName,
 }

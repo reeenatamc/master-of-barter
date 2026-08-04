@@ -99,6 +99,12 @@ function DuelScreen.build(state: Types.DuelState, draft: Draft): ViewModel
 
 	table.insert(panels, DuelPanels.rival(state))
 
+	-- Reactions stay available the whole duel, including while waiting for the
+	-- rival: the selling starts before the offer does.
+	if state.phase ~= "Reveal" and state.phase ~= "Cancelled" then
+		table.insert(panels, DuelPanels.emotes())
+	end
+
 	-- Before committing, the picker and the draft. Afterwards, the offer as it
 	-- actually went out.
 	if state.phase == "BuildingOffers" and not state.yourOffer then

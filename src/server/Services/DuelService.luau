@@ -834,6 +834,64 @@ function DuelService.runFinishRaceCheck(): boolean
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Emotes (card A7)
+
+--- Last time each player reacted, for the cooldown. Cleared on disconnect so a
+--- long-lived server does not accumulate an entry per player who ever joined.
+local lastEmoteAt: { [Player]: number } = {}
+
+local emoteExists: { [string]: boolean } = {}
+for _, id in DuelRules.emotes do
+	emoteExists[id] = true
+end
+
+--- A reaction. Validated in the same four layers as everything else, because a
+--- remote that only carries a smiley is still a remote.
+---
+--- Reactions are broadcast, not stored: nothing about the duel changes, so this
+--- deliberately does NOT go through `stateFor`. An emote is an event that
+--- happened, not a fact about the game.
+function DuelService.emote(player: Player, emoteId: unknown)
+	-- Layer 1: type.
+	if type(emoteId) ~= "string" then
+		return reject(player, "emote id is not a string")
+	end
+
+	-- Layer 2: existence, against Config.
+	if not emoteExists[emoteId] then
+		return reject(player, `unknown emote "{emoteId}"`)
+	end
+
+	-- Layer 3: state.
+	local duelId = duelIdOf[player]
+	local duel = if duelId then duels[duelId] else nil
+	if not duel then
+		return reject(player, "not in a duel")
+	end
+
+	local side = sideOf(duel, player)
+	if not side then
+		return reject(player, "not a participant")
+	end
+
+	-- Layer 4: the cooldown. This is the only rate limit in the project so far,
+	-- and it exists here because an emote is the one action a player can repeat
+	-- as fast as they can tap. The general per-remote limiting is still
+	-- outstanding (Etapa 2).
+	local now = os.clock()
+	local previous = lastEmoteAt[player]
+	if previous and now - previous < DuelRules.emoteCooldownSeconds then
+		return
+	end
+	lastEmoteAt[player] = now
+
+	local remote = Net.get(Net.names.DuelEmote)
+	for _, target in duel.sides do
+		remote:FireClient(target.player, side.slot, emoteId)
+	end
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
 
 --- Wires the service. Called by Main in boot order.
 function DuelService.init()
@@ -845,6 +903,10 @@ function DuelService.init()
 		DuelService.negotiate(player, action)
 	end)
 
+	Net.get(Net.names.DuelEmote).OnServerEvent:Connect(function(player: Player, emoteId: unknown)
+		DuelService.emote(player, emoteId)
+	end)
+
 	-- docs/gdd.md §32: leaving mid-duel is a loss. Scoring is A3; for now the
 	-- duel simply ends so neither side is stuck in a dead duel.
 	--
@@ -852,6 +914,8 @@ function DuelService.init()
 	-- is actually told the duel is over instead of being left staring at a
 	-- state that will never change again.
 	Players.PlayerRemoving:Connect(function(player: Player)
+		lastEmoteAt[player] = nil
+
 		local duelId = duelIdOf[player]
 		local duel = if duelId then duels[duelId] else nil
 		if duel then

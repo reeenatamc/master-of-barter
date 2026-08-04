@@ -174,6 +174,20 @@ function DuelPanels.rival(state: Types.DuelState): Panel
 	return { title = UI.theirOffer, rows = rows }
 end
 
+--- The reaction bar. Ordinary buttons carrying ordinary ids, so the skin needs
+--- no new concept to draw them and UIController no new branch to route them.
+function DuelPanels.emotes(): Panel
+	local buttons = {}
+	for _, id in DuelRules.emotes do
+		table.insert(buttons, button(`emote:{id}`, Strings.emoteSymbols[id] or "?", true, "plain"))
+	end
+
+	return {
+		title = UI.emotes,
+		rows = { { label = "", tone = "plain" :: Tone, buttons = buttons } },
+	}
+end
+
 function DuelPanels.reveal(reveal: Types.RevealResult, yourSlot: Types.Slot): Panel
 	local rows: { Row } = {}
 

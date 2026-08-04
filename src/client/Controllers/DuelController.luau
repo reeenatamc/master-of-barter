@@ -21,6 +21,7 @@ local DuelController = {}
 
 local current: Types.DuelState? = nil
 local listeners: { (Types.DuelState) -> () } = {}
+local emoteListeners: { (Types.Slot, string) -> () } = {}
 
 function DuelController.getState(): Types.DuelState?
 	return current
@@ -163,6 +164,19 @@ function DuelController.fakeCall()
 	DuelController.negotiate("FakeCall")
 end
 
+--- Sends a reaction. The server validates the id, the cooldown and that you are
+--- actually in a duel, so nothing here needs to check anything.
+function DuelController.emote(emoteId: string)
+	Net.get(Net.names.DuelEmote):FireServer(emoteId)
+end
+
+--- Reactions arriving from the server. Separate from state on purpose: an emote
+--- is an event that happened, not a fact about the duel, so it never touches
+--- DuelState and never goes through the view model.
+function DuelController.onEmote(listener: (slot: Types.Slot, emoteId: string) -> ())
+	table.insert(emoteListeners, listener)
+end
+
 --- TEMP: an entirely honest offer -- your cheapest copy plus your best one.
 --- The counterpart to offerDemo, so two clients can play cheat vs honest.
 function DuelController.offerHonest()
@@ -258,6 +272,12 @@ function DuelController.start()
 	if DuelRules.debugLogs then
 		bindDebugKeys()
 	end
+
+	Net.get(Net.names.DuelEmote).OnClientEvent:Connect(function(slot: Types.Slot, emoteId: string)
+		for _, listener in emoteListeners do
+			listener(slot, emoteId)
+		end
+	end)
 
 	-- Asking to queue happens AFTER the handler above is connected. Otherwise
 	-- the first DuelState could arrive with nobody listening, and a

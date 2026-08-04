@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
+local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelController = require(script.Parent.DuelController)
@@ -83,6 +84,9 @@ local function handleAction(id: string)
 		if index then
 			table.remove(draft, index)
 		end
+	elseif kind == "emote" and argument then
+		DuelController.emote(argument)
+		return
 	elseif id == "clear" then
 		table.clear(draft)
 	elseif id == "send" then
@@ -123,6 +127,14 @@ function UIController.start()
 
 	handle = DuelSkin.mount(playerGui, handleAction)
 	DuelController.onStateChanged(onDuelState)
+
+	DuelController.onEmote(function(slot: Types.Slot, emoteId: string)
+		local screen = handle
+		local state = DuelController.getState()
+		if screen and state then
+			screen.flashEmote(Strings.emoteSymbols[emoteId] or "?", slot == state.yourSlot)
+		end
+	end)
 
 	-- The debug keys stay while diagnostics are on, but every one of them maps
 	-- to a button that also exists on screen. Nothing is reachable by keyboard

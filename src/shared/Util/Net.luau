@@ -21,8 +21,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
---- Keys and values match on purpose: the key gives autocomplete at the call
---- site, the value is the actual instance name.
+-- Keys and values match on purpose: the key gives autocomplete at the call
+-- site, the value is the actual instance name.
 local NAMES = {
 	-- Client -> server. Every one of these is an untrusted request.
 	DuelOffer = "DuelOffer",
@@ -39,12 +39,19 @@ local NAMES = {
 	Notice = "Notice",
 }
 
+--[=[
+	@class Net
+
+	Single source of truth for RemoteEvent names. The server creates the whole
+	catalog once with `createAll()`; both sides then look each remote up by name
+	with `get()`, so a typo cannot silently split them into two different names.
+]=]
 local Net = {
 	names = NAMES,
 }
 
---- Waits for Shared/Remotes. Instant on the server; on the client it blocks
---- until replication catches up, which is why nothing else here yields.
+-- Waits for Shared/Remotes. Instant on the server; on the client it blocks
+-- until replication catches up, which is why nothing else here yields.
 local function remotesFolder(): Instance
 	local shared = ReplicatedStorage:WaitForChild("Shared")
 	return shared:WaitForChild("Remotes")

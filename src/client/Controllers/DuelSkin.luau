@@ -45,6 +45,9 @@ local DIM = Color3.fromRGB(150, 150, 156)
 
 export type Handle = {
 	render: (viewModel: DuelViewModel.ViewModel) -> (),
+	--- Shows a reaction for a moment. Not part of `render` because an emote is
+	--- an event, not state: re-rendering the screen must not replay it.
+	flashEmote: (symbol: string, mine: boolean) -> (),
 	destroy: () -> (),
 }
 
@@ -260,12 +263,19 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 				detail.Position = UDim2.fromScale(0.47, 0.2)
 				detail.Parent = strip
 
-				local slot = 0
-				for _, spec in row.buttons do
-					local element = makeButton(spec, UDim2.fromScale(0.15, 0.72))
-					element.Position = UDim2.fromScale(0.68 + slot * 0.16, 0.14)
+				-- Two buttons sit on the right of a labelled row; more than two
+				-- means the row IS the buttons (the reaction bar), so they
+				-- spread across the whole width instead of piling up off-screen.
+				local count = #row.buttons
+				local spread = count > 2
+				local width = if spread then 0.94 / count else 0.15
+				local origin = if spread then 0.03 else 0.68
+				local gap = if spread then width else 0.16
+
+				for index, spec in row.buttons do
+					local element = makeButton(spec, UDim2.fromScale(width * 0.92, 0.72))
+					element.Position = UDim2.fromScale(origin + (index - 1) * gap, 0.14)
 					element.Parent = strip
-					slot += 1
 				end
 			end
 		end
@@ -277,8 +287,39 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 		end
 	end
 
+	-- Two labels rather than one, so both sides can react at the same time
+	-- without one reaction swallowing the other.
+	local flashes = {
+		[true] = label("", UDim2.fromScale(0.2, 0.09), TEXT, Enum.TextXAlignment.Center),
+		[false] = label("", UDim2.fromScale(0.2, 0.09), TEXT, Enum.TextXAlignment.Center),
+	}
+	flashes[true].Position = UDim2.fromScale(0.55, 0.02)
+	flashes[false].Position = UDim2.fromScale(0.25, 0.02)
+	flashes[true].Parent = root
+	flashes[false].Parent = root
+
+	local flashGeneration = 0
+
+	local function flashEmote(symbol: string, mine: boolean)
+		local element = flashes[mine]
+		element.Text = symbol
+
+		flashGeneration += 1
+		local generation = flashGeneration
+
+		-- Registered in the trove like every other timer. A later reaction
+		-- bumps the generation, so an older timer cannot blank out a newer
+		-- emote (same trick as the phase watchdog).
+		trove:Delay(2, function()
+			if flashGeneration == generation then
+				element.Text = ""
+			end
+		end)
+	end
+
 	return {
 		render = render,
+		flashEmote = flashEmote,
 		destroy = function()
 			trove:Clean()
 		end,

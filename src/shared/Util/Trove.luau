@@ -18,6 +18,14 @@
 
 export type Cleanable = RBXScriptConnection | thread | (() -> ())
 
+--[=[
+	@class Trove
+
+	Cleanup handle for connections, timers and plain callbacks. Every duel owns
+	one, and it is released when the duel ends by any route -- including a
+	disconnect. `Live()` reports what is still registered, so a leak fails
+	loudly instead of quietly.
+]=]
 local Trove = {}
 Trove.__index = Trove
 
