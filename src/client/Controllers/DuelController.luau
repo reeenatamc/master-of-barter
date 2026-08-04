@@ -20,9 +20,17 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local DuelController = {}
 
 local current: Types.DuelState? = nil
+local listeners: { (Types.DuelState) -> () } = {}
 
 function DuelController.getState(): Types.DuelState?
 	return current
+end
+
+--- Subscribes to server state. Kept as a plain list rather than a Signal
+--- because the client side has exactly one subscriber (the UI) and no need for
+--- disconnection: the controller lives as long as the client does.
+function DuelController.onStateChanged(listener: (Types.DuelState) -> ())
+	table.insert(listeners, listener)
 end
 
 local function nameOf(itemId: Types.ItemId): string
@@ -204,35 +212,47 @@ end
 local function bindDebugKeys()
 	local UserInputService = game:GetService("UserInputService")
 
-	local actions: { [Enum.KeyCode]: () -> () } = {
-		[Enum.KeyCode.One] = DuelController.offerDemo,
-		[Enum.KeyCode.Two] = DuelController.offerHonest,
-		[Enum.KeyCode.Three] = DuelController.accept,
-		[Enum.KeyCode.Four] = DuelController.decline,
-		[Enum.KeyCode.Five] = DuelController.raise,
-		[Enum.KeyCode.Six] = DuelController.amendDemo,
-		[Enum.KeyCode.Seven] = DuelController.fakeCall,
+	-- Letters, not digits: 1-9 are the backpack hotbar, so Roblox consumes them
+	-- before anything here sees them. WASD is movement, so those are out too.
+	local actions: { [Enum.KeyCode]: { label: string, run: () -> () } } = {
+		[Enum.KeyCode.Q] = { label = "offer 1 real + 1 FAKE", run = DuelController.offerDemo },
+		[Enum.KeyCode.E] = { label = "offer 2 real", run = DuelController.offerHonest },
+		[Enum.KeyCode.R] = { label = "accept", run = DuelController.accept },
+		[Enum.KeyCode.T] = { label = "decline", run = DuelController.decline },
+		[Enum.KeyCode.Z] = { label = "raise", run = DuelController.raise },
+		[Enum.KeyCode.X] = { label = "amend", run = DuelController.amendDemo },
+		[Enum.KeyCode.C] = { label = "ES FAKE", run = DuelController.fakeCall },
 	}
 
 	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
-		-- `processed` is true when Roblox already used the key for chat or a
-		-- text box, so typing a message never fires a duel action.
-		if processed then
+		local action = actions[input.KeyCode]
+		if not action then
 			return
 		end
-		local action = actions[input.KeyCode]
-		if action then
-			action()
+		-- `processed` is true when Roblox already used the key, for chat or a
+		-- text box, so typing a message never fires a duel action. Reported
+		-- rather than swallowed: a key that seems dead is otherwise impossible
+		-- to tell apart from one that never arrived.
+		if processed then
+			print(`[Duel] key {input.KeyCode.Name} ignored: the game used it (chat open?)`)
+			return
 		end
+		print(`[Duel] key {input.KeyCode.Name} -> {action.label}`)
+		action.run()
 	end)
 
-	print("[Duel] keys: 1 offer 1real+1fake · 2 offer 2real · 3 accept · 4 decline · 5 raise · 6 amend · 7 ES FAKE")
+	print("[Duel] KEYS: Q offer 1real+1FAKE · E offer 2real · R accept · T decline · Z raise · X amend · C ES FAKE")
 end
 
 function DuelController.start()
 	Net.get(Net.names.DuelState).OnClientEvent:Connect(function(state: Types.DuelState)
 		current = state
-		dump(state)
+		if DuelRules.debugLogs then
+			dump(state)
+		end
+		for _, listener in listeners do
+			listener(state)
+		end
 	end)
 
 	if DuelRules.debugLogs then

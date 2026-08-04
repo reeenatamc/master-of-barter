@@ -40,11 +40,45 @@ local duelButtons = {
 	fakeCall = "¡ES FAKE!",
 }
 
+--- Everything else the duel screen puts on the player's screen.
+local duelScreen = {
+	waitingForRival = "Esperando al rival…",
+	buildYourOffer = "Armá tu oferta",
+	yourTurn = "Te toca",
+	theirTurn = "Turno del rival",
+	yourHand = "Tu colección",
+	yourOffer = "Tu oferta",
+	theirOffer = "Lo que ofrece el rival",
+	nothingYet = "Todavía no ofreció nada",
+	emptyDraft = "No elegiste nada todavía",
+	offerReal = "Real",
+	offerFake = "Falso",
+	genuineMark = "auténtico",
+	fakeMark = "FALSIFICADO",
+	send = "OFERTAR",
+	clear = "Limpiar",
+	reveal = "LA REVELACIÓN",
+	wasReal = "era auténtico",
+	wasFake = "era FALSO",
+	youWin = "GANASTE",
+	youLose = "Perdiste",
+	tie = "Empate",
+	calledRight = "acusó y ACERTÓ",
+	calledWrong = "acusó y FALLÓ",
+	duelOver = "Duelo terminado",
+	valueLine = "Se lleva %d de valor",
+	fakesSlipped = "coló %d falsificación(es)",
+	tokenSpent = "Ficha usada",
+	raisesLeft = "Pedidos restantes: %d",
+	owesBigger = "Debe mejorar su oferta",
+}
+
 local currencyName = "Clips"
 
 return {
 	itemNames = itemNames,
 	rarityNames = rarityNames,
 	duelButtons = duelButtons,
+	duelScreen = duelScreen,
 	currencyName = currencyName,
 }
