@@ -10,11 +10,15 @@ Esto es lo único que necesita tus ojos ahora. Todo lo demás siguió sin vos.
 
 ---
 
-## Lo primero, y es un pedido
+## Lo que cambió desde la primera versión de este checkpoint
 
-**`docs/mockups` está vacía.** La instrucción decía mirar tus imágenes de referencia antes de diseñar; no había ninguna, así que la paleta salió de la **descripción escrita** del GDD (§25 marcador sobre hoja cuadriculada, §28 colores planos e imperfección deliberada).
+Llegaron tus mockups, y **cambiaron cosas de fondo**. Esta versión ya está rehecha contra ellos, así que lo que vas a ver es la escena final — tu única sentada.
 
-Si ponés las imágenes ahí, rederivo la paleta contra ellas. **No hace falta rehacer E2**: lo que cambia son valores en `Theme.luau`, no estructura.
+**El tablero se acostó.** La instrucción escrita decía "hoja vertical sobre la mesa"; las imágenes la muestran plana entre los dos. Se frenó, se preguntó, ganó la imagen, y `gdd.md` §25 quedó corregido el mismo día para que el doc no siga contradiciendo a los mockups.
+
+**La tinta es birome azul.** Es lo más definitorio de las imágenes y no se ve hasta mirarlas: absolutamente todo el trazo del mundo es la misma lapicera. Quedó escrito en `gdd.md` §28 como regla de arte 🔒, y en el código todo el dibujo pasa por una sola función, así que la regla se cumple por construcción y no por memoria.
+
+**Los objetos ahora son recortes de papel parados**, con borde blanco de tijera y sombra en la base — no cuadraditos de color. Es la fase 1 de dos: los modelos de origami 3D los reemplazan de a uno, empezando por los legendarios.
 
 ---
 
@@ -24,7 +28,9 @@ Si ponés las imágenes ahí, rederivo la paleta contra ellas. **No hace falta r
 2. Studio → **Test** → **2** jugadores → **Start**.
 3. Cada ventana: **click sobre el juego** una vez.
 
-Ya no hay panel flotando: **la cámara te pone en la mesa**, con la hoja de papel parada enfrente y el rival del otro lado. Todo se toca sobre la hoja.
+Ya no hay panel flotando: **la cámara te pone en la mesa mirando hacia abajo**, con el tablero acostado entre vos y el rival, y él enfrente. Todo se toca sobre el tablero.
+
+De lejos a cerca vas a ver: los tres botones de él en contorno, sus casilleros, la red punteada, tus casilleros, y tus tres botones grandes y rellenos.
 
 Jugá un duelo entero: elegí **Real** o **Falso** en unos objetos, **OFERTAR**, y después **Aceptar** para llegar a la revelación.
 
@@ -34,13 +40,15 @@ Jugá un duelo entero: elegí **Real** o **Falso** en unos objetos, **OFERTAR**,
 
 ## Qué mirar, en orden de importancia
 
-**1. ¿Se parece a lo que tenés en la cabeza?** Es la pregunta del checkpoint. Papel crema, cuadrícula tenue, marcador oscuro, recortes torcidos, cinta. Si no se parece, describime qué está mal y ajusto `Theme.luau` — la estructura aguanta cualquier paleta.
+**1. ¿Se parece a tus mockups?** Es la pregunta del checkpoint. Papel kraft cálido, birome azul en todo, recortes torcidos, casilleros punteados, tus tres botones rellenos en rojo/verde/azul. Si algo no da, describime qué y ajusto `Theme.luau` — la estructura aguantó cambiar la paleta entera dos veces sin que se tocara nada de lo que la lee.
 
 **2. La Revelación™.** Los envoltorios se destapan **de a uno**, no todos juntos, con un rebote al caer. ¿Se siente un momento, o se siente una lista?
 
 **3. Que nada esté perfectamente derecho.** Cada recorte está rotado un poco distinto, a propósito (§28). ¿Se lee como papel, o como un error?
 
-**4. Móvil.** Test → **Device** → un teléfono. **Es criterio de cierre de E2**, no un extra. Y decime especialmente si los botones sobre la hoja **se pueden tocar bien con el dedo** — es el riesgo que más me preocupa de poner los botones en el mundo en vez de en la pantalla.
+**4. Móvil — la prueba que decide.** Test → **Device** → un teléfono. **Es criterio de cierre de E2**, no un extra.
+
+Lo que decide: **¿los botones sobre el tablero se tocan bien con el dedo?** Es el riesgo que asumí al ponerlos en el mundo en vez de en la pantalla. Ya está la protección — cada zona táctil es **1,5× más grande que el botón dibujado**, invisible y centrada, así que el dedo no necesita puntería. Si aun así falla, el plan B es mover los tres botones a un `ScreenGui` al pie y dejar solo el trueque en el tablero.
 
 **5. Ventana de PC.** Achicá y agrandá la ventana. Nada debería descolocarse: todo está en escala.
 
@@ -69,9 +77,12 @@ Reemplazan a los 6 squishies de prueba. La gracia es que son cosas de tu casa tr
 
 Cambiar cualquiera es una línea en tres archivos y cero código, como prometía C1. Si alguno no te causa gracia, decilo y lo cambio: **el humor es la mitad del producto**, no es decoración.
 
+Dos aparecen en tus mockups (la Maruchan y la piedra con carita), pero eso **no los da por aprobados** — sigue pendiente tu veredicto nombre por nombre.
+
 ### Otras que quiero que veas
 
-- **Paleta y fuentes** — `PermanentMarker` para títulos y botones, `PatrickHand` para texto. Verificadas contra la API real; `Caveat`, `Amatic` y `ArchitectsDaughter` **no existen** en Roblox aunque suenen a que sí.
+- **Paleta rederivada de tus imágenes** — kraft cálido, birome azul, y los tres botones como paneles rellenos pálidos. La acusación lleva un rojo más oscuro que Rechazar a propósito: son jugadas opuestas, y compartir color haría que el botón más fuerte del juego parezca el más suave.
+- **Fuentes** — `PermanentMarker` para títulos y botones, `PatrickHand` para texto. Verificadas contra la API real; `Caveat`, `Amatic` y `ArchitectsDaughter` **no existen** en Roblox aunque suenen a que sí.
 - **Tiempos del juice** — en `Theme.motion`. Si la revelación se siente lenta o apurada, es un número ahí.
 - **Sonidos: no hay ninguno.** Están todos vacíos a propósito. Un id inventado apunta al sonido de otra persona o a nada. Los nombres describen qué necesita cada hueco (papel arrugándose, cinta, sello, "ohhh" de chicos), así que llenarlos es ir de compras, no diseñar.
 
