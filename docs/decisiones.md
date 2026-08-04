@@ -257,3 +257,33 @@ O sea: el problema de orden entre transferencia y liberación **deja de existir*
 Se eligió algo más fuerte: **la operación no existe**. No se puede llamar a una función que no está. Un camino de código que reste de la colección tendría que escribirla primero, que es un acto deliberado y visible en el diff, no un descuido.
 
 **Consecuencia a resolver en B4, no acá:** `Economy.shop.sellMultiplier` sugiere vender objetos, y vender restaría de la colección. Eso contradice §21 tal como está escrito. Cuando llegue el kiosco hay que decidir si se venden **copias de duelo** (coherente) o si §21 cambia (caso (c): preguntar). Anotado, no resuelto.
+
+---
+
+## 2026-08-04 · ⏸ PENDIENTE — caso (d): `sellMultiplier` contra §21
+
+**La autonomía se suspende acá.** No implemento vender hasta que haya respuesta.
+
+**Qué dice el doc.**
+
+- `gdd.md` §21: *"Colección permanente: objetos obtenidos; **nunca se pierden** 🔒 (pilar anti-frustración)."* Está marcado como decidido, no como abierto.
+- `gdd.md` §19 lista las fuentes de Clips: *"duelos, misiones, rachas"*. **Vender no está.** Y los sumideros: *"fabricar fakes, comprar objetos/cajas del kiosco, reintentos de misión."*
+- `backlog.md` B4 pide *"comprar objetos y copias en el kiosco"*. Solo comprar.
+
+**Qué hace el código.** `Economy.shop.sellMultiplier = 0.40` existe y **nadie lo usa**.
+
+**De dónde salió, que importa para decidir:** lo escribí yo en el primer borrador de `Economy.luau`, arrastrado de la idea genérica de "tienda", no de ninguna línea de los docs. O sea que **probablemente la contradicción la creé yo**, y no es una inconsistencia entre documentos.
+
+**Las lecturas posibles.**
+
+1. **Es para vender copias de duelo.** Compatible con §21 —las copias no son la colección— pero agrega una **fuente de Clips que §19 no contempla**, y cambiar de dónde entra el dinero es diseño de economía, no implementación.
+2. **Es para vender objetos de la colección.** Contradice §21 de frente, que está 🔒.
+3. **Es un número que nadie decidió**, sobreviviente de un borrador.
+
+**Mi recomendación: borrarlo.** Tres razones, en orden de peso:
+
+- **Un número de config que existe "por las dudas" es una decisión de diseño tomada por accidente.** Alguien lo va a usar algún día porque está ahí, y en ese momento nadie se va a acordar de que nunca se decidió.
+- Vender colección está prohibido por §21 🔒, y vender copias agrega una fuente de Clips que §19 no tiene. Cualquiera de las dos es una conversación de diseño, no una línea de código.
+- Aun aceptando vender copias, **no agrega ninguna decisión al jugador**: las copias se compran con Clips, así que revenderlas al 0,40 es solo un viaje de ida y vuelta con pérdida. Un sumidero que no propone nada.
+
+Si más adelante hace falta un sumidero o una fuente, se diseña a propósito y entra a §19.
