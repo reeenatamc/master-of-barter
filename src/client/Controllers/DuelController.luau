@@ -54,7 +54,8 @@ local function dump(state: Types.DuelState)
 
 	for _, view in state.players do
 		local marker = if view.slot == state.yourSlot then " (you)" else ""
-		print(`  slot{view.slot}: {view.displayName}{marker} -- {view.handCount} copies, {view.raisesLeft} raises left`)
+		local owes = if view.mustAmend then ", OWES A BIGGER OFFER" else ""
+		print(`  slot{view.slot}: {view.displayName}{marker} -- {view.handCount} copies, {view.raisesLeft} raises left{owes}`)
 
 		if view.offer and view.slot ~= state.yourSlot then
 			print("    their offer:")
@@ -118,6 +119,28 @@ end
 
 function DuelController.decline()
 	DuelController.negotiate("Decline")
+end
+
+function DuelController.raise()
+	DuelController.negotiate("RaiseOffer")
+end
+
+--- TEMP: re-sends your offer with one extra forgery, which is the cheapest way
+--- to satisfy a raise. Real amendment UI is card E2.
+function DuelController.amendDemo()
+	local state = current
+	if not state or not state.yourOffer then
+		warn("[Duel] no offer of yours to amend")
+		return
+	end
+
+	local requests: { Types.WrapRequest } = {}
+	for _, wrapped in state.yourOffer do
+		table.insert(requests, { copyId = wrapped.copyId, isFake = wrapped.isFake, claim = wrapped.claim })
+	end
+	table.insert(requests, { isFake = true, claim = Items.order[1] })
+
+	DuelController.offer(requests)
 end
 
 function DuelController.start()

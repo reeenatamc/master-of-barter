@@ -45,6 +45,9 @@ type Side = {
 	hand: { DuelCopy },
 	--- nil until this side has offered. Holds the truth, including isFake.
 	offer: { WrappedItem }?,
+	--- The rival spent a raise on you: you owe a bigger offer before play can
+	--- continue. Cleared when the amendment lands.
+	amendRequested: boolean,
 	raisesLeft: number,
 	fakeCallUsed: boolean,
 }
@@ -62,7 +65,15 @@ type Duel = {
 	trove: Trove.Trove,
 	--- Set by the first terminal path to claim the duel. See `resolve`.
 	resolving: boolean,
+	--- Bumped every time the phase deadline is re-armed, so timers from an
+	--- earlier arming can tell they are stale. See `armPhaseWatchdog`.
+	watchdogGeneration: number,
 }
+
+--- 1 <-> 2. Duels are always two-sided (docs/gdd.md §32).
+local function otherSlot(slot: Slot): Slot
+	return 3 - slot
+end
 
 local DuelService = {}
 
@@ -132,6 +143,7 @@ local function stateFor(duel: Duel, slot: Slot): DuelState
 			isBot = false,
 			handCount = #side.hand,
 			raisesLeft = side.raisesLeft,
+			mustAmend = side.amendRequested,
 			fakeCallUsed = side.fakeCallUsed,
 			-- Censored for everyone, including the owner: the owner gets the
 			-- truth through `yourOffer` below instead.
@@ -162,25 +174,31 @@ end
 --- Arms the watchdog for whatever phase the duel is in now, and sets the
 --- matching deadline. Terminal phases have no entry in Config and get no timer.
 ---
---- Timers from a previous phase are NOT cancelled here -- Trove is
---- clean-everything-at-once by design. Instead each timer remembers the phase
---- it was armed for and does nothing if the duel has moved on. A stale timer
---- that fires into a no-op costs nothing; a Trove that could remove single
---- items would cost a whole capability nobody else needs.
+--- Old timers are NOT cancelled here -- Trove is clean-everything-at-once by
+--- design. Instead every arming bumps a generation, each timer captures the one
+--- it was armed under, and a timer whose generation is stale does nothing.
+---
+--- Generation rather than "has the phase changed": a Negotiating deadline gets
+--- re-armed while STAYING in Negotiating every time a raise or an amendment
+--- lands, so comparing phases would leave the old timer looking valid and
+--- cancelling the duel early. A stale timer firing into a no-op costs nothing;
+--- teaching Trove to remove single items would cost a whole capability nothing
+--- else needs.
 local function armPhaseWatchdog(duel: Duel)
 	local seconds = DuelRules.phaseSeconds[duel.phase]
 	if not seconds then
 		return
 	end
 
-	local armedFor = duel.phase
+	duel.watchdogGeneration += 1
+	local generation = duel.watchdogGeneration
 	duel.deadline = workspace:GetServerTimeNow() + seconds
 
 	-- Created and registered in the same statement: no timer ever exists
 	-- without its cleanup (backlog card A1.2).
 	duel.trove:Delay(seconds, function()
 		local current = duels[duel.id]
-		if current and current.phase == armedFor then
+		if current and current.watchdogGeneration == generation then
 			DuelService.expirePhase(duel.id)
 		end
 	end)
@@ -251,11 +269,12 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		turn = 1,
 		deadline = 0,
 		sides = {
-			{ slot = 1, player = playerA, hand = buildStarterHand(), offer = nil, raisesLeft = raises, fakeCallUsed = false },
-			{ slot = 2, player = playerB, hand = buildStarterHand(), offer = nil, raisesLeft = raises, fakeCallUsed = false },
+			{ slot = 1, player = playerA, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallUsed = false },
+			{ slot = 2, player = playerB, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallUsed = false },
 		},
 		trove = Trove.new(),
 		resolving = false,
+		watchdogGeneration = 0,
 	}
 
 	duels[duel.id] = duel
@@ -417,16 +436,26 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 	if not duel then
 		return reject(player, "not in a duel")
 	end
-	if duel.phase ~= "BuildingOffers" then
-		return reject(player, `wrong phase ({duel.phase})`)
-	end
-
 	local side = sideOf(duel, player)
 	if not side then
 		return reject(player, "not a participant")
 	end
-	if side.offer then
-		return reject(player, "already offered")
+
+	-- An offer is legal twice: once when building it, and again when the rival
+	-- has spent a raise demanding a bigger one.
+	local amending: boolean
+	if duel.phase == "BuildingOffers" then
+		if side.offer then
+			return reject(player, "already offered")
+		end
+		amending = false
+	elseif duel.phase == "Negotiating" then
+		if not side.amendRequested then
+			return reject(player, "no raise is pending on you")
+		end
+		amending = true
+	else
+		return reject(player, `wrong phase ({duel.phase})`)
 	end
 
 	-- Layer 1: types.
@@ -436,8 +465,19 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 	end
 
 	local limits = DuelRules.limits
-	if #requests < limits.minItemsPerOffer or #requests > limits.maxItemsPerOffer then
-		return reject(player, `{#requests} wrappers, allowed {limits.minItemsPerOffer}-{limits.maxItemsPerOffer}`)
+	local previous = side.offer
+
+	-- "Add or improve" is validated by COUNT, never by real value.
+	--
+	-- The server knows what every wrapper truly is, so judging whether an
+	-- amendment is genuinely worth more would make the rejection itself leak
+	-- that knowledge: a client could probe amendments and read the truth off
+	-- which ones pass. Same family as the overlapping appearance bands -- the
+	-- server never answers in a way that reveals what it knows.
+	local minimum = if amending and previous then #previous + 1 else limits.minItemsPerOffer
+	if #requests < minimum or #requests > limits.maxItemsPerOffer then
+		local what = if amending then "amendment" else "offer"
+		return reject(player, `{what} has {#requests} wrappers, needs {minimum}-{limits.maxItemsPerOffer}`)
 	end
 
 	-- Layers 2 and 4: existence against Config, then ownership.
@@ -494,7 +534,14 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 
 	side.offer = wrapped
 
-	if duel.sides[1].offer and duel.sides[2].offer then
+	if amending then
+		-- The demand is satisfied; the turn goes back to whoever made it, who
+		-- now gets to accept, decline or raise again. The deadline restarts:
+		-- they are looking at a different offer than the one they were given.
+		side.amendRequested = false
+		duel.turn = otherSlot(side.slot)
+		armPhaseWatchdog(duel)
+	elseif duel.sides[1].offer and duel.sides[2].offer then
 		beginNegotiating(duel)
 	end
 
@@ -504,13 +551,14 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Negotiation (card A2.1)
 
---- The actions this card actually implements. RaiseOffer is A2.2 and FakeCall
---- is A4. Both are legitimate members of Types.DuelAction, so a client asking
---- for one gets a clear refusal rather than being treated as malformed -- it is
---- not an attack, it is a button that does not exist yet.
+--- The actions implemented so far. FakeCall is A4. It is a legitimate member of
+--- Types.DuelAction, so a client asking for it gets a clear refusal rather than
+--- being treated as malformed -- it is not an attack, it is a button that does
+--- not exist yet.
 local IMPLEMENTED: { [string]: boolean } = {
 	Accept = true,
 	Decline = true,
+	RaiseOffer = true,
 }
 
 --- One of the three negotiation buttons. Validated in the four layers of
@@ -556,8 +604,25 @@ function DuelService.negotiate(player: Player, action: unknown)
 		-- >>> A3 inserts the reveal and the item/Clips transfers HERE, between
 		-- >>> entering Reveal and ending the duel. <<<
 		resolve(duel, "Reveal", `slot {side.slot} accepted`)
-	else
+	elseif action == "Decline" then
 		resolve(duel, "Cancelled", `slot {side.slot} declined`)
+	else
+		-- RaiseOffer: hand the turn to the rival, who now owes a bigger offer.
+		if side.raisesLeft <= 0 then
+			return reject(player, `no raises left (limit is {DuelRules.limits.raiseOffersPerSide} per side)`)
+		end
+
+		local rival = duel.sides[otherSlot(side.slot)]
+		if rival.amendRequested then
+			return reject(player, "a raise is already pending on the rival")
+		end
+
+		side.raisesLeft -= 1
+		rival.amendRequested = true
+		duel.turn = rival.slot
+		-- The rival gets a fresh deadline to answer the demand.
+		armPhaseWatchdog(duel)
+		broadcast(duel)
 	end
 end
 

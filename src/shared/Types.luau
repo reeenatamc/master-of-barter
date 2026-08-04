@@ -126,6 +126,9 @@ export type DuelPlayerView = {
 	--- hand would give away what they can honestly claim.
 	handCount: number,
 	raisesLeft: number,
+	--- The rival spent a raise on this side, so it owes a bigger offer. Public
+	--- to both players: everyone saw the raise happen.
+	mustAmend: boolean,
 	fakeCallUsed: boolean,
 	offer: OfferView?,
 }
