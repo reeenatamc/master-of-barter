@@ -68,6 +68,24 @@ Leyenda de tareas: 🟥 Imprescindible · 🟨 Importante · 🟩 Opcional · �
 | BotService v1: 2 personalidades (agresivo, tímido) | 🟥 |
 | DuelService definitivo: FSM completa, watchdogs, desconexiones, Trove por duelo | 🟥 |
 | Validación en 4 capas de todos los remotos + rate limiting | 🟥 |
+<!--
+Nota de rate limiting (detectada al cerrar A1.3): no alcanza con throttlear las
+acciones VÁLIDAS. Un cliente puede spamear solicitudes inválidas sin límite:
+cada una se rechaza correctamente, pero ninguna consume el estado que frena la
+repetición (ej. el "ya ofertaste" de DuelOffer solo aplica tras una oferta
+válida). Mil rechazos por segundo se procesan y se loguean igual — el logging de
+rechazos es en sí un costo que el cliente puede inflar. La tarea necesita las dos
+mitades: throttle de acciones válidas y techo de solicitudes inválidas por
+jugador.
+Además: esto no tiene tarjeta propia en backlog.md, así que hoy no tiene
+criterios de aceptación como el resto del trabajo P0. Se escribe la tarjeta al
+entrar a Etapa 2, con criterios como cualquier P0:
+  - qué se throttlea exactamente (qué remotos, qué ventana, qué límite);
+  - techo de solicitudes inválidas por jugador, separado del throttle de válidas;
+  - cómo se prueba que un cliente que spamea queda efectivamente cortado.
+Una regla sin criterio de aceptación es una intención, no una tarea.
+-->
+
 | UI papel v1: mesa, negociación, revelación animada (versión sencilla), HUD, kiosco | 🟥 |
 | Emulador móvil como parte del cierre de cada pantalla | 🟥 |
 | Kiosco: comprar squishies/copias con Clips | 🟥 |

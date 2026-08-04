@@ -47,26 +47,55 @@ export type DuelCopy = {
 	itemId: ItemId,
 }
 
---- The imperfection a fake carries. docs/gdd.md §37 requires clues to never be
---- distinguishable by colour alone, so every variant also changes shape or text.
-export type VisualClue = "ColorTone" | "Seam" | "Typo"
-
---- Server-side truth for one wrapped item on the table. Never replicated.
-export type WrappedItem = {
-	wrappedId: string,
-	itemId: ItemId,
-	isFake: boolean,
-	--- What the owner declares it to be. May be a lie.
-	claim: ItemId,
-	--- Precalculated by the server, so the client never derives them from isFake.
-	visualClues: { VisualClue },
+--- How a wrapper looks, on the three dimensions docs/gdd.md §8 names: colour
+--- tone, seam regularity and label printing. 0 = flawless, 1 = obviously off.
+---
+--- EVERY wrapper carries all three, genuine ones included. That is not
+--- decoration: if a genuine wrapper had an empty or absent appearance, the
+--- shape of the payload itself would announce which wrappers are forged, and
+--- `isFake` would have leaked through the back door. Forgeries are drawn from a
+--- higher band that overlaps the genuine one, so doubt is possible.
+---
+--- docs/gdd.md §37: never distinguishable by colour alone, hence three
+--- dimensions and not one. Calibrating the bands is card A6.
+export type WrapAppearance = {
+	colorTone: number,
+	seam: number,
+	label: number,
 }
 
---- Safe to replicate: everything the rival is allowed to see.
+--- Server-side truth for one wrapped item on the table.
+---
+--- Only ever replicated back to its OWN owner (they already know what they
+--- wrapped). The rival always receives WrappedItemView instead, which has no
+--- `isFake` field to leak in the first place.
+export type WrappedItem = {
+	wrappedId: string,
+	--- The copy being risked, or nil when this is a forgery: forgeries are
+	--- fabricated and consume nothing from the hand (model A, docs/gdd.md §8).
+	copyId: string?,
+	isFake: boolean,
+	--- What the wrapper says it holds. For a genuine wrapper this equals the
+	--- copy's own item; for a forgery it is the item being imitated.
+	claim: ItemId,
+	appearance: WrapAppearance,
+}
+
+--- Safe to replicate to anyone: what the rival is allowed to see.
 export type WrappedItemView = {
 	wrappedId: string,
 	claim: ItemId,
-	visualClues: { VisualClue },
+	appearance: WrapAppearance,
+}
+
+--- What a client asks for when building an offer. Untrusted input: every field
+--- is validated server-side before anything is created from it.
+export type WrapRequest = {
+	--- nil means "forge it". Must agree with isFake; the server rejects a
+	--- request where the two disagree.
+	copyId: string?,
+	isFake: boolean,
+	claim: ItemId,
 }
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -115,6 +144,10 @@ export type DuelState = {
 	--- Your own copies, in full. The rival's equivalent is only a count in
 	--- their DuelPlayerView.
 	yourHand: { DuelCopy },
+	--- Your own offer, with the truth in it: you know which of your wrappers
+	--- you forged. The rival's offer arrives as OfferView on their
+	--- DuelPlayerView, and that type has nowhere to put `isFake`.
+	yourOffer: { WrappedItem }?,
 	--- Indexed by slot: players[1] and players[2].
 	players: { DuelPlayerView },
 }
