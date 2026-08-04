@@ -1,0 +1,100 @@
+---
+sidebar_label: Checkpoint 3 · persistencia
+---
+
+# Checkpoint 3 — persistencia (B1)
+
+**Este no se agrupa y no se difiere.** Es la regla que ya fijamos: los datos que se guardan no se auto-certifican. Un duelo roto se ve en un segundo; un guardado roto se ve la semana que viene, cuando a alguien le falta la colección.
+
+**Tiempo: 20 minutos.** Cuatro pruebas, en orden.
+
+---
+
+## Antes de empezar
+
+`rojo serve` corriendo y el plugin conectado. Nada más.
+
+**No hace falta publicar el lugar** para las tres primeras pruebas: en Studio, `DataService` habla con el DataStore simulado que trae ProfileStore. Eso hace que las pruebas no toquen datos reales y que igual se verifique el session locking, que es la parte interesante.
+
+La cuarta prueba **sí** necesita el DataStore de verdad, y por eso va al final.
+
+---
+
+## Prueba 1 — el perfil carga
+
+1. **Play** (un jugador).
+2. Command Bar, contexto **Server**:
+
+```lua
+print(require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[1]))
+```
+
+Tiene que imprimir una tabla, no `nil`. Si imprime `nil`, el perfil no cargó y el resto de las pruebas no significan nada.
+
+---
+
+## Prueba 2 — cierre abrupto sin pérdida
+
+Esta es la que importa más. Prueba que lo que ganaste sigue ahí después de un cierre feo.
+
+1. **Play**. En la Command Bar, contexto **Server**, escribí algo en el perfil:
+
+```lua
+require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[1]).clips = 9999
+```
+
+2. **Stop** con el cuadrado rojo. Sin avisar, sin esperar.
+3. **Play** de nuevo.
+4. Volvé a imprimir el perfil como en la prueba 1.
+
+**Tiene que decir `clips = 9999`.** Si dice 250 —el valor inicial— el guardado no ocurrió y **ahí paramos todo**: es exactamente el fallo silencioso que este checkpoint existe para atrapar.
+
+---
+
+## Prueba 3 — dos sesiones peleando por un perfil
+
+Prueba el session locking: que dos servidores no puedan escribir el mismo perfil a la vez.
+
+1. Test → **2** jugadores → **Start**.
+2. En el Output del **servidor**, buscá si alguno quedó como espectador:
+
+```
+[DataService] PlayerN has no profile; spectator mode
+```
+
+Con dos jugadores distintos (Player1 y Player2 tienen ids distintos), **no debería aparecer**: son dos perfiles, no uno.
+
+3. Ahora el caso real: cerrá una ventana y volvé a entrar rápido con el mismo jugador. El perfil viejo puede tardar en soltarse. Si aparece el mensaje de espectador, **eso está bien** — es el lock haciendo su trabajo. Lo que está mal sería que entrara con un perfil vacío.
+
+**Qué mirar:** que un jugador sin perfil quede como espectador **con aviso**, y nunca con datos por defecto.
+
+---
+
+## Prueba 4 — contra el DataStore de verdad
+
+Las tres anteriores usan el simulador. Un simulador que se porta bien no prueba que un DataStore se porte bien.
+
+1. Publicá el lugar si no lo está (**File → Publish to Roblox**).
+2. **Game Settings → Security → Enable Studio Access to API Services**: activado.
+3. `src/shared/Config/DataConfig.luau` → `useMockInStudio = false`.
+4. Repetí la **prueba 2** completa.
+
+Si pasa, la persistencia está probada de verdad.
+
+5. **Volvé `useMockInStudio` a `true`** al terminar, para que las pruebas de todos los días no escriban en los datos reales.
+
+---
+
+## Lo que este checkpoint NO prueba
+
+**Que la colección se llene.** `DataService` guarda el perfil, pero todavía nada escribe en `collection` ni en `duelCopies` — eso es B3, y los duelos siguen repartiendo objetos de prueba en memoria. Acá se prueba que el perfil **persiste**, no que el juego lo use.
+
+**Las migraciones.** La cadena existe y funciona, pero está vacía: la versión 1 es la primera, así que no hay de dónde migrar. Se prueba cuando exista una versión 2.
+
+---
+
+## Si algo falla
+
+**Parás.** Esta es la única prueba del proyecto donde seguir adelante con un fallo es peor que no haber probado: un guardado que falla a veces es indistinguible de uno que anda, hasta que no lo es.
+
+Mandame el Output completo y qué prueba falló.

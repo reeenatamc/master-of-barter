@@ -161,3 +161,35 @@ Y se repitió al llegar los mockups: la paleta se reemplazó **entera** —de ma
 **Decidido:** birome azul para absolutamente todo el trazo. Los únicos rellenos de color son los tres botones de negociación.
 
 **Por qué:** es la decisión más definitoria de los mockups y no se ve hasta que se miran. Esa unidad es lo que hace que el mundo se lea como una sola hoja en vez de como assets juntados de lados distintos. Un elemento con otra tinta rompe el efecto entero, y por eso quedó escrito en `gdd.md` §28 como regla de arte 🔒 y no como preferencia.
+
+---
+
+## 2026-08-04 · ProfileStore vendorizado y auditado por banderas, no leído entero
+
+**Decidido:** se bajó `MadStudioRoblox/ProfileStore` (2242 líneas) a `src/server/ProfileStore.luau`, con la auditoría escrita en la cabecera del archivo.
+
+**Por qué así:** `arquitectura.md` §1 ya había elegido ProfileStore, así que usarlo no era la decisión; **cómo confiar en él** sí. La regla 5 de CLAUDE.md dice nunca código de fuentes no auditadas, y leer 2242 líneas con criterio no es algo que se pueda afirmar honestamente. Lo que sí se hizo, y quedó escrito: cero `loadstring`, cero `getfenv`/`setfenv`, cero `_G`, cero `require(` de terceros (el único del archivo está comentado), y solo cuatro servicios tocados — `HttpService` únicamente para `GenerateGUID`, nunca para red.
+
+**Lo que eso significa y lo que no:** significa que no hace nada que un módulo de guardado no deba hacer y que no trae código de ningún otro lado. **No** significa que se haya leído entero, y la cabecera lo dice con esas palabras.
+
+**Detalle para que no sorprenda:** ProfileStore usa `MessagingService` internamente para resolver conflictos de lock entre servidores. `arquitectura.md` §1 dice "cross-server: ninguno", pero eso es sobre features nuestras, no sobre las tripas de la dependencia que la misma §1 eligió. No es contradicción; se anota para que nadie lo descubra con sorpresa.
+
+---
+
+## 2026-08-04 · `DataConfig` aparte de `Economy`
+
+**Decidido:** el nombre del store, el prefijo de clave, la versión del esquema y el switch del mock van en `Config/DataConfig.luau`, no en `Economy.luau`.
+
+**Por qué:** `Economy` es el archivo que se abre para rebalancear, y va a abrirse seguido. Estos no son números de balance: cambiar el nombre del store no ajusta el juego, **apunta a datos guardados distintos**. Mezclarlos es cómo alguien toca un número para balancear y deja huérfano cada perfil del juego, sin un solo error.
+
+**Alternativa descartada:** meterlos en `Economy` o en `DuelRules` para no crear otro archivo.
+
+---
+
+## 2026-08-04 · El mock de ProfileStore por defecto en Studio
+
+**Decidido:** en Studio se usa el DataStore simulado de ProfileStore, salvo que `DataConfig.useMockInStudio` diga que no.
+
+**Por qué:** sin eso, nada de datos funciona en Studio hasta publicar el lugar con acceso a API, y **cada prueba escribe en los datos reales**. Con eso, Studio anda de entrada y las pruebas no ensucian nada. Y el simulador igual aplica session locking, así que el fallo interesante —dos sesiones peleando por un perfil— se sigue pudiendo probar.
+
+**El límite, escrito en el checkpoint:** un simulador que se porta bien no prueba que un DataStore se porte bien. La prueba 4 del checkpoint 3 corre contra el store real, y es obligatoria.
