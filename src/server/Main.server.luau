@@ -13,9 +13,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 local Net = require(ReplicatedStorage.Shared.Util.Net)
 
+local DataService = require(script.Parent.Services.DataService)
 local DuelService = require(script.Parent.Services.DuelService)
 
 Net.createAll()
+
+-- DataService first, always. Everything else may read a profile, and a service
+-- that reads one before it exists is a service that invents one.
+DataService.init()
 DuelService.init()
 
 -- ─────────────────────────────────────────────────────────────────────────────

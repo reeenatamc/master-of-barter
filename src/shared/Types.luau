@@ -317,4 +317,46 @@ export type DuelState = {
 	reveal: RevealResult?,
 }
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Profile
+--
+-- The saved shape, from docs/arquitectura.md §7, with the glossary's
+-- translations. This is the ONLY table in the project that outlives a server,
+-- so its fields are the ones that cannot be renamed casually: a field renamed
+-- is a field that reads as missing on every existing save.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+export type Stats = {
+	duels: number,
+	wins: number,
+	fakesSlipped: number,
+	fakesCaught: number,
+}
+
+--- Both inventories are counts per item, not lists of instances. Copies of one
+--- object are interchangeable, so a count says everything a list would and
+--- survives a DataStore round trip more cheaply.
+export type Profile = {
+	dataVersion: number,
+	clips: number,
+	level: number,
+	xp: number,
+	--- Permanent. Never decreases because of a duel (docs/gdd.md §21).
+	collection: { [ItemId]: number },
+	--- What can be staked, and the only thing a duel can take.
+	duelCopies: { [ItemId]: number },
+	cosmetics: {
+		owned: { [string]: boolean },
+		equipped: { [string]: string },
+	},
+	stats: Stats,
+	quests: {
+		date: string,
+		progress: { [string]: number },
+	},
+	--- Ids of purchases already granted, for ProcessReceipt idempotency
+	--- (docs/arquitectura.md §8). Written before the grant is acknowledged.
+	receipts: { [string]: boolean },
+}
+
 return Types

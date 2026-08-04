@@ -40,7 +40,10 @@ fi
 rojo sourcemap default.project.json --output sourcemap.json
 
 # Drop luau-lsp's own [INFO]/[WARN] noise; keep only findings.
-output=$("$LSP" analyze --sourcemap=sourcemap.json --definitions="$DEFS" src 2>&1 | grep -v '^\[' || true)
+# ProfileStore is vendored third-party code we do not edit. Its type errors
+# are not ours to fix, and leaving them in would bury ours in the noise.
+output=$("$LSP" analyze --sourcemap=sourcemap.json --definitions="$DEFS" \
+	--ignore="**/ProfileStore.luau" src 2>&1 | grep -v '^\[' || true)
 
 if [ -n "$output" ]; then
 	echo "$output"
