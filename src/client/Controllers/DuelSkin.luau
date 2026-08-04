@@ -159,6 +159,27 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 		end
 	end
 
+	--- Everything lands as a flat list of rows directly under the scrolling
+	--- frame, panels included.
+	---
+	--- The first attempt nested each panel in its own AutomaticSize frame and
+	--- gave rows a scale height. That cannot work: a scale height inside a
+	--- parent whose height is automatic is circular, the row collapses, and an
+	--- aspect ratio constraint then shrinks its width to match. The result was
+	--- a readable-in-theory screen rendered as a postage stamp.
+	---
+	--- Flat rows measure against the scrolling frame, which has a real
+	--- scale-based height, so 6% of it is 6% of something. Still no absolute
+	--- pixels anywhere.
+	local function addRow(order: number, height: number): Frame
+		local line = Instance.new("Frame")
+		line.Size = UDim2.fromScale(1, height)
+		line.BackgroundTransparency = 1
+		line.LayoutOrder = order
+		line.Parent = body
+		return line
+	end
+
 	local function render(viewModel: DuelViewModel.ViewModel)
 		header.Text = viewModel.header
 		subheader.Text = viewModel.subheader
@@ -169,58 +190,36 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 		local order = 0
 		for _, panel in viewModel.panels do
 			order += 1
+			local titleRow = addRow(order, 0.07)
+			local title = label(panel.title, UDim2.fromScale(1, 1), DIM, Enum.TextXAlignment.Left)
+			title.Font = Enum.Font.GothamBold
+			title.Parent = titleRow
 
-			local block = Instance.new("Frame")
-			block.Size = UDim2.fromScale(1, 0)
-			block.AutomaticSize = Enum.AutomaticSize.Y
-			block.BackgroundColor3 = Color3.fromRGB(38, 38, 44)
-			block.BorderSizePixel = 0
-			block.LayoutOrder = order
-			block.Parent = body
-			corner(block, 0.05)
+			for _, row in panel.rows do
+				order += 1
+				local line = addRow(order, 0.09)
 
-			local blockLayout = Instance.new("UIListLayout")
-			blockLayout.SortOrder = Enum.SortOrder.LayoutOrder
-			blockLayout.Parent = block
+				local strip = Instance.new("Frame")
+				strip.Size = UDim2.fromScale(1, 1)
+				strip.BackgroundColor3 = Color3.fromRGB(38, 38, 44)
+				strip.BorderSizePixel = 0
+				strip.Parent = line
+				corner(strip, 0.15)
 
-			local padding = Instance.new("UIPadding")
-			padding.PaddingTop = UDim.new(0.01, 0)
-			padding.PaddingBottom = UDim.new(0.01, 0)
-			padding.PaddingLeft = UDim.new(0.015, 0)
-			padding.PaddingRight = UDim.new(0.015, 0)
-			padding.Parent = block
-
-			local title = label(panel.title, UDim2.fromScale(1, 0.05), DIM, Enum.TextXAlignment.Left)
-			title.LayoutOrder = 0
-			title.Parent = block
-			local titleRatio = Instance.new("UIAspectRatioConstraint")
-			titleRatio.AspectRatio = 18
-			titleRatio.Parent = title
-
-			for index, row in panel.rows do
-				local line = Instance.new("Frame")
-				line.Size = UDim2.fromScale(1, 0.06)
-				line.BackgroundTransparency = 1
-				line.LayoutOrder = index
-				line.Parent = block
-
-				local ratio = Instance.new("UIAspectRatioConstraint")
-				ratio.AspectRatio = 11
-				ratio.Parent = line
-
-				local name = label(row.label, UDim2.fromScale(0.46, 1), COLORS[row.tone], Enum.TextXAlignment.Left)
+				local name = label(row.label, UDim2.fromScale(0.44, 0.7), TEXT, Enum.TextXAlignment.Left)
+				name.Position = UDim2.fromScale(0.02, 0.15)
 				name.TextColor3 = if row.tone == "plain" then TEXT else COLORS[row.tone]
-				name.Parent = line
+				name.Parent = strip
 
-				local detail = label(row.detail or "", UDim2.fromScale(0.24, 1), DIM, Enum.TextXAlignment.Left)
-				detail.Position = UDim2.fromScale(0.47, 0)
-				detail.Parent = line
+				local detail = label(row.detail or "", UDim2.fromScale(0.2, 0.6), DIM, Enum.TextXAlignment.Left)
+				detail.Position = UDim2.fromScale(0.47, 0.2)
+				detail.Parent = strip
 
 				local slot = 0
 				for _, spec in row.buttons do
-					local element = makeButton(spec, UDim2.fromScale(0.14, 0.86))
-					element.Position = UDim2.fromScale(0.72 + slot * 0.15, 0.07)
-					element.Parent = line
+					local element = makeButton(spec, UDim2.fromScale(0.15, 0.72))
+					element.Position = UDim2.fromScale(0.68 + slot * 0.16, 0.14)
+					element.Parent = strip
 					slot += 1
 				end
 			end
