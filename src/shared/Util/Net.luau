@@ -37,10 +37,6 @@ local NAMES = {
 	DuelReveal = "DuelReveal",
 	PlayerData = "PlayerData",
 	Notice = "Notice",
-
-	-- TEMP: smoke test only, so we can prove the channel works before there is
-	-- any game logic. Delete this entry and its handlers when A1 lands.
-	Ping = "Ping",
 }
 
 local Net = {

@@ -38,6 +38,15 @@ export type ItemDef = {
 -- Wrapped items
 -- ─────────────────────────────────────────────────────────────────────────────
 
+--- One squishy in a player's duel inventory: what they can put on the table.
+--- Copies are what gets bet; the permanent collection is never touched
+--- (docs/gdd.md §21, option A). A copy is always genuine -- forgeries do not
+--- exist until someone wraps one at offer time.
+export type DuelCopy = {
+	copyId: string,
+	itemId: ItemId,
+}
+
 --- The imperfection a fake carries. docs/gdd.md §37 requires clues to never be
 --- distinguishable by colour alone, so every variant also changes shape or text.
 export type VisualClue = "ColorTone" | "Seam" | "Typo"
@@ -84,6 +93,9 @@ export type DuelPlayerView = {
 	userId: number,
 	displayName: string,
 	isBot: boolean,
+	--- Only how many copies the rival holds, never which ones. Knowing their
+	--- hand would give away what they can honestly claim.
+	handCount: number,
 	raisesLeft: number,
 	fakeCallUsed: boolean,
 	offer: OfferView?,
@@ -94,11 +106,15 @@ export type DuelPlayerView = {
 export type DuelState = {
 	duelId: string,
 	phase: DuelPhase,
+	round: number,
 	turn: Slot,
 	--- Deadline in server time (workspace:GetServerTimeNow()), so clients can
 	--- count down locally instead of needing a remote every second.
 	deadline: number,
 	yourSlot: Slot,
+	--- Your own copies, in full. The rival's equivalent is only a count in
+	--- their DuelPlayerView.
+	yourHand: { DuelCopy },
 	--- Indexed by slot: players[1] and players[2].
 	players: { DuelPlayerView },
 }

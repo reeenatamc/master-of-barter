@@ -2,26 +2,60 @@
 --[[
 	Main.server.luau -- bootstrap: loads config, starts services in order.
 
-	Services from `Services/` get wired in here one at a time, following the
-	staged plan. Right now the only boot step is creating the remotes, which
-	every service will depend on.
+	Boot order matters and lives here on purpose: services may require other
+	services, so the wiring is explicit in one place instead of hidden in
+	module-level side effects.
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- WaitForChild first so this yields until Rojo/replication has delivered the
--- folder; then index directly, which is the form luau-lsp can resolve types for.
 ReplicatedStorage:WaitForChild("Shared")
 local Net = require(ReplicatedStorage.Shared.Util.Net)
 
-Net.createAll()
+local DuelService = require(script.Parent.Services.DuelService)
 
--- TEMP smoke test: proves client -> server -> client works end to end.
--- Delete along with Net.names.Ping when A1 lands.
-local ping = Net.get(Net.names.Ping)
-ping.OnServerEvent:Connect(function(player: Player)
-	print(`[MasterOfBarter] ping received from {player.Name}`)
-	ping:FireClient(player, "pong")
+Net.createAll()
+DuelService.init()
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TEMP: MatchmakingService (card D1) does not exist yet, so the queue is this
+-- list. It pairs the first two players who ask. When D1 lands, this block moves
+-- into MatchmakingService verbatim and gains the bot timeout.
+
+local queue: { Player } = {}
+
+local function tryPair()
+	while #queue >= 2 do
+		local a, b = queue[1], queue[2]
+		table.remove(queue, 2)
+		table.remove(queue, 1)
+
+		-- A player can leave between joining the queue and being paired.
+		if a.Parent and b.Parent then
+			if DuelService.start(a, b) then
+				print(`[Main] duel started: {a.Name} vs {b.Name}`)
+			end
+		end
+	end
+end
+
+Net.get(Net.names.QueueJoin).OnServerEvent:Connect(function(player: Player)
+	if DuelService.isInDuel(player) or table.find(queue, player) then
+		return
+	end
+	table.insert(queue, player)
+	print(`[Main] {player.Name} joined the queue ({#queue} waiting)`)
+	tryPair()
 end)
+
+Players.PlayerRemoving:Connect(function(player: Player)
+	local index = table.find(queue, player)
+	if index then
+		table.remove(queue, index)
+	end
+end)
+
+-- ─────────────────────────────────────────────────────────────────────────────
 
 print("[MasterOfBarter] server ready")

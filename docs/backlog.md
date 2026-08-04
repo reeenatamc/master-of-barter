@@ -13,6 +13,11 @@ Orden de trabajo recomendado: sigue las etapas de la Fase 7; dentro de cada etap
 Objetivo: base de toda la mecánica. Criterios: selecciono 1–4 objetos de mi inventario de duelo, marco cuáles ofertar como fake (respetando máx. 2 y costo en Clips), declaro contenido; el servidor rechaza ofertas con objetos que no poseo. Dependencias: C1, D1. Riesgos: replicar por error el flag esFake (revisar §4 de arquitectura). Pruebas: ofertar objetos ajenos/inexistentes desde consola cliente → rechazado y logueado.
 > **Nota (Etapa 1):** cobro en Clips diferido a Etapa 2, depende de B2. En el prototipo se aplica el techo de 2 fakes (que es lo que protege el balance) pero no se cobra nada.
 > **Nota (Etapa 1):** la dependencia con D1 sobra para el prototipo — A1 y A2 se prueban con dos clientes de Studio. El orden real es el de CLAUDE.md: A1 → A2 → A4 → D1.
+>
+> **Sub-tareas:** A1.1 duelo mínimo (dos jugadores, copias de duelo, `DuelState` por destinatario) ✅ · A1.2 watchdog de fase + Trove · A1.3 ofertas y validación.
+>
+> **A1.2 — condición de cierre, no negociable:** el Trove nace en **la misma tarjeta** que el watchdog, no después. En el momento en que exista el primer `task.delay`/timer de deadline, ya tiene que estar registrado en el Trove del duelo. No puede haber ni una fase intermedia con un timer sin su limpieza.
+> Test obligatorio de A1.2: un cliente cierra su ventana a mitad de `BuildingOffers` → el duelo no queda colgado y no sobrevive ningún timer. Es el primer test de desconexión real del proyecto; conviene descubrir ahí que el embudo y la limpieza aguantan, con un duelo vacío, y no en Etapa 2 con datos de por medio.
 
 **A2 · Como jugador quiero negociar con Aceptar / Rechazar / Pedir más** — P0 · M
 Objetivo: el loop del meme. Criterios: turnos alternos validados en servidor; Pedir más obliga al rival a añadir/mejorar y tiene límite 3 por lado; Rechazar termina sin transferencias; timeouts por fase con resultado definido. Dependencias: A1. Pruebas: pulsar fuera de turno, spamear botones, dejar expirar cada timeout.
