@@ -1,6 +1,6 @@
 --!strict
 --[[
-	DuelSkin.luau -- draws a DuelScreen.ViewModel. Knows nothing about duels.
+	DuelSkin.luau -- draws a DuelViewModel.ViewModel. Knows nothing about duels.
 
 	This is the throwaway half of card E0, and it is meant to be thrown away.
 	It has no idea what a forgery is, whose turn it is, or why a button is
@@ -24,13 +24,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 
-local DuelScreen = require(script.Parent.DuelScreen)
+local DuelViewModel = require(script.Parent.DuelViewModel)
 
 local DuelSkin = {}
 
 -- Placeholder palette. Card C2 moves anything worth keeping into Theme.luau;
 -- none of this is worth keeping.
-local COLORS: { [DuelScreen.Tone]: Color3 } = {
+local COLORS: { [DuelViewModel.Tone]: Color3 } = {
 	plain = Color3.fromRGB(70, 70, 78),
 	primary = Color3.fromRGB(58, 108, 190),
 	danger = Color3.fromRGB(168, 62, 62),
@@ -42,7 +42,7 @@ local TEXT = Color3.fromRGB(238, 238, 238)
 local DIM = Color3.fromRGB(150, 150, 156)
 
 export type Handle = {
-	render: (viewModel: DuelScreen.ViewModel) -> (),
+	render: (viewModel: DuelViewModel.ViewModel) -> (),
 	destroy: () -> (),
 }
 
@@ -126,7 +126,7 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 	actionLayout.Padding = UDim.new(0.01, 0)
 	actionLayout.Parent = actionBar
 
-	local function makeButton(spec: DuelScreen.Button, size: UDim2): TextButton
+	local function makeButton(spec: DuelViewModel.Button, size: UDim2): TextButton
 		local element = Instance.new("TextButton")
 		element.Size = size
 		element.BackgroundColor3 = COLORS[spec.tone]
@@ -159,7 +159,7 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 		end
 	end
 
-	local function render(viewModel: DuelScreen.ViewModel)
+	local function render(viewModel: DuelViewModel.ViewModel)
 		header.Text = viewModel.header
 		subheader.Text = viewModel.subheader
 
