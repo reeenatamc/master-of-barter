@@ -84,7 +84,15 @@ Todos estos números están en `src/shared/Config/Economy.luau`. **Cambiar cualq
 
 **La pregunta de diseño:** ganar honestamente paga 130. Colar dos falsificaciones y ganar paga 250. ¿Está bien que mentir bien pague casi el doble, o eso empuja el juego demasiado hacia el engaño?
 
-Es la clase de número que se decide mirando gente jugar, no discutiendo. Lo dejo marcado y sigo.
+**La estructura sí está decidida: el bluff DEBE pagar más.** Carga un riesgo que el juego honesto no carga — el costo hundido de fabricar, más la ruina si te cazan. Retorno alto con varianza alta contra retorno bajo seguro: eso es póker, y es la tensión que el juego quiere. Cuánto más (¿1,9×? ¿1,5×?) es número calibrable; que exista el premio es diseño correcto.
+
+> ### ⚠️ Esta pregunta no se puede cerrar antes que la sesión de diversión 2
+>
+> Toda la respuesta de arriba **asume que existe el contrapeso**, y el contrapeso es la ficha **¡ES FAKE!**, cuyo destino depende del checkpoint 1 (`prueba-diversion-2.md`), que todavía no se corrió.
+>
+> Si esa sesión mata la ficha, mentir **pierde su castigo**: el 250 contra 130 pasa a ser estrategia dominante sin freno, y habría que bajar el premio entero o encontrar otro contrapeso.
+>
+> **El veredicto del premio al bluff depende del veredicto de la ficha.** Por eso la sesión de diversión 2 se volvió el cuello de botella de **dos** decisiones, no de una.
 
 ---
 

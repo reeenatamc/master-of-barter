@@ -193,3 +193,37 @@ Y se repitió al llegar los mockups: la paleta se reemplazó **entera** —de ma
 **Por qué:** sin eso, nada de datos funciona en Studio hasta publicar el lugar con acceso a API, y **cada prueba escribe en los datos reales**. Con eso, Studio anda de entrada y las pruebas no ensucian nada. Y el simulador igual aplica session locking, así que el fallo interesante —dos sesiones peleando por un perfil— se sigue pudiendo probar.
 
 **El límite, escrito en el checkpoint:** un simulador que se porta bien no prueba que un DataStore se porte bien. La prueba 4 del checkpoint 3 corre contra el store real, y es obligatoria.
+
+---
+
+## 2026-08-04 · Los costos se derivan, no se recuerdan
+
+**Regla general del proyecto, no una decisión de una tarjeta.** Ningún precio ya cobrado se guarda: se vuelve a calcular desde lo que se compró.
+
+**De dónde salió:** al cobrar una enmienda hacía falta saber cuánto se había pagado por la oferta anterior. Guardar ese número al lado de la oferta habría sido lo obvio y lo rápido.
+
+**Por qué no:** un precio guardado es una segunda fuente de verdad, y envejece apenas alguien toca `Economy.luau`. El día que se rebalancee el costo de falsificar, cada oferta en curso llevaría un precio de la versión anterior, y el cobro del delta saldría mal sin que nada avise.
+
+**En su lugar:** `toRequests()` reconstruye las peticiones desde los envoltorios guardados y `offerCost()` las vuelve a valuar. Más trabajo por llamada, cero desincronización posible.
+
+---
+
+## 2026-08-04 · La guarda de idempotencia dejó de ser defensiva
+
+**No es una decisión nueva: es una predicción que se cumplió.** En A1.2 se escribió que `finish()` fuera idempotente y se anotó textualmente que "el día que `finish()` tenga un ProfileStore del otro lado, el no-op es lo que evita corromper".
+
+Con B2 llegó ese día. El pago del duelo vive **dentro** de esa guarda, y desde ahora "pagar" significa escribir en un perfil. Un duelo que terminara dos veces pagaría dos veces.
+
+**Vale anotarlo porque el costo se pagó meses antes del beneficio**, que es justo el tipo de inversión que se recorta cuando aprieta el tiempo.
+
+---
+
+## 2026-08-04 · Dos fallos distintos no pueden tener el mismo síntoma
+
+**Regla general, tercera aparición.** Primero fue el contador de objetos vivos del Trove ("esperado 0, quedó N" en vez de "no explotó"). Después los contadores de `finish()` ("1 real, 1 bloqueado"). Ahora el acceso al DataStore.
+
+**El caso:** con el acceso a API de Studio apagado, el jugador quedaba como espectador. Con el guardado roto, el jugador quedaba como espectador. **La misma línea en el Output para dos problemas sin nada en común** — uno es un checkbox, el otro es un bug.
+
+Ahora el aviso lleva `DataStoreState`, así que `NoAccess` y `Access` los separan de un vistazo.
+
+**Y de dónde salió:** de escribir el guion de prueba, no de programar. Documentar cómo se prueba algo obligó a pensar qué vería quien lo prueba, y ahí apareció que dos cosas distintas se veían igual.
