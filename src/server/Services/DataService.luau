@@ -60,6 +60,7 @@ local TEMPLATE: Profile = {
 	stats = { duels = 0, wins = 0, fakesSlipped = 0, fakesCaught = 0 },
 	quests = { date = "", progress = {} },
 	receipts = {},
+	escrow = {},
 }
 
 local realStore = ProfileStore.New(DataConfig.storeName, TEMPLATE)

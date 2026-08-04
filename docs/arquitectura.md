@@ -146,8 +146,13 @@ Sin RemoteFunctions en MVP: todo es evento + respuesta por evento (evita cliente
   Stats = { Duelos = 0, Victorias = 0, FakesColados = 0, FakesCazados = 0 },
   Misiones = { Fecha = "", Progreso = {} },
   Recibos = {},          -- ids de ProcessReceipt ya otorgados (idempotencia)
+  Escrow = {},           -- { {itemId, duelId} } copias apostadas y sin resolver
 }
 ```
+
+**Sobre `Escrow` (agregado en B3):** las copias apostadas salen del perfil al **ofertar**, no al resolver. Eso hace que terminar un duelo por desconexión no tenga que escribir nada en el perfil del que se fue, y por lo tanto que no exista carrera entre la transferencia y la liberación del perfil.
+Si el servidor se cae a mitad, esas copias se pierden. Es la elección deliberada entre los dos fallos posibles: una pérdida lastima a una persona una vez, una duplicación infla la economía de todos para siempre. Por eso **no hay auto-devolución** — devolver tras una caída ocurrida entre el pago al ganador y la limpieza del perdedor duplicaría.
+La lista existe para que esa pérdida sea **detectable**: al cargar un perfil, toda entrada de `Escrow` es huérfana por definición (un duelo vivo no sobrevive a la sesión que lo sostenía), se reporta y se limpia sin devolver. Sin esa lista, "lo perdí en una caída" y "nunca lo tuve" serían el mismo síntoma.
 
 Reglas: ProfileStore gestiona auto-save y session locking; jamás se llama a guardar por cambio pequeño. Toda mutación de Clips pasa por `EconomyService` (un solo lugar para logs, validación y balance). `DataVersion` permite migraciones: al cargar, si la versión es vieja, se ejecutan funciones de migración en cadena. Si un perfil no carga (lock ajeno, error), el jugador entra en modo espectador con aviso y reintento — nunca con datos por defecto que luego sobrescriban los reales.
 

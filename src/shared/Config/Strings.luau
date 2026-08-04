@@ -140,6 +140,13 @@ local emoteSymbols: { [string]: string } = {
 	fire = "🔥",
 }
 
+--- Avisos que el servidor manda por el remoto `Notice`.
+local notices = {
+	--- Por qué no podés entrar a un duelo sin perfil. Dice la causa, no solo el
+	--- "no": un "no podés" sin motivo se lee como que el juego está roto.
+	spectatorNoDuel = "No pudimos cargar tu progreso, así que no podés apostar todavía. Salí y volvé a entrar para reintentar.",
+}
+
 local currencyName = "Clips"
 
 return {
@@ -148,6 +155,7 @@ return {
 	rarityNames = rarityNames,
 	duelButtons = duelButtons,
 	duelScreen = duelScreen,
+	notices = notices,
 	emoteSymbols = emoteSymbols,
 	currencyName = currencyName,
 }

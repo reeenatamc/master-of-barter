@@ -65,7 +65,7 @@ end
 --- on the table LEAVES the profile at that moment. Once it is out, resolving
 --- the duel writes nothing to this player -- which is what makes a disconnect
 --- mid-duel free of any ordering problem between transfer and profile release.
-function InventoryService.takeCopy(player: Player, itemId: Types.ItemId): boolean
+function InventoryService.takeCopy(player: Player, itemId: Types.ItemId, duelId: string): boolean
 	local profile = DataService.get(player)
 	if not profile then
 		return false
@@ -84,6 +84,11 @@ function InventoryService.takeCopy(player: Player, itemId: Types.ItemId): boolea
 	else
 		profile.duelCopies[itemId] = nil
 	end
+
+	-- Written down, so that losing it to a crash is DISTINGUISHABLE from never
+	-- having had it. The copy is gone from duelCopies either way; this is what
+	-- makes the difference reportable later.
+	table.insert(profile.escrow, { itemId = itemId, duelId = duelId })
 	return true
 end
 
@@ -96,6 +101,82 @@ function InventoryService.giveCopy(player: Player, itemId: Types.ItemId, count: 
 	end
 	local amount = count or 1
 	profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + amount
+end
+
+--- The exact inverse of `takeCopy`: gives the copy back AND removes ONE
+--- matching escrow entry.
+---
+--- One, not all of them. A player can have several copies staked in the same
+--- duel, and an offer that fails halfway has to put back only what it took --
+--- clearing every entry for the duel would erase the record of copies still
+--- legitimately on the table.
+function InventoryService.returnCopy(player: Player, itemId: Types.ItemId, duelId: string)
+	local profile = DataService.get(player)
+	if not profile then
+		return
+	end
+
+	profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + 1
+
+	for index = #profile.escrow, 1, -1 do
+		local entry = profile.escrow[index]
+		if entry.duelId == duelId and entry.itemId == itemId then
+			table.remove(profile.escrow, index)
+			return
+		end
+	end
+end
+
+--- Forgets this duel's escrow entries WITHOUT returning anything.
+---
+--- For a duel that REACHED A REVEAL, where the copies changed hands rather than
+--- coming back: whatever was owed has already been handed over through
+--- `giveCopy`, so the records are stale and returning here would double it.
+---
+--- A duel that ends without a reveal uses `returnCopy` instead, which is a
+--- return and a record removal together.
+function InventoryService.clearEscrow(player: Player, duelId: string)
+	local profile = DataService.get(player)
+	if not profile then
+		return
+	end
+
+	-- Backwards, so removing does not shift entries still to be looked at.
+	for index = #profile.escrow, 1, -1 do
+		if profile.escrow[index].duelId == duelId then
+			table.remove(profile.escrow, index)
+		end
+	end
+end
+
+--- Reports and clears escrow entries left over from a session that ended
+--- badly, and returns NOTHING.
+---
+--- Any entry present when a profile loads is an orphan by definition: a live
+--- duel cannot outlive the session holding it. Returning them would be the
+--- obvious kindness and is exactly the wrong move -- a crash between paying the
+--- winner and clearing the loser would turn a return into a duplication, and a
+--- duplication is the failure that spreads.
+---
+--- So: the loss stands, and it is written down instead of vanishing. With
+--- enough players, this log is what makes compensating somebody by hand
+--- possible at all.
+local function reportOrphanedEscrow(player: Player, profile: Types.Profile)
+	if #profile.escrow == 0 then
+		return
+	end
+
+	for _, entry in profile.escrow do
+		-- TODO(F3): this belongs in AnalyticsService, which does not exist yet.
+		-- Until then it is at least visible rather than silent.
+		warn(
+			`[Inventory] {player.Name} lost a staked copy to an unfinished duel:`
+				.. ` {entry.itemId} (duel {entry.duelId}).`
+				.. ` Not returned on purpose -- returning could duplicate.`
+		)
+	end
+
+	table.clear(profile.escrow)
 end
 
 --- Adds to the PERMANENT collection. The only thing in this module that touches
@@ -127,6 +208,7 @@ end
 --- Wires the service. Called by Main after DataService, whose signal it needs.
 function InventoryService.init()
 	DataService.profileLoaded:connect(function(player: Player, profile: Types.Profile)
+		reportOrphanedEscrow(player, profile)
 		grantStarter(player, profile)
 	end)
 end

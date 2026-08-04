@@ -326,6 +326,13 @@ export type DuelState = {
 -- is a field that reads as missing on every existing save.
 -- ─────────────────────────────────────────────────────────────────────────────
 
+--- One copy sitting on a table. `duelId` is what makes an entry identifiable
+--- later, which is the difference between a report and a shrug.
+export type EscrowEntry = {
+	itemId: ItemId,
+	duelId: string,
+}
+
 export type Stats = {
 	duels: number,
 	wins: number,
@@ -357,6 +364,19 @@ export type Profile = {
 	--- Ids of purchases already granted, for ProcessReceipt idempotency
 	--- (docs/arquitectura.md §8). Written before the grant is acknowledged.
 	receipts: { [string]: boolean },
+	--- Copies currently ON A TABLE: taken out of `duelCopies` when the offer was
+	--- made, not yet returned or handed over.
+	---
+	--- Recorded so that a loss is DETECTABLE rather than silent. If a server
+	--- dies mid-duel these copies are gone -- that is the accepted failure,
+	--- because returning them could duplicate instead -- but without this list,
+	--- "lost to a crash" and "never had it" look identical, and two different
+	--- failures must never share a symptom.
+	---
+	--- Entries found when a profile LOADS are orphans by definition: a live duel
+	--- cannot outlive the session that held it. They are reported and cleared,
+	--- never returned.
+	escrow: { EscrowEntry },
 }
 
 --- What one side earned from a duel, handed to EconomyService as a single

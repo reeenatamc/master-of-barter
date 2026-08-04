@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
 local Items = require(ReplicatedStorage.Shared.Config.Items)
+local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
@@ -281,8 +282,17 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 	-- and cannot be paid. Letting them duel would mean a duel whose stakes and
 	-- rewards silently go nowhere -- which looks exactly like a working duel
 	-- until somebody notices their collection never changed.
+	-- Told to the player, not only to the log. "You cannot duel" with no reason
+	-- reads as a broken game; "we could not load your progress" reads as a
+	-- problem with a cause, and one they can retry.
+	local notice = Net.get(Net.names.Notice)
+	for _, player in { playerA, playerB } do
+		if DataService.isSpectator(player) then
+			warn(`[DuelService] refused to start a duel: {player.Name} has no profile to stake from`)
+			notice:FireClient(player, Strings.notices.spectatorNoDuel)
+		end
+	end
 	if DataService.isSpectator(playerA) or DataService.isSpectator(playerB) then
-		warn("[DuelService] refused to start a duel: a spectator cannot stake anything")
 		return nil
 	end
 
@@ -393,6 +403,10 @@ function DuelService.finish(duelId: string, reason: string)
 					end
 				end
 			end
+			-- Whatever was owed has just been handed over, so the escrow record
+			-- has done its job. Cleared rather than returned: returning here
+			-- would double what resolution already gave back.
+			InventoryService.clearEscrow(side.player, duelId)
 		end
 	end
 
@@ -405,7 +419,9 @@ function DuelService.finish(duelId: string, reason: string)
 			local staked: { WrappedItem } = side.offer or {}
 			for _, wrapped in staked do
 				if not wrapped.isFake then
-					InventoryService.giveCopy(side.player, wrapped.claim)
+					-- returnCopy rather than giveCopy: this is a stake coming
+					-- back, so its escrow record goes with it.
+					InventoryService.returnCopy(side.player, wrapped.claim, duelId)
 				end
 			end
 		end
@@ -681,11 +697,11 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 		local item = wrapped[index]
 		if not item.isFake then
 			local claim = item.claim
-			if not InventoryService.takeCopy(player, claim) then
+			if not InventoryService.takeCopy(player, claim, duel.id) then
 				-- Put back whatever was already taken in this call, so a
 				-- half-escrowed offer cannot exist.
 				for _, back in newlyStaked do
-					InventoryService.giveCopy(player, back)
+					InventoryService.returnCopy(player, back, duel.id)
 				end
 				return reject(player, `no longer owns a copy of {claim}`)
 			end
