@@ -125,3 +125,39 @@ Y se repitió al llegar los mockups: la paleta se reemplazó **entera** —de ma
 **Alternativa descartada:** agrandar los botones dibujados. Se descartó porque la composición de los mockups tiene tamaños concretos, y engordarlos para que el dedo acierte deforma el diseño para resolver un problema que es de entrada, no de dibujo.
 
 **Cómo está hecho:** el contenedor conserva el tamaño visual, así que ningún sitio de llamada cambió; la zona de toque desborda ese contenedor por igual en los cuatro lados.
+
+---
+
+## 2026-08-04 · El tablero va ACOSTADO, no parado — los mockups mandan
+
+**Decidido:** el tablero de papel se apoya plano sobre la mesa, entre los dos jugadores, y la cámara mira hacia abajo desde sobre tu hombro.
+
+**Por qué se frenó primero:** la instrucción escrita decía "la hoja de papel VERTICAL sobre la mesa" y los mockups la muestran acostada. Contradicción entre fuentes — el caso (d), donde la autonomía se suspende. Se había construido la versión parada siguiendo el texto.
+
+**Por qué gana la imagen:** el texto era una interpretación anterior a que las imágenes existieran; la imagen es la fuente de verdad de la dirección de arte. Y acostado es mejor por tres razones:
+
+1. **Es el meme real.** Los papelitos de los videos están sobre una mesa o el piso, entre los dos. Nunca parados como atril.
+2. **Los dos juegan sobre el mismo objeto físico**, que es lo que hace que las filas espejadas signifiquen algo: cerca lo mío grande y relleno, lejos lo suyo chico y en contorno, la red punteada al medio.
+3. **Mirar hacia abajo a una mesa es más natural** que mirar de frente a un atril.
+
+**Consecuencia técnica que vale la pena anotar:** un tablero acostado tiene **una sola cara** para dos jugadores. Funciona porque cada cliente crea su propio `SurfaceGui` local sobre esa cara y solo ve el suyo; el de slot 2 va rotado 180° para que "cerca" sea cerca para los dos. La regla de oro sigue siendo estructural: la vista del rival no existe en esta máquina.
+
+**`gdd.md` §25 corregido el mismo día**, para que el doc no siga contradiciendo a los mockups.
+
+---
+
+## 2026-08-04 · Los objetos, en dos fases
+
+**Decidido:** ahora, recortes de papel parados —cutout con borde blanco de tijera y sombra en la base—; después, modelos 3D de papel reemplazándolos objeto por objeto, empezando por los legendarios.
+
+**Por qué:** los mockups muestran modelos de papel de verdad (la sopa, la piedra con carita) y los envueltos como paquetitos de origami con un "?" dibujado. Es la dirección correcta y queda aprobada, pero son doce modelos: salto de contenido, no ajuste. Fasearlo hace que el tablero nuevo salga ya con objetos dignos sin que el checkpoint espere a que existan los doce.
+
+**Alternativa descartada:** dejar los cuadraditos de color hasta tener los modelos. Se descartó porque el checkpoint es una revisión visual, y revisarla con placeholders mide el placeholder.
+
+---
+
+## 2026-08-04 · Una sola lapicera dibujó este mundo
+
+**Decidido:** birome azul para absolutamente todo el trazo. Los únicos rellenos de color son los tres botones de negociación.
+
+**Por qué:** es la decisión más definitoria de los mockups y no se ve hasta que se miran. Esa unidad es lo que hace que el mundo se lea como una sola hoja en vez de como assets juntados de lados distintos. Un elemento con otra tinta rompe el efecto entero, y por eso quedó escrito en `gdd.md` §28 como regla de arte 🔒 y no como preferencia.

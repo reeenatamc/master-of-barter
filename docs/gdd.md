@@ -55,7 +55,19 @@ Misiones diarias (jugar X duelos, ganar con un fake, cazar un fake) · rachas de
 Táctil/click puro: tres botones grandes de negociación, tap para inspeccionar, drag para armar oferta. Sin movimiento de personaje durante el duelo. Gamepad: navegación por foco de UI.
 
 ### 11. Cámara
-**Escena canónica del duelo 🔒:** los dos avatares parados **frente a frente**, con la tabla de papel **en medio de ambos**, y la cámara lateral/cenital sobre la mesa — el encuadre del meme original.
+**Escena canónica del duelo 🔒:** los dos avatares **frente a frente**, con el **tablero de papel acostado en la mesa entre ambos**, y la cámara **sobre tu propio hombro mirando hacia abajo** — el encuadre del meme original.
+
+**Acostado, no parado.** Tres razones: los papelitos de los videos están sobre una mesa o el piso, entre los dos, nunca de pie como atril; los dos juegan sobre **el mismo objeto físico**, que es lo que hace que las filas espejadas signifiquen algo; y mirar hacia abajo a una mesa es más natural que mirar de frente a un atril.
+
+**Zonas del tablero**, de lejos a cerca:
+
+| Zona | Qué es |
+|---|---|
+| Fila lejana | Los tres botones del rival — chicos y solo contorno, no se tocan |
+| Franja del rival | Sus casilleros punteados, con lo que ofrece |
+| Red punteada | La línea del medio: de ahí para allá es de él |
+| Franja propia | Tus casilleros |
+| Fila cercana | Tus tres botones — grandes y rellenos: ✗ rojo, ✓ verde, ✛ azul |
 
 Dos razones, y ninguna es estética: **(1)** reconocimiento instantáneo — una miniatura o un clip de TikTok con ese encuadre se lee como "esto es aquello" sin leer una palabra; **(2)** ver al rival es **mecánico**, no decorativo: su avatar y sus emotes son parte de la información con la que decides si te está mintiendo, igual que las pistas visuales del envoltorio.
 
@@ -128,7 +140,10 @@ Foley casero intencional: papel arrugándose, cinta adhesiva, marcador escribien
 Lo-fi juguetón de fondo en lobby; en duelo, tensión creciente por ronda de negociación (capas que se suman). Librería con licencia de Roblox; nada con copyright externo 🔒.
 
 ### 28. Estilo artístico
-Papel/dibujado a mano (fiel al meme) 🔒. Ventaja estratégica: es mayormente 2D/UI — poco modelado 3D, rinde perfecto en gama baja, y una desarrolladora sola puede producirlo. La imperfección del trazo es estética, no defecto.
+Papel/dibujado a mano (fiel al meme) 🔒.
+
+**Regla de arte, no negociable 🔒: una sola lapicera dibujó este mundo.** Todo —bordes, cuadrícula, íconos, árboles, casas, el suelo— está trazado con la misma **birome azul** sobre papel kraft cálido. Los únicos rellenos de color son los tres botones de negociación (rojo, verde, azul pálidos), y son la excepción justamente porque son lo más importante de la pantalla.
+Esa unidad es lo que hace que el mundo se lea como una sola hoja y no como assets de sitios distintos. Un elemento con otra tinta rompe el efecto entero. Ventaja estratégica: es mayormente 2D/UI — poco modelado 3D, rinde perfecto en gama baja, y una desarrolladora sola puede producirlo. La imperfección del trazo es estética, no defecto.
 
 ### 29. Animaciones
 Pocas y jugosas: desenvolver (la estrella del juego — merece 3 variantes), poner objeto en mesa, estampar el sello de ¡ES FAKE!, celebración/derrota. Animación de UI con TweenService; animación de personaje mínima.
