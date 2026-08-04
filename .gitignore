@@ -1,0 +1,29 @@
+# Roblox
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+*.rbxm
+*.rbxmx
+
+# Herramientas
+/sourcemap.json
+/Packages/
+/ServerPackages/
+/DevPackages/
+
+# Skills de agentes: son herramientas, no codigo del juego.
+# Se reinstalan con `npx skills add ...`. Si preferis versionarlas para que
+# queden reproducibles, borra estas dos lineas.
+/.agents/
+/.claude/skills/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Herramientas locales de verificacion (se descargan solas con ./check.sh)
+/.tools/
+
+# Instrucciones para el agente: privadas, no son parte del juego.
+/CLAUDE.md

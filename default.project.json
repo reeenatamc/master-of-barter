@@ -1,0 +1,40 @@
+{
+	"name": "master-of-barter",
+	"globIgnorePaths": ["**/.DS_Store", "**/*.md"],
+	"tree": {
+		"$className": "DataModel",
+
+		"ReplicatedStorage": {
+			"$className": "ReplicatedStorage",
+			"Shared": {
+				"$path": "src/shared"
+			}
+		},
+
+		"ServerScriptService": {
+			"$className": "ServerScriptService",
+			"Main": {
+				"$path": "src/server/Main.server.luau"
+			},
+			"Services": {
+				"$path": "src/server/Services"
+			},
+			"ProfileStore": {
+				"$path": "src/server/ProfileStore.luau"
+			}
+		},
+
+		"StarterPlayer": {
+			"$className": "StarterPlayer",
+			"StarterPlayerScripts": {
+				"$className": "StarterPlayerScripts",
+				"Main": {
+					"$path": "src/client/Main.client.luau"
+				},
+				"Controllers": {
+					"$path": "src/client/Controllers"
+				}
+			}
+		}
+	}
+}
