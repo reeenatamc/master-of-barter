@@ -24,6 +24,7 @@ local TextChatService = game:GetService("TextChatService")
 
 ReplicatedStorage:WaitForChild("Shared")
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
+local Theme = require(ReplicatedStorage.Shared.Config.Theme)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 
 local DuelViewModel = require(script.Parent.DuelViewModel)
@@ -245,7 +246,7 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 
 			for _, row in panel.rows do
 				order += 1
-				local line = addRow(order, 0.09)
+				local line = addRow(order, 0.115)
 
 				local strip = Instance.new("Frame")
 				strip.Size = UDim2.fromScale(1, 1)
@@ -254,13 +255,40 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 				strip.Parent = line
 				corner(strip, 0.15)
 
-				local name = label(row.label, UDim2.fromScale(0.44, 0.7), TEXT, Enum.TextXAlignment.Left)
-				name.Position = UDim2.fromScale(0.02, 0.15)
+				-- Card E0.2: when a row is about an object, draw the object.
+				--
+				-- The colour and the silhouette come from Theme, not from the
+				-- view model: the brain said WHICH item, and how an item looks
+				-- is the skin's business. Card E2 swaps the art without the
+				-- logic noticing.
+				local textLeft = 0.02
+				if row.itemId then
+					local swatch = Theme.itemSwatches[row.itemId] or Theme.defaultSwatch
+
+					local blob = Instance.new("Frame")
+					blob.Size = UDim2.fromScale(0.06, 0.66)
+					blob.Position = UDim2.fromScale(0.02, 0.17)
+					blob.BackgroundColor3 = swatch.color
+					blob.BorderSizePixel = 0
+					blob.Parent = strip
+					corner(blob, swatch.corner)
+
+					-- Square regardless of how wide the screen is, so the
+					-- silhouette stays a silhouette on a phone.
+					local square = Instance.new("UIAspectRatioConstraint")
+					square.AspectRatio = 1
+					square.Parent = blob
+
+					textLeft = 0.1
+				end
+
+				local name = label(row.label, UDim2.fromScale(0.42, 0.78), TEXT, Enum.TextXAlignment.Left)
+				name.Position = UDim2.fromScale(textLeft, 0.11)
 				name.TextColor3 = if row.tone == "plain" then TEXT else COLORS[row.tone]
 				name.Parent = strip
 
-				local detail = label(row.detail or "", UDim2.fromScale(0.2, 0.6), DIM, Enum.TextXAlignment.Left)
-				detail.Position = UDim2.fromScale(0.47, 0.2)
+				local detail = label(row.detail or "", UDim2.fromScale(0.18, 0.55), DIM, Enum.TextXAlignment.Left)
+				detail.Position = UDim2.fromScale(0.53, 0.22)
 				detail.Parent = strip
 
 				-- Two buttons sit on the right of a labelled row; more than two

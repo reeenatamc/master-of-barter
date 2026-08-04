@@ -29,6 +29,13 @@ export type Row = {
 	label: string,
 	detail: string?,
 	tone: Tone,
+	--- Which catalogue item this row is about, when it is about one.
+	---
+	--- Semantic, not visual: the brain says WHICH object, the skin decides how
+	--- an object looks by asking Theme. Putting a colour here instead would put
+	--- styling in the logic, and card E2 would have to rewrite the logic to
+	--- restyle the game -- which is the exact thing this split exists to avoid.
+	itemId: string?,
 	buttons: { Button },
 }
 

@@ -87,6 +87,7 @@ function DuelPanels.picker(state: Types.DuelState, draft: Draft): Panel
 			label = nameOf(itemId),
 			detail = `{valueOf(itemId)}`,
 			tone = "plain" :: Tone,
+			itemId = itemId,
 			buttons = {
 				button(`real:{itemId}`, UI.offerReal, copyId ~= nil and not full, "plain"),
 				button(`fake:{itemId}`, UI.offerFake, fakesLeft > 0 and not full, "danger"),
@@ -109,6 +110,7 @@ function DuelPanels.draft(draft: Draft): Panel
 				label = nameOf(wrap.claim),
 				detail = if wrap.isFake then UI.fakeMark else UI.genuineMark,
 				tone = (if wrap.isFake then "danger" else "plain") :: Tone,
+				itemId = wrap.claim,
 				buttons = { button(`drop:{index}`, "X", true, "plain") },
 			})
 		end
@@ -136,6 +138,7 @@ function DuelPanels.ownOffer(state: Types.DuelState): Panel
 			label = nameOf(wrapped.claim),
 			detail = if wrapped.isFake then UI.fakeMark else UI.genuineMark,
 			tone = (if wrapped.isFake then "danger" else "plain") :: Tone,
+			itemId = wrapped.claim,
 			buttons = {},
 		})
 	end
@@ -155,6 +158,7 @@ function DuelPanels.rival(state: Types.DuelState): Panel
 				for _, wrapped in view.offer.wrapped do
 					table.insert(rows, {
 						label = nameOf(wrapped.claim),
+						itemId = wrapped.claim,
 						detail = string.format(
 							"%.0f / %.0f / %.0f",
 							wrapped.appearance.colorTone * 100,
@@ -209,6 +213,7 @@ function DuelPanels.reveal(reveal: Types.RevealResult, yourSlot: Types.Slot): Pa
 				label = `{mark}{nameOf(wrapped.claim)}`,
 				detail = if wrapped.isFake then UI.wasFake else UI.wasReal,
 				tone = (if wrapped.isFake then "danger" else "plain") :: Tone,
+				itemId = wrapped.claim,
 				buttons = {},
 			})
 		end
