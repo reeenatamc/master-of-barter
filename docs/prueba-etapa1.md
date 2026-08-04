@@ -14,10 +14,12 @@ Duración estimada: 20–30 min.
 4. En la Command Bar de **cada cliente** (contexto Client):
 
 ```lua
-local dc = require(game.Players.LocalPlayer.PlayerScripts.Controllers.DuelController)
+_G.dc = require(game.Players.LocalPlayer.PlayerScripts.Controllers.DuelController)
 ```
 
-Guardá esa línea a mano: hay que repetirla cada vez que reinicies la sesión de Play.
+**Tiene que ser `_G.dc`, no `local dc`.** Cada línea que enviás a la Command Bar se compila como un chunk aparte, así que un `local` muere al terminar esa línea y la siguiente lo ve como `nil`. `_G` es la tabla global compartida y sí sobrevive entre comandos.
+
+Hay que repetir esa línea cada vez que reinicies Play.
 
 **Cómo saber quién es quién:** al entrar, cada cliente imprime `you=slot1` o `you=slot2`. El slot 1 es el que abre la negociación.
 
@@ -29,10 +31,10 @@ Esto es lo que responde la pregunta de la Etapa 1. Todo lo demás es plomería.
 
 | # | Dónde | Comando | Qué tiene que pasar |
 |---|---|---|---|
-| A1 | slot 1 | `dc.offerDemo()` | Ofrece 1 genuino + 1 falsificación del Unicornio Arcoíris |
-| A2 | slot 2 | `local s = dc.getState() dc.offer({{copyId=s.yourHand[1].copyId,isFake=false,claim=s.yourHand[1].itemId},{copyId=s.yourHand[5].copyId,isFake=false,claim=s.yourHand[5].itemId}})` | Oferta 100% honesta: Pulpito Azul + Zorro Galaxia |
+| A1 | slot 1 | `_G.dc.offerDemo()` | Ofrece 1 genuino + 1 falsificación del Unicornio Arcoíris |
+| A2 | slot 2 | `local s = _G.dc.getState() _G.dc.offer({{copyId=s.yourHand[1].copyId,isFake=false,claim=s.yourHand[1].itemId},{copyId=s.yourHand[5].copyId,isFake=false,claim=s.yourHand[5].itemId}})` | Oferta 100% honesta: Pulpito Azul + Zorro Galaxia |
 | A3 | ambos | — | Los dos ven `phase=Negotiating`, `turn=slot1` |
-| A4 | slot 1 | `dc.accept()` | La revelación |
+| A4 | slot 1 | `_G.dc.accept()` | La revelación |
 
 **Lo que tiene que salir en la revelación**, idéntico en las dos ventanas:
 
@@ -60,13 +62,13 @@ Reiniciá Play (Stop → Start) y volvé a pegar la línea del `dc`.
 
 | # | Dónde | Comando | Qué tiene que pasar |
 |---|---|---|---|
-| B1 | slot 1 | `dc.offerDemo()` | Igual que antes: uno genuino, uno falso |
+| B1 | slot 1 | `_G.dc.offerDemo()` | Igual que antes: uno genuino, uno falso |
 | B2 | slot 2 | el comando largo de A2 | Oferta honesta |
-| B3 | slot 1 | `dc.accept()` — **NO**, esperá | Es turno de slot 1; para que acuse slot 2 hace falta pasarle el turno |
-| B3 | slot 1 | `dc.raise()` | Slot 1 pide más → turno pasa a slot 2, que ahora "OWES A BIGGER OFFER" |
-| B4 | slot 2 | `dc.amendDemo()` | Slot 2 agrega un envoltorio → turno vuelve a slot 1 |
-| B5 | slot 1 | `dc.raise()` | Segundo pedido → turno a slot 2 otra vez |
-| B6 | slot 2 | `dc.fakeCall()` | **Acusa.** Slot 1 sí tiene una falsificación → acierta |
+| B3 | slot 1 | `_G.dc.accept()` — **NO**, esperá | Es turno de slot 1; para que acuse slot 2 hace falta pasarle el turno |
+| B3 | slot 1 | `_G.dc.raise()` | Slot 1 pide más → turno pasa a slot 2, que ahora "OWES A BIGGER OFFER" |
+| B4 | slot 2 | `_G.dc.amendDemo()` | Slot 2 agrega un envoltorio → turno vuelve a slot 1 |
+| B5 | slot 1 | `_G.dc.raise()` | Segundo pedido → turno a slot 2 otra vez |
+| B6 | slot 2 | `_G.dc.fakeCall()` | **Acusa.** Slot 1 sí tiene una falsificación → acierta |
 
 **Lo que tiene que salir:**
 
@@ -85,12 +87,12 @@ Fijate en `slipped 0 fake(s)` de slot 1: la falsificación cambió de manos, per
 
 ## Bloque C — validación (lo que tiene que ser rechazado)
 
-Reiniciá. Llegá a `Negotiating` con `dc.offerDemo()` en los dos.
+Reiniciá. Llegá a `Negotiating` con `_G.dc.offerDemo()` en los dos.
 
 Todo esto va en **una línea** desde el cliente **slot 2**:
 
 ```lua
-dc.accept() dc.negotiate("Nope") dc.negotiate(42) dc.fakeCall()
+_G.dc.accept() _G.dc.negotiate("Nope") _G.dc.negotiate(42) _G.dc.fakeCall()
 ```
 
 En el Output del **servidor**, cuatro `rejected:` seguidos:
@@ -102,24 +104,26 @@ En el Output del **servidor**, cuatro `rejected:` seguidos:
 Después, desde **slot 1**, en una línea:
 
 ```lua
-local s = dc.getState() local c = s.yourHand[1].copyId dc.offer({{isFake=true,claim="no_existe"}}) dc.offer({{copyId=c,isFake=false,claim="rainbow_unicorn"}}) dc.offer({{copyId=c,isFake=true,claim="blue_octopus"}}) dc.offer({{isFake=true,claim="blue_octopus"},{isFake=true,claim="mint_turtle"},{isFake=true,claim="galaxy_fox"}}) dc.offer({})
+local s = _G.dc.getState() local c = s.yourHand[1].copyId _G.dc.offer({{isFake=true,claim="no_existe"}}) _G.dc.offer({{copyId=c,isFake=false,claim="rainbow_unicorn"}}) _G.dc.offer({{copyId=c,isFake=true,claim="blue_octopus"}}) _G.dc.offer({{isFake=true,claim="blue_octopus"},{isFake=true,claim="mint_turtle"},{isFake=true,claim="galaxy_fox"}}) _G.dc.offer({})
 ```
 
 Cinco rechazos más: claim inexistente · genuino mintiendo sobre su identidad · `isFake` en desacuerdo con `copyId` · 3 fakes · 0 envoltorios. Todos deberían decir `no raise is pending on you`, porque estamos en `Negotiating` — eso también es correcto: la primera capa que falla es la que corta.
 
-Y las fichas: `dc.fakeCall()` dos veces desde slot 1 → la segunda da `your FakeCall token is already spent`.
+Y las fichas: `_G.dc.fakeCall()` dos veces desde slot 1 → la segunda da `your FakeCall token is already spent`.
 
 ---
 
 ## Bloque D — límites y timeouts
 
+> **Antes de este bloque:** si tenés `phaseSeconds` subido para tener tiempo de tipear (300s), bajá `BuildingOffers` y `Negotiating` a **15** en `DuelRules.luau`. Con 300 te quedás cinco minutos mirando la pantalla en cada fila. Los tiempos de abajo asumen 15.
+
 | # | Qué | Qué mirar |
 |---|---|---|
-| D1 | Reiniciá, llegá a `Negotiating`, hacé `dc.raise()` 4 veces desde slot 1 (con `dc.amendDemo()` en slot 2 entre medio) | La cuarta da `no raises left (limit is 3 per side)` |
+| D1 | Reiniciá, llegá a `Negotiating`, hacé `_G.dc.raise()` 4 veces desde slot 1 (con `_G.dc.amendDemo()` en slot 2 entre medio) | La cuarta da `no raises left (limit is 3 per side)` |
 | D2 | Enmendar sin agregar nada: en slot 2 con un raise pendiente, repetí su oferta original | `amendment has N wrappers, needs N+1-4` |
-| D3 | **Watchdog por generación.** Hacé un `dc.raise()` + `dc.amendDemo()` y después **no toques nada 30s** | El duelo **no** se cancela antes de tiempo. Si muere apenas pasan 30s desde que empezó `Negotiating` en vez de 30s desde la enmienda, el timer viejo no se está descartando |
-| D4 | Reiniciá, llegá a `Negotiating`, no toques nada 30s | `Cancelled` + `expected 0 live objects, got 0` |
-| D5 | Reiniciá, no ofertes nada, esperá 45s | `BuildingOffers timed out` + `got 0` |
+| D3 | **Watchdog por generación.** Hacé un `_G.dc.raise()` + `_G.dc.amendDemo()` y después **no toques nada** | El duelo **no** se cancela antes de tiempo. Si muere contando desde que empezó `Negotiating` en vez de desde la enmienda, el timer viejo no se está descartando |
+| D4 | Reiniciá, llegá a `Negotiating`, no toques nada | `Cancelled` + `expected 0 live objects, got 0` |
+| D5 | Reiniciá, no ofertes nada, esperá | `BuildingOffers timed out` + `got 0` |
 
 ---
 
@@ -127,7 +131,7 @@ Y las fichas: `dc.fakeCall()` dos veces desde slot 1 → la segunda da `your Fak
 
 **Este es el importante.** Es el único que cubre un cambio ya commiteado y sin probar (`72114f7`), y un camino de desconexión roto no da error: corrompe después.
 
-1. Reiniciá. Llegá a `Negotiating` con `dc.offerDemo()` en los dos.
+1. Reiniciá. Llegá a `Negotiating` con `_G.dc.offerDemo()` en los dos.
 2. **Cerrá la ventana de slot 2** (la X de la ventana, no Stop).
 
 En el cliente que **queda vivo** (slot 1):
