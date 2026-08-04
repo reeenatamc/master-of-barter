@@ -123,9 +123,7 @@ local duelScreen = {
 	duelOver = "Duelo terminado",
 	valueLine = "Se lleva %d de valor",
 	fakesSlipped = "coló %d falsificación(es)",
-	tokenSpent = "Ficha usada",
 	raisesLeft = "Pedidos restantes: %d",
-	owesBigger = "Debe mejorar su oferta",
 }
 
 --- What each reaction of DuelRules.emotes looks like. Symbols rather than

@@ -77,15 +77,22 @@ local duelReward = {
 }
 
 --[=[
-	@prop shop { buyMultiplier: number, sellMultiplier: number }
+	@prop shop { buyMultiplier: number }
 	@within Economy
 
 	Shop prices are derived from baseValue, never stored per item, so a new
 	object is priced automatically.
+
+	There is no sell multiplier, and its absence is deliberate. One existed here
+	unused, written from the generic idea of a shop rather than from any line of
+	the design, and it was removed as case (d): selling from the collection is
+	forbidden by a locked gdd.md §21, selling copies would add a Clips source
+	§19 never decided, and either way a lossy round trip proposes no decision to
+	the player. If a sink or a source is ever needed, it gets designed into §19
+	first and coded second (docs/decisiones.md).
 ]=]
 local shop = {
 	buyMultiplier = 1.35,
-	sellMultiplier = 0.40,
 }
 
 return {

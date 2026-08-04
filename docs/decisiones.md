@@ -287,3 +287,39 @@ Se eligió algo más fuerte: **la operación no existe**. No se puede llamar a u
 - Aun aceptando vender copias, **no agrega ninguna decisión al jugador**: las copias se compran con Clips, así que revenderlas al 0,40 es solo un viaje de ida y vuelta con pérdida. Un sumidero que no propone nada.
 
 Si más adelante hace falta un sumidero o una fuente, se diseña a propósito y entra a §19.
+
+---
+
+## 2026-08-04 · Auditoría de Config: qué es una mina y qué es un valor esperando su tarjeta
+
+**El corolario de la regla 6**, aplicado. Buscar "valores que nadie lee" da 47 resultados en este proyecto y casi todos son ruido: la mayoría se accede por índice dinámico (`Theme.items[itemId]`, `Strings.emoteSymbols[id]`, `phaseSeconds[duel.phase]`), que ningún grep de `.clave` encuentra.
+
+**El criterio que sí sirve no es "nadie lo lee" — es "nadie lo lee Y ninguna tarjeta lo va a leer".**
+
+| Valor | Sin consumidor | Pero |
+|---|---|---|
+| `secondsBeforeBot` | sí | lo consume **D1** (bots). Está en el backlog. |
+| `buyMultiplier` | sí | lo consume **B4**, que es lo que sigue. |
+| `itemFlavour`, `rarityNames` | sí | los consume **A6** (inspección). |
+| `currencyName` | sí | lo consume **E3** (HUD). |
+| `Theme.textures`, ranuras de sonido | sí | los consume **C2** cuando existan los assets. |
+| `Strings.tokenSpent` | sí | **ninguna.** Lo escribí de más. |
+| `Strings.owesBigger` | sí | **ninguna.** Se muestra inline, esta cadena nunca se usó. |
+
+**Un valor que espera a una tarjeta del backlog no es una mina: tiene un consumidor con nombre y fecha.** Una mina es un valor que no tiene ni consumidor ni tarjeta ni entrada en el GDD — nadie lo va a usar porque haga falta, lo van a usar porque estaba ahí.
+
+Los dos últimos se borraron con `sellMultiplier`.
+
+---
+
+## 2026-08-04 · Toda operación reversible necesita su inversa exacta
+
+**Regla general, salida del bug del rollback de B3.**
+
+`takeCopy` sacaba una copia y anotaba una entrada de escrow. Para deshacerlo se usaba `clearEscrow(player, duelId)`, que borraba **todas** las entradas de ese duelo — y una enmienda que fallaba a mitad borraba también los registros de las copias que **seguían legítimamente apostadas** de la oferta original.
+
+**El fix no fue arreglar el borrado, fue cambiar la herramienta:** `returnCopy` es el inverso exacto de `takeCopy` — una copia vuelve, **un** registro se borra. Ya no puede borrar de más, no porque valide, sino porque **no sabe borrar de más**.
+
+`clearEscrow` quedó únicamente para duelos que llegaron a revelación, donde las copias cambiaron de manos y los registros sí están todos obsoletos.
+
+**La regla:** una operación de estado que pueda revertirse parcialmente necesita su **inversa exacta**, no una limpieza general. "Borrar todo lo del duelo" era un martillo donde hacía falta una pinza, y los martillos no dejan de golpear de más cuando el caso es raro — golpean de más justo ahí.
