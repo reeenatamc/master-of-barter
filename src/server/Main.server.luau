@@ -17,6 +17,7 @@ local DataService = require(script.Parent.Services.DataService)
 local DuelService = require(script.Parent.Services.DuelService)
 local EconomyService = require(script.Parent.Services.EconomyService)
 local InventoryService = require(script.Parent.Services.InventoryService)
+local ShopService = require(script.Parent.Services.ShopService)
 
 Net.createAll()
 
@@ -27,6 +28,7 @@ DataService.init()
 -- loads before it is listening never gets its starter copies.
 InventoryService.init()
 DuelService.init()
+ShopService.init()
 
 -- EconomyService has nothing to wire: it is a gate, not a listener. Required
 -- here anyway so a missing module fails at boot rather than mid-duel.

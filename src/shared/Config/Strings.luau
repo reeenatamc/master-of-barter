@@ -143,6 +143,8 @@ local notices = {
 	--- Por qué no podés entrar a un duelo sin perfil. Dice la causa, no solo el
 	--- "no": un "no podés" sin motivo se lee como que el juego está roto.
 	spectatorNoDuel = "No pudimos cargar tu progreso, así que no podés apostar todavía. Salí y volvé a entrar para reintentar.",
+	shopNotStocked = "Eso ya no está en el kiosco. Don Trueque rota lo que ofrece cada tanto.",
+	shopCannotAfford = "No te alcanzan los Clips para eso.",
 }
 
 local currencyName = "Clips"

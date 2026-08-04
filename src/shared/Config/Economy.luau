@@ -95,10 +95,30 @@ local shop = {
 	buyMultiplier = 1.35,
 }
 
+--[=[
+	@prop kiosk { slots: number, rotationSeconds: number }
+	@within Economy
+
+	The kiosk's rotating stock.
+
+	Rotation is on a clock and seeded from the window number, so every server
+	shows the SAME objects at the same moment. Different kiosks per server would
+	make the shop read as a slot machine, and gdd.md §34 rules out anything that
+	does.
+
+	Four slots out of twelve objects: enough that a rotation is worth checking,
+	few enough that what is missing is felt.
+]=]
+local kiosk = {
+	slots = 4,
+	rotationSeconds = 900,
+}
+
 return {
 	startingClips = startingClips,
 	clipsMax = clipsMax,
 	fakeCost = fakeCost,
 	duelReward = duelReward,
 	shop = shop,
+	kiosk = kiosk,
 }
