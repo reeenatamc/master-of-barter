@@ -1,3 +1,7 @@
+---
+sidebar_label: Prueba · ¿es divertido?
+---
+
 # Sesión de prueba con personas — ¿negociar con fakes es divertido?
 
 Esta es la prueba que cierra la Etapa 1. No es una prueba de bugs: es **el examen del juego**, y su resultado decide si se sigue construyendo o se replantea el núcleo.
@@ -88,3 +92,42 @@ Si eso pasa, **no significa que la ficha esté rota** — significa que le falta
 ## Si algo se rompe durante la sesión
 
 No pares la sesión a depurar. Anotá qué pasó y en qué momento, reiniciá con Stop → Start, y seguí. La sesión mide diversión; los bugs se arreglan después con la nota que escribiste.
+
+---
+
+# Resultado — primera sesión (2026-08-04, 2 personas)
+
+## Lo que salió
+
+**El concepto interesa.** Ese es el veredicto de los testers y es la señal que importa: la mecánica de ofrecer, mentir y decidir se entiende y engancha sin que nadie explique nada.
+
+**La UI es muy fea** y se nota. Esperado y deliberado —E0 existe para eso—, pero deja de ser gratis: si la pantalla parece una planilla, la gente juzga la planilla y no el juego. Se arregla con elementos visuales, no con más mecánica.
+
+**Hallazgo principal, y no estaba en la lista de cosas a observar: quieren poder HABLAR.** Los dos testers pidieron poder decirse cosas durante el duelo — para venderse el objeto, para exagerar, para hacerse los graciosos.
+
+## Por qué ese hallazgo importa más que los otros dos
+
+Confirma, con gente real, lo que `gdd.md` §8 anotaba como hipótesis **antes** de la prueba: la diversión del meme original no está en descubrir una falsificación, está en la **actuación de venta**. El sobrehype, el "es rarísimo, no lo consigues en ningún lado".
+
+El prototipo tiene el trueque pero no tiene el escenario donde se actúa. Los testers fueron directo al hueco.
+
+Esto refuerza tres cosas que ya estaban escritas y que ahora dejan de ser intuición:
+
+- **`gdd.md` §31** ya define el chat de texto + emotes como *"canal principal de la guerra psicológica"*. Estaba en el diseño; falta en el prototipo.
+- **`gdd.md` §11**, la escena cara a cara, deja de ser sólo un tema de miniaturas: si vas a vender algo actuando, tenés que ver a quién se lo vendés.
+- **La tarjeta A7 (emotes)** estaba marcada P1. Con este dato mira a P0.
+
+## Lo que NO se puede concluir todavía
+
+**No está confirmado el criterio de aceptación de la etapa**, que es *dos personas piden "otra partida" sin que se lo sugieras*. "Interesante" no es "otra". Pendiente de confirmar con quien corrió la sesión.
+
+**No se comparó (a) con ficha vs (b) sin ficha.** El protocolo de las dos configuraciones quedó sin ejecutar, así que sobre la ficha ¡ES FAKE! seguimos sin dato.
+
+## Sospecha técnica a verificar antes de diseñar nada
+
+Puede que el chat **no faltara**, sino que estuviera tapado o roto:
+
+1. El Output de la sesión mostraba `Failure to Start CoreScript module TopBar` — y el botón del chat vive en esa barra.
+2. La pantalla de E0 ocupa el 94% del ancho con `IgnoreGuiInset`, así que aunque el chat funcionara, queda debajo.
+
+Son dos problemas distintos con arreglos distintos: uno es "hay que hacer sitio para el chat" y el otro es "hay que arreglar por qué no arranca". Se verifica antes de escribir código.

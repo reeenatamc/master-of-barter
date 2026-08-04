@@ -1,3 +1,7 @@
+---
+sidebar_label: Plan por etapas
+---
+
 # Plan por Etapas — Master of Barter
 **Versión 0.1 — Fase 7 · agosto 2026**
 

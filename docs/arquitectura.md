@@ -1,3 +1,7 @@
+---
+sidebar_label: Arquitectura técnica
+---
+
 # Arquitectura Técnica — Master of Barter
 **Versión 0.1 — Fase 6 · agosto 2026**
 Principio rector: la arquitectura más simple que soporte el GDD. Cada pieza está justificada; lo que no aparece aquí, no se necesita en el MVP.

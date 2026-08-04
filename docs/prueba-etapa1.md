@@ -1,3 +1,7 @@
+---
+sidebar_label: Prueba · Etapa 1
+---
+
 # Sesión de prueba — punto de control Etapa 1 (tras A4)
 
 Una sola sesión que ejercita todo lo acumulado sin probar: **A2.1, A2.2, A3, A4** y el camino de desconexión del commit `72114f7`. Está ordenada para que no tengas que reiniciar entre bloques más de lo necesario.
