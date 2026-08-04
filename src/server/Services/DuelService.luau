@@ -598,12 +598,18 @@ local function buildReveal(duel: Duel, takenBy: { Slot }, fakeCall: Types.FakeCa
 		-- which is not iterable.
 		local own: { WrappedItem } = side.offer or {}
 
+		-- Was this side the target of an accusation that landed?
+		local caught = fakeCall ~= nil and fakeCall.correct and fakeCall.by == otherSlot(side.slot)
+
 		local offered: { Types.RevealedWrap } = {}
 		local fakesPassed = 0
 		for _, wrapped in own do
 			table.insert(offered, uncover(wrapped))
-			-- Only counts as slipped past if it actually changed hands.
-			if wrapped.isFake and takenBy[side.slot] ~= side.slot then
+			-- A forgery counts as slipped past only if it changed hands AND was
+			-- not exposed. Handing your fakes over because the rival caught you
+			-- is the opposite of getting away with it, even though the wrappers
+			-- do end up on their side of the table.
+			if wrapped.isFake and takenBy[side.slot] ~= side.slot and not caught then
 				fakesPassed += 1
 			end
 		end
