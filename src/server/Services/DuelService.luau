@@ -27,6 +27,8 @@ local Net = require(ReplicatedStorage.Shared.Util.Net)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local DuelSceneService = require(script.Parent.DuelSceneService)
+
 type Slot = Types.Slot
 type DuelCopy = Types.DuelCopy
 type DuelPhase = Types.DuelPhase
@@ -289,6 +291,15 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 	duels[duel.id] = duel
 	duelIdOf[playerA] = duel.id
 	duelIdOf[playerB] = duel.id
+
+	-- The table, and both players standing at it. Registered in the trove in
+	-- the same statement that creates it, like every other resource a duel
+	-- owns: the scene disappears by every route the duel can end, disconnects
+	-- included (card E2, docs/gdd.md §11).
+	duel.trove:Add(DuelSceneService.open(duel.id, {
+		{ player = playerA, slot = 1 },
+		{ player = playerB, slot = 2 },
+	}))
 
 	armPhaseWatchdog(duel)
 	broadcast(duel)

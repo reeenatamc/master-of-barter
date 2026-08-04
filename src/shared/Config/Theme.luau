@@ -186,6 +186,29 @@ local motion = {
 	snap = 0.15,
 }
 
+--- [propuesta] The duel table, in studs. Dimensions live in the theme because
+--- the scene is part of the look: a different theme may want a school desk, a
+--- market stall or a cardboard box, and none of them should need code changes.
+---
+--- The sheet stands VERTICALLY on the table so both players read the same
+--- object from opposite sides (docs/gdd.md §11), which is also what lets each
+--- client draw its own face of it and never assemble the rival's view anywhere
+--- the rival could reach.
+local tableSpec = {
+	--- Width and depth of the surface. Wide enough to frame two avatars.
+	topSize = Vector3.new(12, 0.4, 7),
+	--- Height of the surface off the floor.
+	height = 3,
+	--- The sheet. Deliberately thin: at this thickness it reads as paper rather
+	--- than as a board.
+	sheetSize = Vector3.new(9, 5.5, 0.08),
+	--- How far back each player stands from the sheet.
+	standDistance = 4.5,
+	--- Resolution of the surface drawn on the sheet. Higher looks sharper and
+	--- costs more; this is the knob for docs/gdd.md §38's low-end budget.
+	pixelsPerStud = 96,
+}
+
 --- How much a taped cut-out is rotated, in degrees. Nothing is ever perfectly
 --- straight: §28 says the imperfection is the aesthetic, not a defect, and a
 --- perfectly aligned grid of paper cards stops reading as paper immediately.
@@ -201,4 +224,10 @@ return {
 	defaultItem = defaultItem,
 	motion = motion,
 	tiltDegrees = tiltDegrees,
+	table = tableSpec,
+	--- Which duel screen is used. "table" is the card E2 scene: a paper sheet
+	--- standing on a table in the world. "flat" is the E0 panel, kept working so
+	--- there is always something to fall back to if the new one misbehaves
+	--- during a play-test.
+	screen = "table",
 }
