@@ -41,6 +41,10 @@ Objetivo: el momento estrella y clipeable. Criterios: al aceptar, se desenvuelve
 
 **A4 · Como jugador quiero una ficha ¡ES FAKE! única por duelo** — P0 · S
 Criterios: usable una vez, solo en fase de negociación; acierto → me llevo la oferta rival; fallo → pierdo mi apuesta; queda registrada en analítica. Dependencias: A2. Riesgo: es la mecánica 🧪 más incierta — instrumentarla bien para decidir su futuro con datos.
+> **Hipótesis a falsear en el punto de control, no un bug.** A4 frena "falsificá todo siempre" —si el rival acusa, acierta y te deja sin nada—, pero en el prototipo abre la simétrica: **"acusá siempre"**. La ficha no cuesta nada, acertar solo requiere que el rival tenga *al menos una* falsificación, y falsificar todavía es gratis (el costo en Clips es B2). Con esos tres hechos juntos, acusar es casi dinero seguro.
+> Lo que la frena en el diseño completo y hoy no existe: el costo en Clips hace que se falsifique menos, así que acusar deja de acertar siempre. **No se agregó ninguna penalización inventada** para compensarlo, por la misma razón que en A3.
+> Qué mirar en la sesión de prueba: si en todas las partidas la jugada obvia es acusar, el equilibrio del prototipo está roto **por falta de B2**, no por A4. Es dato para decidir el futuro de la ficha (§8 la marca 🧪), no un fallo que arreglar acá.
+> `AnalyticsService` no existe (F3), así que las llamadas todavía no se registran. Marcado con TODO en el código.
 
 **A5 · Como jugador quiero que las desconexiones no me perjudiquen injustamente** — P0 · M
 Criterios: quien se desconecta pierde el duelo y su apuesta pasa al rival; el que queda vuelve al lobby limpio; el Trove del duelo libera todo (verificar sin fugas tras 100 duelos bot-vs-bot). Dependencias: A2, E2.
@@ -159,6 +163,8 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 | Pedir más: límite de 3 por lado, enmienda validada por cantidad | A2.2 | Lógica de juego pura, agrupable. |
 | Revelación: `isFake` aparece **solo** al aceptar, igual para los dos, y nunca antes | A3 | Es el momento en que la regla de oro se levanta. Mirar que en ninguna fase previa llegue `reveal` al cliente. |
 | Marcador: genuino = `baseValue`, fake = 0, gana quien recibió más | A3 | Crudo a propósito. Se espera que "falsificá todo" domine hasta que exista A4. |
+| Ficha ¡ES FAKE!: una por lado, acierto → te llevás la oferta del tramposo, fallo → perdés tu apuesta | A4 | Lógica de juego. Probar los dos desenlaces y que la segunda ficha del mismo lado se rechace. |
+| **Equilibrio del bucle completo** | A2–A4 | No es una prueba de código, es la pregunta de la Etapa 1. Ver la hipótesis "acusá siempre" en la tarjeta A4. |
 | Watchdog por generación: tras un raise + enmienda, el duelo **no** se cancela antes de tiempo por el timer viejo | A2.2 | Sutil. El fallo se ve como un duelo que muere solo a mitad de negociación, y es fácil confundirlo con otra cosa. Hacer al menos un raise + enmienda y esperar a que el reloj pase el deadline original. |
 
 **No agrupable** (regla de CLAUDE.md): nada que toque ProfileStore, guardado o `ProcessReceipt` entra en esta lista. Eso se prueba cuando se escribe.

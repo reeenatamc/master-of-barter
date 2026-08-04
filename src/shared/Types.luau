@@ -145,11 +145,20 @@ export type RevealSide = {
 	fakesPassed: number,
 }
 
+--- An accusation, once per duel per side (docs/gdd.md §8).
+export type FakeCall = {
+	by: Slot,
+	--- True when the accused offer really did contain at least one forgery.
+	correct: boolean,
+}
+
 export type RevealResult = {
 	--- Indexed by slot.
 	sides: { RevealSide },
 	--- nil means a tie.
 	winner: Slot?,
+	--- nil when the duel ended on a plain Accept, with nobody accusing.
+	fakeCall: FakeCall?,
 }
 
 export type DuelPlayerView = {

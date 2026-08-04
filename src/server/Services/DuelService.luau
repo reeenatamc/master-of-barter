@@ -559,14 +559,14 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Negotiation (card A2.1)
 
---- The actions implemented so far. FakeCall is A4. It is a legitimate member of
---- Types.DuelAction, so a client asking for it gets a clear refusal rather than
---- being treated as malformed -- it is not an attack, it is a button that does
---- not exist yet.
+--- Every action in Types.DuelAction is now implemented. The table stays because
+--- it is what turns an unknown string from a client into a clean refusal rather
+--- than a lookup miss further down.
 local IMPLEMENTED: { [string]: boolean } = {
 	Accept = true,
 	Decline = true,
 	RaiseOffer = true,
+	FakeCall = true,
 }
 
 --- The whole truth of the duel, built at the instant it enters Reveal and not
@@ -578,14 +578,11 @@ local IMPLEMENTED: { [string]: boolean } = {
 --- Scoring is crude on purpose. A genuine wrapper is worth its baseValue, a
 --- forgery is worth nothing, and whoever received more wins.
 ---
---- Known and accepted: with only this, "forge everything, always" is dominant.
---- Two things that do not exist yet are what hold it back -- the Clips cost of
---- forging (B2) and above all the FakeCall token (A4). No invented penalty has
---- been added here to paper over that: inventing one would be smuggling in A4's
---- mechanic and then having to remove it. The bluff dilemma cannot be judged
---- until A4 lands, which is why the play-test checkpoint sits after A4, not
---- after A3.
-local function buildReveal(duel: Duel): Types.RevealResult
+--- `takenBy[slot]` says which side walks away with the wrappers that `slot` put
+--- on the table. A plain accept swaps them; an accusation redirects them (see
+--- `settleFakeCall`). Keeping the outcome as data rather than branching inside
+--- here means the reveal is built the same way no matter how the duel ended.
+local function buildReveal(duel: Duel, takenBy: { Slot }, fakeCall: Types.FakeCall?): Types.RevealResult
 	local function uncover(wrapped: WrappedItem): Types.RevealedWrap
 		return {
 			wrappedId = wrapped.wrappedId,
@@ -600,24 +597,30 @@ local function buildReveal(duel: Duel): Types.RevealResult
 		-- Annotated because `x or {}` infers a union with the empty-table type,
 		-- which is not iterable.
 		local own: { WrappedItem } = side.offer or {}
-		local theirs: { WrappedItem } = duel.sides[otherSlot(side.slot)].offer or {}
 
 		local offered: { Types.RevealedWrap } = {}
 		local fakesPassed = 0
 		for _, wrapped in own do
 			table.insert(offered, uncover(wrapped))
-			if wrapped.isFake then
+			-- Only counts as slipped past if it actually changed hands.
+			if wrapped.isFake and takenBy[side.slot] ~= side.slot then
 				fakesPassed += 1
 			end
 		end
 
+		-- Everything that ended up on this side, whoever originally offered it.
 		local received: { Types.RevealedWrap } = {}
 		local valueReceived = 0
-		for _, wrapped in theirs do
-			table.insert(received, uncover(wrapped))
-			if not wrapped.isFake then
-				local def = Items.catalog[wrapped.claim]
-				valueReceived += if def then def.baseValue else 0
+		for _, source in duel.sides do
+			if takenBy[source.slot] == side.slot then
+				local wrappers: { WrappedItem } = source.offer or {}
+				for _, wrapped in wrappers do
+					table.insert(received, uncover(wrapped))
+					if not wrapped.isFake then
+						local def = Items.catalog[wrapped.claim]
+						valueReceived += if def then def.baseValue else 0
+					end
+				end
 			end
 		end
 
@@ -637,7 +640,45 @@ local function buildReveal(duel: Duel): Types.RevealResult
 		winner = 2
 	end
 
-	return { sides = sides, winner = winner }
+	return { sides = sides, winner = winner, fakeCall = fakeCall }
+end
+
+--- Who ends up holding what after a plain accepted trade: each side takes the
+--- other's wrappers.
+local function swapAll(): { Slot }
+	return { 2, 1 }
+end
+
+--- The accusation, resolved (docs/gdd.md §8).
+---
+--- Right: you take the cheat's offer and keep your own -- they walk away with
+--- nothing. Wrong: your stake goes to them and you keep nothing.
+---
+--- Note what is NOT checked here: whether the accusation was "reasonable". The
+--- server knows the truth and answers only with the outcome, never with a hint
+--- about how close the call was.
+local function settleFakeCall(duel: Duel, accuser: Slot): (boolean, { Slot })
+	local accused = otherSlot(accuser)
+	local wrappers: { WrappedItem } = duel.sides[accused].offer or {}
+
+	local correct = false
+	for _, wrapped in wrappers do
+		if wrapped.isFake then
+			correct = true
+			break
+		end
+	end
+
+	local takenBy: { Slot } = {}
+	if correct then
+		takenBy[accused] = accuser
+		takenBy[accuser] = accuser
+	else
+		takenBy[accuser] = accused
+		takenBy[accused] = accused
+	end
+
+	return correct, takenBy
 end
 
 --- One of the three negotiation buttons. Validated in the four layers of
@@ -687,10 +728,24 @@ function DuelService.negotiate(player: Player, action: unknown)
 		--
 		-- Transfers are still in-memory only: the permanent collection is B3
 		-- and Clips are B2, both Etapa 2.
-		duel.reveal = buildReveal(duel)
+		duel.reveal = buildReveal(duel, swapAll(), nil)
 		resolve(duel, "Reveal", `slot {side.slot} accepted`)
 	elseif action == "Decline" then
 		resolve(duel, "Cancelled", `slot {side.slot} declined`)
+	elseif action == "FakeCall" then
+		-- One token per side per duel (DuelRules.limits.fakeCallsPerDuel).
+		if side.fakeCallUsed then
+			return reject(player, "your FakeCall token is already spent")
+		end
+		side.fakeCallUsed = true
+
+		local correct, takenBy = settleFakeCall(duel, side.slot)
+		duel.reveal = buildReveal(duel, takenBy, { by = side.slot, correct = correct })
+
+		-- TODO(F3): this is the single most uncertain mechanic in the GDD (§8
+		-- marks it as one to keep or cut with data), so every call needs to
+		-- reach analytics with its outcome. AnalyticsService does not exist yet.
+		resolve(duel, "Reveal", `slot {side.slot} called fake ({if correct then "hit" else "miss"})`)
 	else
 		-- RaiseOffer: hand the turn to the rival, who now owes a bigger offer.
 		if side.raisesLeft <= 0 then

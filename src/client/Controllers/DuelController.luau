@@ -68,6 +68,12 @@ local function dump(state: Types.DuelState)
 
 	if state.reveal then
 		print("  ── THE REVEAL ──")
+		local call = state.reveal.fakeCall
+		if call then
+			local who = if call.by == state.yourSlot then "you" else `slot{call.by}`
+			local outcome = if call.correct then "and was RIGHT" else "and was WRONG"
+			print(`  {who} shouted ES FAKE {outcome}`)
+		end
 		for _, side in state.reveal.sides do
 			local marker = if side.slot == state.yourSlot then " (you)" else ""
 			print(`  slot{side.slot}{marker} offered:`)
@@ -142,6 +148,10 @@ end
 
 function DuelController.raise()
 	DuelController.negotiate("RaiseOffer")
+end
+
+function DuelController.fakeCall()
+	DuelController.negotiate("FakeCall")
 end
 
 --- TEMP: re-sends your offer with one extra forgery, which is the cheapest way
