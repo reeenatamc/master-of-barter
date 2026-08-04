@@ -20,7 +20,8 @@ local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelCamera = {}
 
---- Takes over the camera and glides it to the table. Sliding in rather than
+--- Takes over the camera and glides it over your own shoulder, looking down
+--- at the board (docs/gdd.md §25). Sliding in rather than
 --- cutting: a cut is jarring, a glide reads as sitting down.
 function DuelCamera.focus(sheet: BasePart, slot: Types.Slot)
 	local camera = workspace.CurrentCamera
@@ -29,8 +30,11 @@ function DuelCamera.focus(sheet: BasePart, slot: Types.Slot)
 	end
 
 	local side = if slot == 1 then -1 else 1
+	-- Behind your own edge and above it, aiming just past the middle of the
+	-- board: your half sits low on screen, theirs high, and the rival's avatar
+	-- stands above the far edge.
 	local eye = sheet.Position + Vector3.new(0, Theme.camera.height, side * Theme.camera.distance)
-	local aim = sheet.Position + Vector3.new(0, Theme.camera.aimHeight - sheet.Size.Y / 2, 0)
+	local aim = sheet.Position + Vector3.new(0, 0, -side * Theme.camera.aimOffset)
 
 	camera.CameraType = Enum.CameraType.Scriptable
 	TweenService:Create(camera, TweenInfo.new(Theme.camera.settle, Enum.EasingStyle.Quad), {

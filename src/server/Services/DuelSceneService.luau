@@ -33,9 +33,10 @@ local DuelSceneService = {}
 local SPACING = 60
 local nextIndex = 0
 
---- Which way each slot faces. Slot 1 stands on the negative side of the sheet
---- and looks towards positive Z, slot 2 does the opposite. The client derives
---- which face of the sheet to draw on from the same rule.
+--- Which side each slot stands on. Slot 1 takes the negative side of the board
+--- and looks towards positive Z, slot 2 the opposite. The client derives which
+--- way round to draw its page from the same rule, which is why neither has to
+--- tell the other.
 local function standOffset(slot: Slot): Vector3
 	local side = if slot == 1 then -1 else 1
 	return Vector3.new(0, 0, side * Theme.table.standDistance)
@@ -58,13 +59,17 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	top.BottomSurface = Enum.SurfaceType.Smooth
 	top.Parent = model
 
-	-- The sheet stands vertically ON the table, so both players read the same
-	-- object from opposite sides. Thin enough to read as paper rather than as a
-	-- board.
+	-- The board lies FLAT on the table, between the two players, and both act
+	-- on this one object -- which is what makes mirrored rows mean anything
+	-- (docs/gdd.md §25). A pad of paper, not a lectern.
+	--
+	-- One face, two readers: each client draws its own local SurfaceGui on the
+	-- top of it and sees only that one, with slot 2's rotated 180 so that
+	-- "near" is near for both. The rival's view is never assembled here.
 	local sheet = Instance.new("Part")
-	sheet.Name = "Sheet"
-	sheet.Size = Theme.table.sheetSize
-	sheet.CFrame = origin * CFrame.new(0, Theme.table.height + Theme.table.sheetSize.Y / 2, 0)
+	sheet.Name = "Board"
+	sheet.Size = Theme.table.boardSize
+	sheet.CFrame = origin * CFrame.new(0, Theme.table.height + Theme.table.boardSize.Y / 2, 0)
 	sheet.Anchored = true
 	sheet.Color = Theme.palette.paper
 	sheet.Material = Enum.Material.SmoothPlastic

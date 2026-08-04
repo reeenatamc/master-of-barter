@@ -1,28 +1,31 @@
 --!strict
 --[[
-	DuelPaperSkin.luau -- draws the duel onto the paper sheet standing on the
-	table. Card E2, and the replacement for DuelSkin.
+	DuelPaperSkin.luau -- draws the duel onto the paper board lying on the table.
+	Card E2, and the replacement for DuelSkin.
 
 	Same contract as the ugly skin it replaces (DuelViewModel.Handle): it takes a
 	view model and reports which button id was pressed. It knows nothing about
-	forgeries, turns or why anything is disabled -- which is why swapping the
-	whole look costs one file and leaves DuelScreen, DuelPanels and UIController
-	untouched. That was the entire point of building E0 in two halves.
+	forgeries, turns or why anything is disabled -- which is why the entire look
+	could be rebuilt twice, once for the paper theme and once again when the
+	board turned out to lie flat, without DuelScreen or DuelPanels changing.
 
-	Drawn with a SurfaceGui rather than a ScreenGui, and that is the difference
-	between this and E0: the interface IS the sheet on the table, seen in the
-	world, with the rival's avatar visible past it. docs/gdd.md §11 wants that
-	framing for two reasons, and only one of them is thumbnails -- the other is
-	that reading your opponent is part of the game.
+	Laid out against the reference images (mockups/), far edge to near:
 
-	Each client draws only its OWN face of the sheet, chosen from its slot. The
-	rival's view is never assembled here, so the golden rule holds in 3D the same
-	way it holds in the payload: not by discipline, but because the other view
-	does not exist on this machine.
+	    rival's three buttons     small, outline only, not yours to press
+	    rival's slots             dashed boxes with whatever they offered
+	    the dashed net            the middle of the board
+	    your slots                dashed boxes, or the catalogue while choosing
+	    your three buttons        large and filled -- red, green, blue
 
-	Layout follows the sheet, not a scroll: the rival's things at the far edge,
-	yours at the near one, mirrored -- which is how a sheet between two people
-	works when both are reading it.
+	ONE BOARD, TWO READERS. The board has a single top face, and each client
+	draws its own local SurfaceGui on it, seeing only that one. Slot 2's page is
+	rotated 180 so "near" is near for both. The rival's view is never assembled
+	on this machine, so the golden rule holds in 3D the way it holds in the
+	payload: not by discipline, but by absence.
+
+	docs/gdd.md §28: one ballpoint pen drew this world. Every line here is
+	Theme.palette.ink; the only colour fills are the three negotiation buttons,
+	which are the exception because they matter most.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -37,17 +40,9 @@ local SoundController = require(script.Parent.SoundController)
 
 local DuelPaperSkin = {}
 
-local TONE_COLORS: { [DuelViewModel.Tone]: Color3 } = {
-	plain = Theme.palette.ink,
-	primary = Theme.palette.accept,
-	danger = Theme.palette.fakeCall,
-	good = Theme.palette.good,
-	bad = Theme.palette.bad,
-}
-
---- Which sound each action makes. plan-etapas.md Etapa 2 raised juice to
---- required and applied it to EVERY meaningful action, not only the reveal: a
---- duel where only the ending moves is silent for ninety percent of its length.
+--- Which sound each action makes. plan-etapas.md Etapa 2 applied juice to EVERY
+--- meaningful action, not only the reveal: a duel where only the ending moves
+--- is silent for ninety percent of its length.
 local SOUND_FOR: { [string]: string } = {
 	send = "offerSent",
 	clear = "offerCleared",
@@ -57,9 +52,16 @@ local SOUND_FOR: { [string]: string } = {
 	fakecall = "fakeCall",
 }
 
---- Every cut-out is rotated a little, and never all by the same amount.
---- docs/gdd.md §28: the imperfection is the aesthetic, not a defect. A grid of
---- perfectly aligned paper cards stops reading as paper immediately.
+--- The three negotiation buttons are the only filled colour on the board.
+local FILL_FOR: { [string]: { line: Color3, fill: Color3 } } = {
+	accept = { line = Theme.palette.accept, fill = Theme.palette.acceptFill },
+	decline = { line = Theme.palette.decline, fill = Theme.palette.declineFill },
+	raise = { line = Theme.palette.raise, fill = Theme.palette.raiseFill },
+	fakecall = { line = Theme.palette.fakeCall, fill = Theme.palette.fakeCallFill },
+}
+
+--- Nothing on this board is perfectly straight. docs/gdd.md §28: the
+--- imperfection is the aesthetic, not a defect.
 local function tiltFor(seed: number): number
 	return ((seed % 5) - 2) * (Theme.tiltDegrees / 2)
 end
@@ -70,40 +72,43 @@ local function corner(parent: Instance, scale: number)
 	ui.Parent = parent
 end
 
-local function marker(text: string, size: UDim2, color: Color3): TextLabel
+--- A pen line. Everything drawn on this board goes through here, which is how
+--- the one-pen rule stays true by construction rather than by memory.
+local function stroke(parent: Instance, thickness: number, transparency: number?)
+	local line = Instance.new("UIStroke")
+	line.Color = Theme.palette.ink
+	line.Thickness = thickness
+	line.Transparency = transparency or 0
+	line.Parent = parent
+end
+
+local function text(content: string, size: UDim2, color: Color3, font: Enum.Font): TextLabel
 	local element = Instance.new("TextLabel")
 	element.Size = size
 	element.BackgroundTransparency = 1
-	element.Text = text
+	element.Text = content
 	element.TextColor3 = color
 	element.TextScaled = true
-	element.Font = Theme.fonts.marker
-	element.TextXAlignment = Enum.TextXAlignment.Center
+	element.Font = font
+	element.Parent = nil
 	return element
 end
 
-local function handwriting(text: string, size: UDim2, color: Color3): TextLabel
-	local element = marker(text, size, color)
-	element.Font = Theme.fonts.hand
-	element.TextXAlignment = Enum.TextXAlignment.Left
-	return element
-end
-
---- Faint squared ruling across the page. Drawn once and never touched again.
+--- Faint squared ruling, drawn once.
 local function drawGrid(page: Frame)
-	for index = 1, 11 do
+	for index = 1, 23 do
 		local line = Instance.new("Frame")
-		line.Size = UDim2.fromScale(1, 0.002)
-		line.Position = UDim2.fromScale(0, index / 12)
+		line.Size = UDim2.fromScale(1, 0.0012)
+		line.Position = UDim2.fromScale(0, index / 24)
 		line.BackgroundColor3 = Theme.palette.grid
 		line.BorderSizePixel = 0
 		line.ZIndex = 0
 		line.Parent = page
 	end
-	for index = 1, 15 do
+	for index = 1, 31 do
 		local line = Instance.new("Frame")
-		line.Size = UDim2.fromScale(0.0015, 1)
-		line.Position = UDim2.fromScale(index / 16, 0)
+		line.Size = UDim2.fromScale(0.0009, 1)
+		line.Position = UDim2.fromScale(index / 32, 0)
 		line.BackgroundColor3 = Theme.palette.grid
 		line.BorderSizePixel = 0
 		line.ZIndex = 0
@@ -111,25 +116,25 @@ local function drawGrid(page: Frame)
 	end
 end
 
---- Mounts onto a sheet part. `face` decides which side of the paper this client
---- reads, which is what makes the two views mirror each other.
+--- Mounts onto the board. `flip` turns the whole page around for the player on
+--- the far side, so each reads their own half as the near one.
 function DuelPaperSkin.mount(
 	parent: Instance,
-	sheet: BasePart,
-	face: Enum.NormalId,
+	board: BasePart,
+	flip: boolean,
 	onAction: (id: string) -> ()
 ): DuelViewModel.Handle
 	local trove = Trove.new()
 
 	local surface = Instance.new("SurfaceGui")
-	surface.Name = "DuelSheet"
-	surface.Adornee = sheet
-	surface.Face = face
+	surface.Name = "DuelBoard"
+	surface.Adornee = board
+	surface.Face = Enum.NormalId.Top
 	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surface.PixelsPerStud = Theme.table.pixelsPerStud
 	surface.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	-- Lit like paper rather than like a screen: a glowing sheet is the fastest
-	-- way to lose the whole aesthetic.
+	-- Lit like paper, not like a screen. A glowing board is the fastest way to
+	-- lose the whole aesthetic.
 	surface.LightInfluence = 1
 	surface.Parent = parent
 	trove:Add(function()
@@ -140,52 +145,44 @@ function DuelPaperSkin.mount(
 	page.Size = UDim2.fromScale(1, 1)
 	page.BackgroundColor3 = Theme.palette.paper
 	page.BorderSizePixel = 0
+	page.Rotation = if flip then 180 else 0
 	page.Parent = surface
 	drawGrid(page)
 
-	--- Far edge of the sheet: whatever belongs to the rival.
-	local farZone = Instance.new("Frame")
-	farZone.Size = UDim2.fromScale(0.94, 0.3)
-	farZone.Position = UDim2.fromScale(0.03, 0.03)
-	farZone.BackgroundTransparency = 1
-	farZone.Parent = page
+	-- The drawn border of the pad, a hand's width in from the edge.
+	local border = Instance.new("Frame")
+	border.Size = UDim2.fromScale(0.96, 0.94)
+	border.Position = UDim2.fromScale(0.02, 0.03)
+	border.BackgroundTransparency = 1
+	border.Parent = page
+	stroke(border, 3)
 
-	--- The middle: whose turn it is, and the reveal when it comes.
-	local midZone = Instance.new("Frame")
-	midZone.Size = UDim2.fromScale(0.94, 0.22)
-	midZone.Position = UDim2.fromScale(0.03, 0.35)
-	midZone.BackgroundTransparency = 1
-	midZone.Parent = page
+	local function zone(y: number, height: number): Frame
+		local frame = Instance.new("Frame")
+		frame.Size = UDim2.fromScale(0.9, height)
+		frame.Position = UDim2.fromScale(0.05, y)
+		frame.BackgroundTransparency = 1
+		frame.Parent = page
+		return frame
+	end
 
-	--- Near edge: yours, within reach.
-	local nearZone = Instance.new("Frame")
-	nearZone.Size = UDim2.fromScale(0.94, 0.3)
-	nearZone.Position = UDim2.fromScale(0.03, 0.58)
-	nearZone.BackgroundTransparency = 1
-	nearZone.Parent = page
+	local farActions = zone(0.06, 0.09)
+	local farSlots = zone(0.18, 0.22)
+	local nearSlots = zone(0.5, 0.22)
+	local nearActions = zone(0.79, 0.13)
+	local emoteStrip = zone(0.94, 0.05)
 
-	--- The three buttons, along the bottom edge. They are the visual signature
-	--- of the game (§25), so they get the widest, closest strip of the page.
-	local actionZone = Instance.new("Frame")
-	actionZone.Size = UDim2.fromScale(0.94, 0.1)
-	actionZone.Position = UDim2.fromScale(0.03, 0.89)
-	actionZone.BackgroundTransparency = 1
-	actionZone.Parent = page
+	-- The net: from here across, it is theirs.
+	local net = Instance.new("Frame")
+	net.Size = UDim2.fromScale(0.86, 0.004)
+	net.Position = UDim2.fromScale(0.07, 0.45)
+	net.BackgroundColor3 = Theme.palette.ink
+	net.BorderSizePixel = 0
+	net.Parent = page
 
-	local actionLayout = Instance.new("UIListLayout")
-	actionLayout.FillDirection = Enum.FillDirection.Horizontal
-	actionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	actionLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	actionLayout.Padding = UDim.new(0.012, 0)
-	actionLayout.Parent = actionZone
-
-	local header = marker("", UDim2.fromScale(1, 0.4), Theme.palette.ink)
-	header.Parent = midZone
-
-	local subheader = marker("", UDim2.fromScale(1, 0.22), Theme.palette.inkSoft)
-	subheader.Position = UDim2.fromScale(0, 0.42)
-	subheader.Font = Theme.fonts.hand
-	subheader.Parent = midZone
+	local banner = text("", UDim2.fromScale(0.5, 0.05), Theme.palette.ink, Theme.fonts.marker)
+	banner.Position = UDim2.fromScale(0.25, 0.4)
+	banner.Parent = page
 
 	local function clear(container: Instance)
 		for _, child in container:GetChildren() do
@@ -195,44 +192,48 @@ function DuelPaperSkin.mount(
 		end
 	end
 
-	--- A taped cut-out. Everything pressable on the page is one of these.
+	--- A pressable cut-out.
 	---
-	--- Returns a container the caller sizes and places exactly as it would a
-	--- plain button. Inside it, the DRAWING is the size the composition wants,
-	--- and an invisible TOUCH TARGET sits over it, `Theme.touchPadding` times
-	--- larger and overflowing the container on every side.
-	---
-	--- These buttons live in world space on the sheet, seen at an angle, pressed
-	--- with a thumb on the primary platform. A target the size of the drawing
-	--- would demand aim that a thumb does not have -- and a button that looks
-	--- right and misses is worse than one that looks slightly wrong.
-	local function cutout(spec: DuelViewModel.Button, size: UDim2, seed: number): Frame
+	--- Returns a container the caller places as it would a plain button. Inside,
+	--- the DRAWING is the size the composition wants and an invisible TOUCH
+	--- TARGET sits over it, `Theme.touchPadding` times larger. These buttons
+	--- live in world space, seen at an angle, pressed with a thumb on the
+	--- primary platform: a target the size of the drawing demands aim a thumb
+	--- does not have, and a button that looks right and misses is worse than one
+	--- that looks slightly wrong.
+	local function cutout(spec: DuelViewModel.Button, size: UDim2, seed: number, big: boolean): Frame
 		local pad = Theme.touchPadding
+		local scheme = FILL_FOR[spec.id]
 
 		local container = Instance.new("Frame")
 		container.Size = size
 		container.BackgroundTransparency = 1
 
-		local element = Instance.new("TextLabel")
-		element.Size = UDim2.fromScale(1, 1)
-		element.BackgroundColor3 = if spec.enabled then Theme.palette.paper else Theme.palette.grid
-		element.TextColor3 = if spec.enabled then TONE_COLORS[spec.tone] else Theme.palette.inkSoft
-		element.Text = spec.label
-		element.TextScaled = true
-		element.Font = Theme.fonts.marker
-		element.Rotation = tiltFor(seed)
-		element.BorderSizePixel = 0
-		element.Parent = container
-		corner(element, 0.12)
+		local face = Instance.new("TextLabel")
+		face.Size = UDim2.fromScale(1, 1)
+		face.Text = spec.label
+		face.TextScaled = true
+		face.Font = Theme.fonts.marker
+		face.Rotation = tiltFor(seed)
+		face.BorderSizePixel = 0
+		face.Parent = container
 
-		local edge = Instance.new("UIStroke")
-		edge.Color = TONE_COLORS[spec.tone]
-		edge.Thickness = 2
-		edge.Transparency = if spec.enabled then 0 else 0.6
-		edge.Parent = element
+		if big and scheme then
+			-- Yours: filled, and the colour says what it does before the icon
+			-- gets read.
+			face.BackgroundColor3 = scheme.fill
+			face.TextColor3 = scheme.line
+			face.BackgroundTransparency = if spec.enabled then 0 else 0.55
+		else
+			-- Theirs, and everything else: outline only, on bare paper.
+			face.BackgroundTransparency = 1
+			face.TextColor3 = if spec.enabled then Theme.palette.ink else Theme.palette.inkSoft
+		end
 
-		-- Centred on the drawing and larger than it, so the extra reach is even
-		-- on all four sides. On top, so it takes the press.
+		face.TextTransparency = if spec.enabled then 0 else 0.45
+		corner(face, 0.18)
+		stroke(face, if big then 3 else 2, if spec.enabled then 0 else 0.6)
+
 		local target = Instance.new("TextButton")
 		target.Size = UDim2.fromScale(pad, pad)
 		target.Position = UDim2.fromScale((1 - pad) / 2, (1 - pad) / 2)
@@ -240,15 +241,14 @@ function DuelPaperSkin.mount(
 		target.Text = ""
 		target.Active = spec.enabled
 		target.AutoButtonColor = false
-		target.ZIndex = element.ZIndex + 1
+		target.ZIndex = face.ZIndex + 1
 		target.Parent = container
 
 		if spec.enabled then
 			trove:Connect(target.Activated, function()
 				-- The press answers before the server has said anything.
-				-- plan-etapas.md Etapa 2: every action reports immediately.
-				TweenService:Create(element, TweenInfo.new(Theme.motion.snap), {
-					Rotation = tiltFor(seed) + 4,
+				TweenService:Create(face, TweenInfo.new(Theme.motion.snap), {
+					Rotation = tiltFor(seed) + 5,
 				}):Play()
 				SoundController.play(SOUND_FOR[spec.id] or "offerPlaced")
 				onAction(spec.id)
@@ -258,156 +258,149 @@ function DuelPaperSkin.mount(
 		return container
 	end
 
-	--- One line of a panel: an object with its shape, or plain text.
-	local function drawRow(container: Instance, row: DuelViewModel.Row, index: number, height: number): Frame
-		local line = Instance.new("Frame")
-		line.Size = UDim2.fromScale(1, height)
-		line.Position = UDim2.fromScale(0, (index - 1) * height)
-		line.BackgroundTransparency = 1
-		line.Parent = container
-
-		local textLeft = 0.01
-		if row.itemId then
-			local look = Theme.items[row.itemId] or Theme.defaultItem
-
-			local blob = Instance.new("Frame")
-			blob.Size = UDim2.fromScale(0.05, 0.72)
-			blob.Position = UDim2.fromScale(0.01, 0.14)
-			blob.BackgroundColor3 = look.color
-			blob.BorderSizePixel = 0
-			blob.Rotation = tiltFor(index * 3)
-			blob.Parent = line
-			corner(blob, look.corner)
-
-			local square = Instance.new("UIAspectRatioConstraint")
-			square.AspectRatio = 1
-			square.Parent = blob
-
-			local outline = Instance.new("UIStroke")
-			outline.Color = Theme.palette.ink
-			outline.Thickness = 2
-			outline.Parent = blob
-
-			textLeft = 0.08
-		end
-
-		local name = handwriting(row.label, UDim2.fromScale(0.42, 0.8), TONE_COLORS[row.tone])
-		name.Position = UDim2.fromScale(textLeft, 0.1)
-		name.Parent = line
-
-		local detail = handwriting(row.detail or "", UDim2.fromScale(0.18, 0.6), Theme.palette.inkSoft)
-		detail.Position = UDim2.fromScale(0.52, 0.2)
-		detail.Parent = line
-
-		local count = #row.buttons
-		if count > 0 then
-			local spread = count > 2
-			local width = if spread then 0.96 / count else 0.14
-			local origin = if spread then 0.02 else 0.7
-			for slot, spec in row.buttons do
-				local element = cutout(spec, UDim2.fromScale(width * 0.9, 0.74), index * 7 + slot)
-				element.Position = UDim2.fromScale(origin + (slot - 1) * width, 0.13)
-				element.Parent = line
-			end
-		end
-
-		return line
-	end
-
-	--- The Revelación™ (docs/gdd.md §29, plan-etapas.md Etapa 4). One wrapper
-	--- comes off at a time, because everything arriving at once is a list and
-	--- everything arriving in order is a reveal.
+	--- A standing paper cut-out of an object: the shape with a scissor-cut white
+	--- border, and a soft shadow at its foot so it reads as standing on the
+	--- board rather than printed on it.
 	---
-	--- Each row starts invisible and slightly off, then snaps into place on its
-	--- own delay. Timings come from Theme: how fast a thing lands is part of how
-	--- the game feels, and another theme may want another rhythm.
-	local function revealRow(line: Frame, index: number)
-		local target = line.Position
-		line.Position = target + UDim2.fromScale(0, 0.04)
+	--- Phase one of two. Card A6 replaces these one at a time with real folded
+	--- paper models, highest rarity first, so the board can look right now
+	--- instead of waiting for twelve of them.
+	local function paperFigure(itemId: string, parent: Frame)
+		local look = Theme.items[itemId] or Theme.defaultItem
 
-		for _, element in line:GetDescendants() do
-			if element:IsA("TextLabel") or element:IsA("Frame") then
-				(element :: any).Visible = false
-			end
-		end
+		local shadow = Instance.new("Frame")
+		shadow.Size = UDim2.fromScale(0.5, 0.1)
+		shadow.Position = UDim2.fromScale(0.25, 0.82)
+		shadow.BackgroundColor3 = Theme.palette.shadow
+		shadow.BackgroundTransparency = 0.35
+		shadow.BorderSizePixel = 0
+		shadow.Parent = parent
+		corner(shadow, 0.5)
 
-		-- Registered in the trove, like every other timer this file starts: a
-		-- duel that ends mid-reveal must not leave animations running.
-		trove:Delay((index - 1) * Theme.motion.revealStagger, function()
-			for _, element in line:GetDescendants() do
-				if element:IsA("TextLabel") or element:IsA("Frame") then
-					(element :: any).Visible = true
-				end
-			end
-			TweenService:Create(line, TweenInfo.new(Theme.motion.place, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-				Position = target,
-			}):Play()
-			SoundController.play("revealTear")
-		end)
+		local figure = Instance.new("Frame")
+		figure.Size = UDim2.fromScale(0.52, 0.62)
+		figure.Position = UDim2.fromScale(0.24, 0.16)
+		figure.BackgroundColor3 = look.color
+		figure.BorderSizePixel = 0
+		figure.Rotation = tiltFor(#itemId)
+		figure.Parent = parent
+		corner(figure, look.corner)
+
+		-- The white margin left by the scissors, then the pen line around it.
+		local cut = Instance.new("UIStroke")
+		cut.Color = Color3.fromRGB(252, 250, 244)
+		cut.Thickness = 5
+		cut.Parent = figure
+
+		local aspect = Instance.new("UIAspectRatioConstraint")
+		aspect.AspectRatio = 0.85
+		aspect.Parent = figure
 	end
 
-	local function drawPanel(container: Frame, panel: DuelViewModel.Panel)
-		local title = handwriting(panel.title, UDim2.fromScale(1, 0.16), Theme.palette.inkSoft)
-		title.Parent = container
+	--- One dashed slot, with whatever is standing in it.
+	local function drawSlot(container: Frame, row: DuelViewModel.Row, index: number, count: number)
+		local width = 1 / math.max(count, 3)
 
-		local rowHeight = 0.2
+		local slot = Instance.new("Frame")
+		slot.Size = UDim2.fromScale(width * 0.86, 0.92)
+		slot.Position = UDim2.fromScale((index - 1) * width + width * 0.07, 0.04)
+		slot.BackgroundTransparency = 1
+		slot.Parent = container
+		stroke(slot, 2, 0.45)
+		corner(slot, 0.06)
+
+		if row.itemId then
+			paperFigure(row.itemId, slot)
+		end
+
+		local caption = text(row.label, UDim2.fromScale(1, 0.16), Theme.palette.ink, Theme.fonts.hand)
+		caption.Position = UDim2.fromScale(0, 0.84)
+		caption.Parent = slot
+
+		if row.detail and row.detail ~= "" then
+			local note = text(row.detail, UDim2.fromScale(1, 0.12), Theme.palette.inkSoft, Theme.fonts.hand)
+			note.Position = UDim2.fromScale(0, 0.02)
+			note.Parent = slot
+		end
+
+		local buttons = #row.buttons
+		for slotIndex, spec in row.buttons do
+			local element = cutout(spec, UDim2.fromScale(0.9 / buttons, 0.2), index * 7 + slotIndex, false)
+			element.Position = UDim2.fromScale(0.05 + (slotIndex - 1) * (0.9 / buttons), 0.66)
+			element.Parent = slot
+		end
+	end
+
+	local function drawStrip(container: Frame, panel: DuelViewModel.Panel)
+		clear(container)
+		local count = math.max(#panel.rows, 3)
 		for index, row in panel.rows do
-			local line = drawRow(container, row, index + 1, rowHeight)
-			if panel.kind == "reveal" then
-				revealRow(line, index)
-			end
+			drawSlot(container, row, index, count)
 		end
 	end
 
 	local function render(viewModel: DuelViewModel.ViewModel)
-		header.Text = viewModel.header
-		subheader.Text = viewModel.subheader
-
-		clear(farZone)
-		clear(midZone)
-		clear(nearZone)
-		clear(actionZone)
-
-		-- Rebuilt because clear() removed them along with everything else.
-		header.Parent = midZone
-		subheader.Parent = midZone
+		banner.Text = viewModel.header
+		clear(farActions)
+		clear(farSlots)
+		clear(nearSlots)
+		clear(nearActions)
+		clear(emoteStrip)
 
 		for _, panel in viewModel.panels do
 			if panel.kind == "rival" then
-				drawPanel(farZone, panel)
+				drawStrip(farSlots, panel)
+			elseif panel.kind == "emotes" then
+				local row = panel.rows[1]
+				if row then
+					local count = #row.buttons
+					for index, spec in row.buttons do
+						local element = cutout(spec, UDim2.fromScale(0.9 / count, 1), index * 3, false)
+						element.Position = UDim2.fromScale((index - 1) * (0.95 / count), 0)
+						element.Parent = emoteStrip
+					end
+				end
 			elseif panel.kind == "reveal" then
-				clear(midZone)
-				drawPanel(midZone, panel)
-			elseif panel.kind ~= "emotes" then
-				drawPanel(nearZone, panel)
+				drawStrip(nearSlots, panel)
+			else
+				drawStrip(nearSlots, panel)
 			end
 		end
 
+		-- Yours: large, filled, along the near edge. Theirs: the same three in
+		-- outline at the far edge, so you can see what they are looking at
+		-- without being able to touch it.
+		local count = #viewModel.actions
 		for index, spec in viewModel.actions do
-			local element = cutout(spec, UDim2.fromScale(0.22, 0.92), index * 11)
-			element.LayoutOrder = index
-			element.Parent = actionZone
+			local mine = cutout(spec, UDim2.fromScale(0.9 / count, 1), index * 11, true)
+			mine.Position = UDim2.fromScale((index - 1) * (0.95 / count), 0)
+			mine.Parent = nearActions
+
+			local theirs = cutout(
+				{ id = `mirror:{spec.id}`, label = spec.label, enabled = false, tone = spec.tone },
+				UDim2.fromScale(0.6 / count, 1),
+				index * 5,
+				false
+			)
+			theirs.Position = UDim2.fromScale(0.2 + (index - 1) * (0.62 / count), 0)
+			theirs.Parent = farActions
 		end
 	end
-
-	--- Reactions land big in the middle of the page: they are meant to be seen
-	--- from the other side of the table.
-	local flash = marker("", UDim2.fromScale(0.25, 0.18), Theme.palette.ink)
-	flash.Position = UDim2.fromScale(0.375, 0.4)
-	flash.Parent = page
 
 	local flashGeneration = 0
 
 	local function flashEmote(symbol: string, mine: boolean)
 		SoundController.play("emote")
-		flash.Text = symbol
-		flash.Position = UDim2.fromScale(if mine then 0.55 else 0.2, 0.4)
+
+		local mark = text(symbol, UDim2.fromScale(0.12, 0.1), Theme.palette.ink, Theme.fonts.marker)
+		mark.Position = UDim2.fromScale(0.44, if mine then 0.62 else 0.3)
+		mark.Parent = page
 
 		flashGeneration += 1
 		local generation = flashGeneration
 		trove:Delay(Theme.motion.emote, function()
 			if flashGeneration == generation then
-				flash.Text = ""
+				mark:Destroy()
 			end
 		end)
 	end

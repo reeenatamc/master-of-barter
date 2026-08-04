@@ -217,18 +217,18 @@ local motion = {
 --- client draw its own face of it and never assemble the rival's view anywhere
 --- the rival could reach.
 local tableSpec = {
-	--- Width and depth of the surface. Wide enough to frame two avatars.
-	topSize = Vector3.new(12, 0.4, 7),
-	--- Height of the surface off the floor.
+	--- The table the board rests on.
+	topSize = Vector3.new(16, 0.6, 12),
 	height = 3,
-	--- The sheet. Deliberately thin: at this thickness it reads as paper rather
-	--- than as a board.
-	sheetSize = Vector3.new(9, 5.5, 0.08),
-	--- How far back each player stands from the sheet.
-	standDistance = 4.5,
-	--- Resolution of the surface drawn on the sheet. Higher looks sharper and
-	--- costs more; this is the knob for docs/gdd.md §38's low-end budget.
-	pixelsPerStud = 96,
+	--- The board itself: a thick pad of graph paper, lying FLAT. Wider than it
+	--- is deep, like the references, so the two strips of slots and the two
+	--- button rows all fit without crowding.
+	boardSize = Vector3.new(13, 0.35, 9.5),
+	--- How far back each player stands from the near edge.
+	standDistance = 6,
+	--- Resolution of the surface drawn on the board. The knob for §38's low-end
+	--- budget: higher is sharper and costs more.
+	pixelsPerStud = 110,
 }
 
 --- [propuesta] Where the camera sits during a duel. Over your own shoulder,
@@ -236,15 +236,17 @@ local tableSpec = {
 --- of docs/gdd.md §11. Fixed, not orbiting: §11 says fija, and a camera the
 --- player has to manage is one more thing between them and the game.
 local camera = {
-	--- Behind your own side of the sheet.
-	distance = 11,
-	--- Eye height above the table.
-	height = 7.5,
-	--- What it aims at: the middle of the sheet, so the rival's head sits just
-	--- above the far edge.
-	aimHeight = 4.5,
-	--- Seconds to glide in when the duel opens. Cutting is jarring; sliding in
-	--- reads as sitting down at the table.
+	--- Behind your own edge of the board.
+	distance = 9,
+	--- Eye height. High enough to read the whole board at a glance, low enough
+	--- that the rival's avatar still stands above the far edge -- seeing them is
+	--- part of reading them (§11).
+	height = 9.5,
+	--- Where it aims: just past the middle of the board, so your own half sits
+	--- comfortably in the lower screen and theirs in the upper.
+	aimOffset = 1.5,
+	--- Seconds to glide in. Cutting is jarring; sliding in reads as sitting down
+	--- at the table.
 	settle = 0.8,
 }
 

@@ -11,10 +11,11 @@
 	as a finished offer, and validates it from scratch (docs/arquitectura.md §4).
 	Nothing here decides anything the server will not re-decide.
 
-	Two skins answer to the same contract: the paper sheet standing on the table
-	(card E2) and the flat panel from E0, kept as a fallback. `Theme.screen`
-	picks between them, and nothing else in this file knows which is running --
-	that is what the contract bought.
+	Two skins answer to the same contract: the paper board lying on the table
+	(card E2) and the flat panel from E0, kept alive as a fallback until the
+	mobile test approves pressing buttons in world space. `Theme.screen` picks
+	between them, and nothing else in this file knows which is running -- that is
+	what the contract bought.
 ]]
 
 local Players = game:GetService("Players")
@@ -136,11 +137,15 @@ local function teardown()
 	mountedDuelId = nil
 end
 
---- Slot 1 stands on the negative side of the sheet and so reads its Back face;
---- slot 2 reads the Front. Derived from the same rule DuelSceneService uses to
---- place them, which is why neither has to tell the other.
-local function faceFor(slot: Types.Slot): Enum.NormalId
-	return if slot == 1 then Enum.NormalId.Back else Enum.NormalId.Front
+--- The board lies flat and has one top face, so both players draw on the same
+--- side of it -- each on their own local surface, seeing only theirs. Slot 2
+--- reads the board upside down from where they stand, so their page is turned
+--- around and "near" is near for both.
+---
+--- Derived from the same rule DuelSceneService uses to place them, which is why
+--- neither has to tell the other.
+local function flippedFor(slot: Types.Slot): boolean
+	return slot ~= 1
 end
 
 local function mountFlat(playerGui: Instance)
@@ -148,16 +153,16 @@ local function mountFlat(playerGui: Instance)
 	refresh()
 end
 
---- Puts the duel on the paper sheet standing on the table. Yields until the
---- table has replicated, which is why it runs in its own thread.
+--- Puts the duel on the paper board lying on the table. Yields until the board
+--- has replicated, which is why it runs in its own thread.
 local function mountPaper(playerGui: Instance, state: Types.DuelState)
 	local model = workspace:WaitForChild(`Duel_{state.duelId}`, 10)
-	local sheet = if model then model:WaitForChild("Sheet", 5) else nil
+	local sheet = if model then model:WaitForChild("Board", 5) else nil
 
 	if not sheet or not sheet:IsA("BasePart") then
 		-- Falling back rather than failing: a player with no screen at all
 		-- cannot even tell you what went wrong.
-		warn("[UI] the duel table never arrived; using the flat screen instead")
+		warn("[UI] the duel board never arrived; using the flat screen instead")
 		mountFlat(playerGui)
 		return
 	end
@@ -165,7 +170,7 @@ local function mountPaper(playerGui: Instance, state: Types.DuelState)
 	local trove = Trove.new()
 	sceneTrove = trove
 
-	handle = DuelPaperSkin.mount(playerGui, sheet, faceFor(state.yourSlot), handleAction)
+	handle = DuelPaperSkin.mount(playerGui, sheet, flippedFor(state.yourSlot), handleAction)
 	DuelCamera.focus(sheet, state.yourSlot)
 	trove:Add(DuelCamera.release)
 
