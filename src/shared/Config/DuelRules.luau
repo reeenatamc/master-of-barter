@@ -28,9 +28,13 @@ local limits = {
 --- The watchdog in docs/arquitectura.md §5 uses these to guarantee no duel can
 --- hang forever. A phase with no entry here simply has no deadline, which is
 --- correct for terminal phases like Cancelled.
+--- TEMPORAL (prueba manual): 5 min por fase, para poder tipear comandos en la
+--- Command Bar sin que la fase venza a mitad. Los valores de diseño son
+--- BuildingOffers = 45 y Negotiating = 30, y hay que volver a ellos: docs/gdd.md
+--- §7 fija duelos de 2-3 minutos, y con 5 min por fase el duelo dura 10.
 local phaseSeconds: { [string]: number } = {
-	BuildingOffers = 45,
-	Negotiating = 30,
+	BuildingOffers = 300,
+	Negotiating = 300,
 	Reveal = 8,
 	Results = 12,
 }
@@ -55,7 +59,7 @@ local secondsBeforeBot = 15
 ---
 --- Off by default. Note that leaks are NOT gated by this: a non-zero live count
 --- always warns. A flag can hide a confirmation, never a failure.
-local debugLogs = false
+local debugLogs = true
 
 return {
 	limits = limits,

@@ -11,6 +11,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
@@ -154,6 +155,27 @@ function DuelController.fakeCall()
 	DuelController.negotiate("FakeCall")
 end
 
+--- TEMP: an entirely honest offer -- your cheapest copy plus your best one.
+--- The counterpart to offerDemo, so two clients can play cheat vs honest.
+function DuelController.offerHonest()
+	local state = current
+	if not state then
+		warn("[Duel] no state yet -- is there a duel running?")
+		return
+	end
+
+	local cheap, best = state.yourHand[1], state.yourHand[#state.yourHand - 1]
+	if not cheap or not best then
+		warn("[Duel] not enough copies in hand")
+		return
+	end
+
+	DuelController.offer({
+		{ copyId = cheap.copyId, isFake = false, claim = cheap.itemId },
+		{ copyId = best.copyId, isFake = false, claim = best.itemId },
+	})
+end
+
 --- TEMP: re-sends your offer with one extra forgery, which is the cheapest way
 --- to satisfy a raise. Real amendment UI is card E2.
 function DuelController.amendDemo()
@@ -172,11 +194,50 @@ function DuelController.amendDemo()
 	DuelController.offer(requests)
 end
 
+--- TEMP: drives the prototype from the keyboard until the real UI exists (E2).
+---
+--- Why keys and not the command bar: Studio's command bar runs in its own Lua
+--- environment, with its own module cache AND its own globals. `require` there
+--- hands back a second, empty copy of this module, and `_G` set here is not the
+--- `_G` the bar sees. There is no way to reach the live controller from that
+--- console. A key binding runs inside the client itself, so it just works.
+local function bindDebugKeys()
+	local UserInputService = game:GetService("UserInputService")
+
+	local actions: { [Enum.KeyCode]: () -> () } = {
+		[Enum.KeyCode.One] = DuelController.offerDemo,
+		[Enum.KeyCode.Two] = DuelController.offerHonest,
+		[Enum.KeyCode.Three] = DuelController.accept,
+		[Enum.KeyCode.Four] = DuelController.decline,
+		[Enum.KeyCode.Five] = DuelController.raise,
+		[Enum.KeyCode.Six] = DuelController.amendDemo,
+		[Enum.KeyCode.Seven] = DuelController.fakeCall,
+	}
+
+	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
+		-- `processed` is true when Roblox already used the key for chat or a
+		-- text box, so typing a message never fires a duel action.
+		if processed then
+			return
+		end
+		local action = actions[input.KeyCode]
+		if action then
+			action()
+		end
+	end)
+
+	print("[Duel] keys: 1 offer 1real+1fake · 2 offer 2real · 3 accept · 4 decline · 5 raise · 6 amend · 7 ES FAKE")
+end
+
 function DuelController.start()
 	Net.get(Net.names.DuelState).OnClientEvent:Connect(function(state: Types.DuelState)
 		current = state
 		dump(state)
 	end)
+
+	if DuelRules.debugLogs then
+		bindDebugKeys()
+	end
 
 	-- Asking to queue happens AFTER the handler above is connected. Otherwise
 	-- the first DuelState could arrive with nobody listening, and a
