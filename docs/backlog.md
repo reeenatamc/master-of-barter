@@ -16,6 +16,9 @@ Objetivo: base de toda la mecánica. Criterios: selecciono 1–4 objetos de mi i
 >
 > **Sub-tareas:** A1.1 duelo mínimo (dos jugadores, copias de duelo, `DuelState` por destinatario) ✅ · A1.2 watchdog de fase + Trove · A1.3 ofertas y validación.
 >
+> **A1.3 — condición de cierre heredada de A1.2:** test determinista de doble `finish()`: tres caminos (accept / decline / watchdog) hacia `finish()` disparables desde el servidor; nace acá, no antes. En A1.2 la carrera casi no existe (una desconexión cancela el watchdog antes de que dispare), así que el test se escribió recién cuando los caminos que compiten son los definitivos, en vez de escribirlo dos veces.
+> Por qué importa más de lo que parece: en cuanto aceptar una oferta cuelgue el guardado del perfil del fin del duelo (Etapa 2, pero el camino se abre acá), la guarda de idempotencia deja de ser defensiva y pasa a ser **lo único que impide un doble guardado**. No es una optimización, es la red.
+>
 > **A1.2 — condición de cierre, no negociable:** el Trove nace en **la misma tarjeta** que el watchdog, no después. En el momento en que exista el primer `task.delay`/timer de deadline, ya tiene que estar registrado en el Trove del duelo. No puede haber ni una fase intermedia con un timer sin su limpieza.
 > Test obligatorio de A1.2: un cliente cierra su ventana a mitad de `BuildingOffers` → el duelo no queda colgado y no sobrevive ningún timer. Es el primer test de desconexión real del proyecto; conviene descubrir ahí que el embudo y la limpieza aguantan, con un duelo vacío, y no en Etapa 2 con datos de por medio.
 

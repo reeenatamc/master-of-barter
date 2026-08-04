@@ -37,8 +37,17 @@ local phaseSeconds = {
 --- How long the queue waits for a human before a bot steps in (backlog D1).
 local secondsBeforeBot = 15
 
+--- Diagnostics, not balance. Turn on to trace the duel lifecycle in Output,
+--- including the Trove live-object count when a duel ends and duplicate
+--- finish() calls being ignored.
+---
+--- Off by default. Note that leaks are NOT gated by this: a non-zero live count
+--- always warns. A flag can hide a confirmation, never a failure.
+local debugLogs = false
+
 return {
 	limits = limits,
 	phaseSeconds = phaseSeconds,
 	secondsBeforeBot = secondsBeforeBot,
+	debugLogs = debugLogs,
 }

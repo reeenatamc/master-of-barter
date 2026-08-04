@@ -6,15 +6,14 @@
 	client receives a DuelState. No offers, no negotiation, no timers yet --
 	those are A1.2 and A2.
 
+	Card A1.2 adds the phase watchdog and the per-duel Trove, together: the
+	moment a timer exists, its cleanup exists too.
+
 	The one rule this module exists to protect (docs/gdd.md §39): every table in
 	here is server-only. Nothing leaves except through `stateFor`, which builds
 	a per-recipient view. Today the only thing being censored is the rival's
 	hand (they get a count, not the items); once forgeries exist, the same
 	funnel is what keeps `isFake` from ever reaching the other client.
-
-	No Trove yet on purpose: an A1.1 duel holds zero connections and zero
-	timers, so there is nothing to leak. It arrives with A1.2, when phase
-	watchdogs do.
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -25,6 +24,7 @@ ReplicatedStorage:WaitForChild("Shared")
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
+local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 type Slot = Types.Slot
@@ -50,6 +50,9 @@ type Duel = {
 	deadline: number,
 	--- Indexed by slot: sides[1] and sides[2].
 	sides: { Side },
+	--- Owns every connection and timer this duel creates. Cleaned on finish,
+	--- whichever way the duel ends.
+	trove: Trove.Trove,
 }
 
 local DuelService = {}
@@ -124,40 +127,86 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		return nil
 	end
 
+	local phaseSeconds = DuelRules.phaseSeconds.BuildingOffers
+
 	local duel: Duel = {
 		id = HttpService:GenerateGUID(false),
 		phase = "BuildingOffers",
 		round = 1,
 		turn = 1,
-		deadline = workspace:GetServerTimeNow() + DuelRules.phaseSeconds.BuildingOffers,
+		deadline = workspace:GetServerTimeNow() + phaseSeconds,
 		sides = {
 			{ slot = 1, player = playerA, hand = buildStarterHand(), raisesLeft = DuelRules.limits.raiseOffersPerSide, fakeCallUsed = false },
 			{ slot = 2, player = playerB, hand = buildStarterHand(), raisesLeft = DuelRules.limits.raiseOffersPerSide, fakeCallUsed = false },
 		},
+		trove = Trove.new(),
 	}
 
 	duels[duel.id] = duel
 	duelIdOf[playerA] = duel.id
 	duelIdOf[playerB] = duel.id
 
+	-- The watchdog is created and registered in the same statement. There is no
+	-- window, not even one line wide, where this timer exists without its
+	-- cleanup (docs/arquitectura.md §5, backlog card A1.2).
+	duel.trove:Delay(phaseSeconds, function()
+		DuelService.expirePhase(duel.id)
+	end)
+
 	broadcast(duel)
 	return duel.id
 end
 
---- Ends a duel and forgets it. `reason` is for the log only until A3 computes
---- real results.
-function DuelService.finish(duelId: string, reason: string)
+--- Phase watchdog: no phase may hang forever (docs/arquitectura.md §5).
+--- A1.2 scope is deliberately one transition only -- BuildingOffers expires
+--- into Cancelled and the duel ends. Reaching Negotiating requires offers,
+--- which is A1.3.
+function DuelService.expirePhase(duelId: string)
 	local duel = duels[duelId]
 	if not duel then
 		return
 	end
 
+	local expired = duel.phase
+	duel.phase = "Cancelled"
+	broadcast(duel)
+
+	DuelService.finish(duelId, `{expired} timed out`)
+end
+
+--- Ends a duel, releases everything it owned, and forgets it. `reason` is for
+--- the log only until A3 computes real results.
+---
+--- Idempotent by design. Two paths race towards this: a disconnect and the
+--- phase watchdog can fire for the same duel at nearly the same moment. The
+--- second call must do nothing, because in Etapa 2 a profile save will hang off
+--- the end of a duel and running it twice would corrupt data.
+function DuelService.finish(duelId: string, reason: string)
+	local duel = duels[duelId]
+	if not duel then
+		if DuelRules.debugLogs then
+			print(`[DuelService] finish({duelId}) ignored: already finished`)
+		end
+		return
+	end
+
+	-- Forget the duel BEFORE cleaning up, so anything that cleanup triggers and
+	-- that calls back in here takes the no-op path above.
+	duels[duelId] = nil
 	for _, side in duel.sides do
 		duelIdOf[side.player] = nil
 	end
-	duels[duelId] = nil
 
-	print(`[DuelService] duel {duelId} ended: {reason}`)
+	duel.trove:Clean()
+
+	local live = duel.trove:Live()
+	if live ~= 0 then
+		-- Never gated behind debugLogs: a leak is not something a config flag
+		-- gets to hide.
+		warn(`[DuelService] duel {duelId} LEAK: expected 0 live objects, got {live}`)
+	elseif DuelRules.debugLogs then
+		print(`[DuelService] duel {duelId} ended ({reason}): expected 0 live objects, got 0`)
+	end
 end
 
 --- Wires the service. Called by Main in boot order.
