@@ -106,6 +106,20 @@ function DuelController.offerDemo()
 	})
 end
 
+--- Sends a negotiation action. Takes the raw value so an invalid one can be
+--- fired from the Command Bar to exercise server validation.
+function DuelController.negotiate(action: string)
+	Net.get(Net.names.DuelNegotiate):FireServer(action)
+end
+
+function DuelController.accept()
+	DuelController.negotiate("Accept")
+end
+
+function DuelController.decline()
+	DuelController.negotiate("Decline")
+end
+
 function DuelController.start()
 	Net.get(Net.names.DuelState).OnClientEvent:Connect(function(state: Types.DuelState)
 		current = state

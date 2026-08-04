@@ -31,6 +31,9 @@ Objetivo: el loop del meme. Criterios: turnos alternos validados en servidor; Pe
 
 **A3 · Como jugador quiero una revelación dramática al aceptarse un trade** — P0 · M (v1 simple) / L (versión final Etapa 4)
 Objetivo: el momento estrella y clipeable. Criterios: al aceptar, se desenvuelve todo con animación+sonido; transferencias y Clips aplicados atómicamente en servidor; ambos ven el mismo resultado. Dependencias: A2, C2. Pruebas: desconexión exactamente durante la revelación → estado consistente al reconectar.
+> **Re-verificación heredada de A2.1 — no dar por probado lo que no se probó.** El `runFinishRaceCheck` de A2.1 pasa, pero cubre menos de lo que parece: hoy el segundo camino terminal queda frenado por el **registro** (`duels[id]` ya está en nil cuando llega), no por el claim de `resolving`. Son dos garantías distintas y hoy solo se ejercita una. Un PASS significa "los dos caminos no se pisaron en la resolución", **no** "el claim está probado".
+> El claim existe para proteger el broadcast si alguna vez aparece un yield entre entrar en la fase y emitirla. Hoy no hay ninguno, así que nunca llega a actuar. **En cuanto A3 introduzca un yield en el camino de Reveal** — transferencias, DataStore, cualquier espera entre `phase = "Reveal"` y el broadcast — el claim pasa de decorativo a load-bearing, y `runFinishRaceCheck` tiene que volver a correrse **con el yield presente**, que es el único momento en que esa ventana se prueba de verdad.
+> Sin esta nota, en A3 nadie se acuerda de que el test de A2.1 no cubría ese caso y se da por probado algo que no lo está.
 
 **A4 · Como jugador quiero una ficha ¡ES FAKE! única por duelo** — P0 · S
 Criterios: usable una vez, solo en fase de negociación; acierto → me llevo la oferta rival; fallo → pierdo mi apuesta; queda registrada en analítica. Dependencias: A2. Riesgo: es la mecánica 🧪 más incierta — instrumentarla bien para decidir su futuro con datos.
@@ -135,3 +138,20 @@ Criterios: checklist para lanzar una temporada (tema + squishies + misiones) en 
 
 ## Fuera del backlog (recordatorio de disciplina)
 Trade-Up Run · mesas 4–6 · espectadores · torneos · trading libre entre jugadores · moneda dura · rankings globales. Viven en el GDD §40. Cada vez que tientes con una, pregunta: ¿qué P0 estoy retrasando a cambio?
+
+---
+
+## Verificación pendiente — punto de control tras A3
+
+Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en Studio**. Al terminar A3 el duelo se juega de punta a punta, y una sola sesión cubre todo esto de una vez. Ninguna se da por buena hasta entonces.
+
+| Qué | De dónde viene | Por qué importa |
+|---|---|---|
+| **Camino de desconexión** — el jugador que se queda recibe `Cancelled` en vez de quedar mirando un estado muerto | commit `72114f7` | 🔴 **Prioridad alta.** Es un camino de desconexión que cambió. Un bug acá no da error visible y en Etapa 2 corrompe datos. Se prueba en el primer punto de control sí o sí. |
+| Payload del rival: solo `appearance`, `claim`, `wrappedId` | A1.3 | Verificado por lectura; falta el runtime (que la serialización del RemoteEvent no agregue nada). Ver la nota en A1.3. |
+| Aceptar / Rechazar, validación de turno, acciones no implementadas | A2.1 | Lógica de juego pura, agrupable. |
+| Timeout de `Negotiating` → `Cancelled` con contador en 0 | A2.1 | Lógica de juego pura, agrupable. |
+| `runFinishRaceCheck()` → PASS | A2.1 | Cubre menos de lo que parece: ver la nota en A3 sobre el claim de `resolving`. |
+| Pedir más: límite de 3 por lado, enmienda validada por cantidad | A2.2 | Lógica de juego pura, agrupable. |
+
+**No agrupable** (regla de CLAUDE.md): nada que toque ProfileStore, guardado o `ProcessReceipt` entra en esta lista. Eso se prueba cuando se escribe.

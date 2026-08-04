@@ -502,11 +502,132 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Negotiation (card A2.1)
+
+--- The actions this card actually implements. RaiseOffer is A2.2 and FakeCall
+--- is A4. Both are legitimate members of Types.DuelAction, so a client asking
+--- for one gets a clear refusal rather than being treated as malformed -- it is
+--- not an attack, it is a button that does not exist yet.
+local IMPLEMENTED: { [string]: boolean } = {
+	Accept = true,
+	Decline = true,
+}
+
+--- One of the three negotiation buttons. Validated in the four layers of
+--- docs/arquitectura.md §8, same as offers.
+---
+--- Like submitOffer, this is NOT rate limited yet.
+function DuelService.negotiate(player: Player, action: unknown)
+	-- Layer 1: type.
+	if type(action) ~= "string" then
+		return reject(player, "action is not a string")
+	end
+
+	-- Layer 2: existence.
+	if not IMPLEMENTED[action] then
+		return reject(player, `action "{action}" is not available yet`)
+	end
+
+	-- Layer 3: state.
+	local duelId = duelIdOf[player]
+	local duel = if duelId then duels[duelId] else nil
+	if not duel then
+		return reject(player, "not in a duel")
+	end
+	if duel.phase ~= "Negotiating" then
+		return reject(player, `wrong phase ({duel.phase})`)
+	end
+
+	local side = sideOf(duel, player)
+	if not side then
+		return reject(player, "not a participant")
+	end
+
+	-- Layer 4: permission. Only whoever holds the turn may act on it.
+	if duel.turn ~= side.slot then
+		return reject(player, `not your turn (slot {duel.turn} is up)`)
+	end
+
+	if action == "Accept" then
+		-- The trade is agreed. Reveal exists as a phase so that A3 has a state
+		-- to hang the unwrapping and the transfers on; right now it carries no
+		-- content and the duel ends immediately after.
+		--
+		-- >>> A3 inserts the reveal and the item/Clips transfers HERE, between
+		-- >>> entering Reveal and ending the duel. <<<
+		resolve(duel, "Reveal", `slot {side.slot} accepted`)
+	else
+		resolve(duel, "Cancelled", `slot {side.slot} declined`)
+	end
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- Fires two real terminal paths at the same duel, back to back with no yield
+--- between them, and reports numbers instead of impressions.
+---
+--- Debug only, and deliberately NOT reachable from a client. A remote that ends
+--- duels on demand is exactly the kind of thing this project refuses to ship,
+--- so this runs from the Server context of the Command Bar.
+function DuelService.runFinishRaceCheck(): boolean
+	if not DuelRules.debugLogs then
+		warn("[DuelService] race check needs DuelRules.debugLogs = true")
+		return false
+	end
+
+	local target: Duel? = nil
+	for _, candidate in duels do
+		if candidate.phase == "Negotiating" then
+			target = candidate
+			break
+		end
+	end
+
+	local duel = target
+	if not duel then
+		warn("[DuelService] race check: no duel is in Negotiating right now")
+		return false
+	end
+
+	local before = table.clone(counters)
+	local trove = duel.trove
+	local duelId = duel.id
+	local actor = duel.sides[duel.turn].player
+
+	DuelService.negotiate(actor, "Accept")
+	DuelService.expirePhase(duelId)
+
+	local resolved = counters.resolved - before.resolved
+	local blocked = counters.blocked - before.blocked
+	local broadcasts = counters.terminalBroadcasts - before.terminalBroadcasts
+	local finished = counters.finished - before.finished
+	local live = trove:Live()
+	local gone = duels[duelId] == nil
+
+	local ok = resolved == 1 and blocked == 1 and broadcasts == 1 and finished == 1 and live == 0 and gone
+
+	print("[DuelService] finish race check")
+	print(`  terminal transitions applied : {resolved}   (expected 1)`)
+	print(`  second path turned away      : {blocked}   (expected 1)`)
+	print(`  phase broadcasts to clients  : {broadcasts}   (expected 1)`)
+	print(`  finish() calls that did work : {finished}   (expected 1)`)
+	print(`  trove live objects           : {live}   (expected 0)`)
+	print(`  duel removed from registry   : {gone}   (expected true)`)
+	print(if ok then "  RESULT: PASS" else "  RESULT: FAIL")
+
+	return ok
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
 
 --- Wires the service. Called by Main in boot order.
 function DuelService.init()
 	Net.get(Net.names.DuelOffer).OnServerEvent:Connect(function(player: Player, payload: unknown)
 		DuelService.submitOffer(player, payload)
+	end)
+
+	Net.get(Net.names.DuelNegotiate).OnServerEvent:Connect(function(player: Player, action: unknown)
+		DuelService.negotiate(player, action)
 	end)
 
 	-- docs/gdd.md §32: leaving mid-duel is a loss. Scoring is A3; for now the
