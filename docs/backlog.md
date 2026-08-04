@@ -104,6 +104,11 @@ Criterios: agresivo y tímido difieren medible en ratio de fakes, uso de Pedir m
 
 ## ÉPICA E — Lobby, UI y sonido
 
+> **⚠️ Hueco detectado el 2026-08-04.** `plan-etapas.md` Etapa 1 lista como 🟥 *"Mesa de duelo con UI fea: 3 botones + lista de objetos como texto plano"*, pero en el backlog la UI vive solo en E2, que es Etapa 2. Al seguir el orden A1 → A2 → A4 de CLAUDE.md, esa UI mínima quedó sin hacer.
+> Consecuencia real, encontrada al terminar el punto de control: **la pregunta de la Etapa 1 no se puede contestar sin ella.** Nadie juzga si negociar con fakes divierte leyendo líneas de Output y apretando teclas de debug; eso prueba mecánicas, no diversión. Y el criterio de aceptación de la etapa es "dos personas que no eres tú piden otra partida", que además necesita gente de fuera.
+> Falta una tarjeta **E0 — mesa de duelo fea**: los tres botones, la lista de objetos como texto plano, y el resultado de la revelación en pantalla. Sin pulido, sin tema de papel: eso es E2. Es lo que convierte el prototipo en algo jugable por una persona que no escribió el código.
+
+
 **E1 · Lobby "El Patio de Trades" con mesas, kiosco y flujo de cola** — P0 · M
 Criterios: caminar, unirse a cola desde una mesa, volver del duelo al mismo punto.
 
@@ -160,7 +165,9 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 |---|---|---|
 | **Camino de desconexión** — el jugador que se queda recibe `Cancelled` en vez de quedar mirando un estado muerto | commit `72114f7` | 🔴 **Prioridad alta.** Es un camino de desconexión que cambió. Un bug acá no da error visible y en Etapa 2 corrompe datos. Se prueba en el primer punto de control sí o sí. |
 | ~~Payload del rival: solo `appearance`, `claim`, `wrappedId`~~ | A1.3 | ✅ **Verificado en runtime el 2026-08-04.** Los dos envoltorios, real y falso, llegaron con los mismos tres campos. |
-| Aceptar / Rechazar, validación de turno, acciones no implementadas | A2.1 | Lógica de juego pura, agrupable. |
+| ~~Bucle completo: ofertar → negociar → aceptar → revelar~~ | A2.1+A3 | ✅ **2026-08-04.** Mentir ganó 210 a 10. Ambos clientes vieron la misma revelación. |
+| ~~Pedir más + ficha ¡ES FAKE! acertando~~ | A2.2+A4 | ✅ **2026-08-04.** `shouted ES FAKE and was RIGHT`; el tramposo quedó en 0 y `slipped 0` pese a que sus envoltorios cambiaron de manos. |
+| Aceptar / Rechazar fuera de turno, acciones inválidas | A2.1 | Pendiente (bloque C). Lógica pura, agrupable. |
 | Timeout de `Negotiating` → `Cancelled` con contador en 0 | A2.1 | Lógica de juego pura, agrupable. |
 | `runFinishRaceCheck()` → PASS | A2.1 | Cubre menos de lo que parece: ver la nota en A3 sobre el claim de `resolving`. |
 | Pedir más: límite de 3 por lado, enmienda validada por cantidad | A2.2 | Lógica de juego pura, agrupable. |
