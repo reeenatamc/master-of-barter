@@ -74,14 +74,47 @@ Con dos jugadores distintos (Player1 y Player2 tienen ids distintos), **no deber
 
 Las tres anteriores usan el simulador. Un simulador que se porta bien no prueba que un DataStore se porte bien.
 
-1. Publicá el lugar si no lo está (**File → Publish to Roblox**).
-2. **Game Settings → Security → Enable Studio Access to API Services**: activado.
-3. `src/shared/Config/DataConfig.luau` → `useMockInStudio = false`.
-4. Repetí la **prueba 2** completa.
+**Esta prueba tiene preparación, y es donde la gente pierde la tarde.** Hacela completa antes de tocar Play, para que tu sentada sean 20 minutos de probar y no 20 de configurar.
 
-Si pasa, la persistencia está probada de verdad.
+### Preparación (una sola vez)
 
-5. **Volvé `useMockInStudio` a `true`** al terminar, para que las pruebas de todos los días no escriban en los datos reales.
+**1. El lugar tiene que estar publicado.** Sin publicar, no existe ningún DataStore al que hablarle.
+
+> **File → Publish to Roblox** (o *Publish to Roblox As…* si nunca lo publicaste). Si ya lo hiciste antes, este paso ya está.
+
+**2. Activar el acceso a API desde Studio.** Por defecto viene **apagado**, y es lo que más muerde.
+
+> Pestaña **Home** → **Game Settings** → sección **Security** → prendé **Enable Studio Access to API Services** → **Save**.
+>
+> Si no ves *Game Settings* en Home, está también en el menú de arriba: **File → Game Settings**.
+
+**3. Apagar el simulador.** `src/shared/Config/DataConfig.luau` → `useMockInStudio = false`. Rojo lo sincroniza solo.
+
+### La prueba
+
+Repetí la **prueba 2** completa: escribís `clips = 9999`, Stop de golpe, Play, y leés.
+
+Si sigue diciendo 9999, **la persistencia está probada de verdad**.
+
+### Cómo distinguir "falta un permiso" de "está roto"
+
+Los dos fallos se ven igual a primera vista: el jugador queda como espectador. Por eso el mensaje del servidor ahora dice **por qué**:
+
+```
+[DataService] Player1 has no profile; spectator mode. DataStore access: NoAccess.
+```
+
+| Si dice | Significa | Qué hacer |
+|---|---|---|
+| `NoAccess` | El acceso a API está apagado, o el lugar no está publicado | Volvé al paso 1 y 2 de preparación. **No es un bug.** |
+| `NotReady` | Todavía está averiguando. Esperá unos segundos y reintentá | Nada, dale tiempo |
+| `Access` | El DataStore responde bien | Entonces el perfil **sí** está bloqueado por otra sesión, o hay algo roto de verdad. Mandámelo |
+
+Sin esa línea, un checkbox apagado y un bug de guardado producen exactamente el mismo síntoma.
+
+### Al terminar
+
+**Volvé `useMockInStudio` a `true`.** Si no, todas las pruebas de todos los días pasan a escribir en los datos reales de tu juego.
 
 ---
 

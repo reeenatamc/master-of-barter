@@ -145,7 +145,18 @@ local function onPlayerAdded(player: Player)
 		-- later overwrites real data is how a collection disappears, and it
 		-- does it without raising anything.
 		spectators[player] = true
-		warn(`[DataService] {player.Name} has no profile; spectator mode`)
+
+		-- WHY it failed, not just that it did. Without this line, "the API is
+		-- switched off in Studio" and "the save logic is broken" produce the
+		-- identical message, and somebody spends an afternoon debugging a
+		-- checkbox. ProfileStore reports its own access as NotReady,
+		-- NoInternet, NoAccess or Access.
+		warn(
+			`[DataService] {player.Name} has no profile; spectator mode.`
+				.. ` DataStore access: {ProfileStore.DataStoreState}.`
+				.. ` (NoAccess = Studio API access is off, or the place is unpublished.`
+				.. ` Access = reachable, so the profile is genuinely locked elsewhere.)`
+		)
 		return
 	end
 
