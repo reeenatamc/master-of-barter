@@ -16,7 +16,9 @@ Objetivo: base de toda la mecánica. Criterios: selecciono 1–4 objetos de mi i
 >
 > **Sub-tareas:** A1.1 duelo mínimo (dos jugadores, copias de duelo, `DuelState` por destinatario) ✅ · A1.2 watchdog de fase + Trove · A1.3 ofertas y validación.
 >
-> **Verificación diferida de A1.3 → Etapa 2:** la comprobación *visual* de que el payload del rival trae solo `appearance`, `claim` y `wrappedId` no se completó, porque hacerla hoy exige pelear con el multijugador de Studio y tipear comandos en consola. No se saltó: se verificó por lectura (el tipo `WrappedItemView` no tiene dónde poner `isFake`, `viewOf()` copia campo por campo y nunca clona la tabla, y la lista impresa sale de recorrer las claves reales del payload recibido, no de una lista escrita a mano). Lo que la lectura no puede cubrir es el runtime: que la serialización del RemoteEvent no agregue nada y que ese camino sea el que realmente se ejecuta. Se retoma en Etapa 2, cuando exista la UI de duelo (E2) y mirar los envoltorios en la mesa sea natural.
+> **✅ VERIFICADA (2026-08-04), antes de lo previsto.** En la sesión de prueba del punto de control, el cliente rival imprimió `server sent fields: appearance, claim, wrappedId` para los dos envoltorios — el genuino y el falso — con exactamente los mismos tres campos. Ni `isFake` ni `copyId` cruzan, y la forma del payload no distingue uno de otro. La lista sale de recorrer las claves reales de la tabla recibida. Ya no hace falta esperar a la UI de E2. Texto original abajo, como registro de por qué se había diferido.
+>
+> ~~**Verificación diferida de A1.3 → Etapa 2:**~~ la comprobación *visual* de que el payload del rival trae solo `appearance`, `claim` y `wrappedId` no se completó, porque hacerla hoy exige pelear con el multijugador de Studio y tipear comandos en consola. No se saltó: se verificó por lectura (el tipo `WrappedItemView` no tiene dónde poner `isFake`, `viewOf()` copia campo por campo y nunca clona la tabla, y la lista impresa sale de recorrer las claves reales del payload recibido, no de una lista escrita a mano). Lo que la lectura no puede cubrir es el runtime: que la serialización del RemoteEvent no agregue nada y que ese camino sea el que realmente se ejecuta. Se retoma en Etapa 2, cuando exista la UI de duelo (E2) y mirar los envoltorios en la mesa sea natural.
 >
 > **Deuda del doble `finish()`: movida de A1.3 → A2.** No se olvidó, se movió con razón. Los tres caminos que hacen que la carrera importe son accept / decline / watchdog, y accept/decline son acciones de negociación: no existen hasta A2. En A1.3 los únicos caminos reales eran dos watchdogs y una desconexión, prácticamente la misma carrera que ya se había descartado probar en A1.2. Escribirlo antes de A2 era escribirlo dos veces. Ver la condición de cierre en la tarjeta A2.
 >
@@ -51,6 +53,7 @@ Criterios: quien se desconecta pierde el duelo y su apuesta pasa al rival; el qu
 
 **A6 · Como jugador quiero inspeccionar objetos envueltos y notar imperfecciones** — P0 · M
 Criterios: zoom táctil/click; 3 tipos de imperfección (tono, costura, errata) precalculados por servidor; nunca detectables solo por color. Dependencias: A1, D2. Pruebas: verificación con simulación de daltonismo.
+> **Dato de calibración de la primera partida real (2026-08-04):** con las bandas iniciales (genuino `0.00–0.18`, falso `0.12–0.55`), la falsificación sacó `tone 0.47` mientras que todo lo genuino de la partida quedó entre `0.06` y `0.18`. En esa muestra el falso se delataba **por una sola dimensión**, sin necesidad de mirar las otras dos. La mitad superior de la banda falsa es efectivamente un cartel luminoso. A6 tiene que decidir si la banda falsa se recorta hacia abajo (más solapamiento, más duda) o si el sorteo evita que las tres dimensiones se aparten a la vez.
 
 **A7 · Como jugador quiero emotes para la guerra psicológica** — P1 · S
 Criterios: 6 emotes prediseñados, visibles por el rival, con cooldown anti-spam.
@@ -156,7 +159,7 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 | Qué | De dónde viene | Por qué importa |
 |---|---|---|
 | **Camino de desconexión** — el jugador que se queda recibe `Cancelled` en vez de quedar mirando un estado muerto | commit `72114f7` | 🔴 **Prioridad alta.** Es un camino de desconexión que cambió. Un bug acá no da error visible y en Etapa 2 corrompe datos. Se prueba en el primer punto de control sí o sí. |
-| Payload del rival: solo `appearance`, `claim`, `wrappedId` | A1.3 | Verificado por lectura; falta el runtime (que la serialización del RemoteEvent no agregue nada). Ver la nota en A1.3. |
+| ~~Payload del rival: solo `appearance`, `claim`, `wrappedId`~~ | A1.3 | ✅ **Verificado en runtime el 2026-08-04.** Los dos envoltorios, real y falso, llegaron con los mismos tres campos. |
 | Aceptar / Rechazar, validación de turno, acciones no implementadas | A2.1 | Lógica de juego pura, agrupable. |
 | Timeout de `Negotiating` → `Cancelled` con contador en 0 | A2.1 | Lógica de juego pura, agrupable. |
 | `runFinishRaceCheck()` → PASS | A2.1 | Cubre menos de lo que parece: ver la nota en A3 sobre el claim de `resolving`. |
