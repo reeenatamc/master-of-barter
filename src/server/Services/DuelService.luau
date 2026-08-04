@@ -28,6 +28,7 @@ local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelSceneService = require(script.Parent.DuelSceneService)
+local EconomyService = require(script.Parent.EconomyService)
 
 type Slot = Types.Slot
 type DuelCopy = Types.DuelCopy
@@ -352,6 +353,37 @@ function DuelService.finish(duelId: string, reason: string)
 		duelIdOf[side.player] = nil
 	end
 
+	-- Paying happens HERE, inside the idempotency guard, and that is the whole
+	-- reason the guard was written. A duel that ended twice would pay twice, and
+	-- from B2 onward "pay" means writing to a profile.
+	--
+	-- Only a duel that reached a reveal pays: a declined or timed-out duel had
+	-- no trade, so there is nothing to reward. docs/gdd.md §19 says losing still
+	-- pays something, and losing is not the same as never finishing.
+	local reveal = duel.reveal
+	if reveal then
+		for _, side in duel.sides do
+			local mine = reveal.sides[side.slot]
+			local theirs = reveal.sides[otherSlot(side.slot)]
+			if mine and theirs then
+				local result: "win" | "draw" | "loss" = if reveal.winner == nil
+					then "draw"
+					elseif reveal.winner == side.slot then "win"
+					else "loss"
+
+				EconomyService.payDuel(side.player, {
+					result = result,
+					fakesSlipped = mine.fakesPassed,
+					fakesCaught = if reveal.fakeCall ~= nil
+							and reveal.fakeCall.by == side.slot
+							and reveal.fakeCall.correct
+						then 1
+						else 0,
+				})
+			end
+		end
+	end
+
 	duel.trove:Clean()
 
 	local live = duel.trove:Live()
@@ -396,6 +428,17 @@ local function sideOf(duel: Duel, player: Player): Side?
 		end
 	end
 	return nil
+end
+
+--- The requests an existing offer was built from, so its cost can be worked
+--- out again without storing a price alongside it. A stored price is a second
+--- source of truth that goes stale the moment Config changes.
+local function toRequests(wrapped: { WrappedItem }): { WrapRequest }
+	local requests: { WrapRequest } = {}
+	for _, item in wrapped do
+		table.insert(requests, { copyId = item.copyId, isFake = item.isFake, claim = item.claim })
+	end
+	return requests
 end
 
 local function findCopy(side: Side, copyId: string): DuelCopy?
@@ -550,6 +593,26 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 			claim = request.claim,
 			appearance = rollAppearance(request.isFake),
 		})
+	end
+
+	-- Layer 4, the economic half: forging costs Clips, scaled to what is being
+	-- imitated (docs/gdd.md §19). This is card B2 and it is the brake the
+	-- balance was missing -- while forging was free, "forge everything" and
+	-- then "accuse always" both dominated.
+	--
+	-- Charged on the DELTA, never on the whole offer. An amendment adds
+	-- wrappers to one already paid for, and charging the total again would bill
+	-- twice for the same forgeries.
+	local alreadyPaid = if previous then EconomyService.offerCost(toRequests(previous)) else 0
+	local owed = EconomyService.offerCost(requests) - alreadyPaid
+
+	if owed > 0 then
+		local paid, refusal = EconomyService.charge(player, owed, "forgery")
+		if not paid then
+			-- Refused BEFORE anything is stored, so a rejected offer leaves the
+			-- duel exactly as it was.
+			return reject(player, `cannot pay {owed} Clips for the forgeries ({refusal})`)
+		end
 	end
 
 	side.offer = wrapped

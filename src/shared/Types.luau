@@ -359,4 +359,12 @@ export type Profile = {
 	receipts: { [string]: boolean },
 }
 
+--- What one side earned from a duel, handed to EconomyService as a single
+--- payout rather than four separate credits that could half-apply.
+export type DuelPayout = {
+	result: "win" | "draw" | "loss",
+	fakesSlipped: number,
+	fakesCaught: number,
+}
+
 return Types

@@ -15,6 +15,7 @@ local Net = require(ReplicatedStorage.Shared.Util.Net)
 
 local DataService = require(script.Parent.Services.DataService)
 local DuelService = require(script.Parent.Services.DuelService)
+local EconomyService = require(script.Parent.Services.EconomyService)
 
 Net.createAll()
 
@@ -22,6 +23,10 @@ Net.createAll()
 -- that reads one before it exists is a service that invents one.
 DataService.init()
 DuelService.init()
+
+-- EconomyService has nothing to wire: it is a gate, not a listener. Required
+-- here anyway so a missing module fails at boot rather than mid-duel.
+local _ = EconomyService
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- TEMP: MatchmakingService (card D1) does not exist yet, so the queue is this

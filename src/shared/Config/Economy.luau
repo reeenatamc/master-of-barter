@@ -30,6 +30,18 @@
 local startingClips = 250
 
 --[=[
+	@prop clipsMax number
+	@within Economy
+
+	Hard ceiling on a balance.
+
+	Not paranoia about rich players: it is what stops one bad addition from
+	parking a profile at a value that no longer round-trips through a DataStore
+	cleanly. That kind of corruption never announces itself.
+]=]
+local clipsMax = 100000000
+
+--[=[
 	@prop fakeCost { valueShare: number, flatFee: number }
 	@within Economy
 
@@ -78,6 +90,7 @@ local shop = {
 
 return {
 	startingClips = startingClips,
+	clipsMax = clipsMax,
 	fakeCost = fakeCost,
 	duelReward = duelReward,
 	shop = shop,
