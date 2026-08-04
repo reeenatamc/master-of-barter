@@ -16,7 +16,11 @@ Objetivo: base de toda la mecánica. Criterios: selecciono 1–4 objetos de mi i
 >
 > **Sub-tareas:** A1.1 duelo mínimo (dos jugadores, copias de duelo, `DuelState` por destinatario) ✅ · A1.2 watchdog de fase + Trove · A1.3 ofertas y validación.
 >
-> **✅ VERIFICADA (2026-08-04), antes de lo previsto.** En la sesión de prueba del punto de control, el cliente rival imprimió `server sent fields: appearance, claim, wrappedId` para los dos envoltorios — el genuino y el falso — con exactamente los mismos tres campos. Ni `isFake` ni `copyId` cruzan, y la forma del payload no distingue uno de otro. La lista sale de recorrer las claves reales de la tabla recibida. Ya no hace falta esperar a la UI de E2. Texto original abajo, como registro de por qué se había diferido.
+> **✅ SALDADA (2026-08-04). No queda residuo pendiente.** El cliente rival imprimió `server sent fields: appearance, claim, wrappedId` para los dos envoltorios —el genuino y el falso— con exactamente los mismos tres campos. Ni `isFake` ni `copyId` cruzan, y la forma del payload tampoco los distingue.
+>
+> Lo que se había anotado como no cubrible por lectura era el runtime: que la serialización del RemoteEvent no agregue nada y que ese camino sea el que de verdad se ejecuta. **Ambas cosas quedaron cubiertas**, porque la comprobación corrió sobre el payload recibido en un duelo real jugado de punta a punta, no sobre el código. La lista sale de recorrer las claves reales de la tabla que llegó.
+>
+> No se difiere nada a Etapa 2. Texto original abajo, solo como registro de por qué se había diferido en su momento.
 >
 > ~~**Verificación diferida de A1.3 → Etapa 2:**~~ la comprobación *visual* de que el payload del rival trae solo `appearance`, `claim` y `wrappedId` no se completó, porque hacerla hoy exige pelear con el multijugador de Studio y tipear comandos en consola. No se saltó: se verificó por lectura (el tipo `WrappedItemView` no tiene dónde poner `isFake`, `viewOf()` copia campo por campo y nunca clona la tabla, y la lista impresa sale de recorrer las claves reales del payload recibido, no de una lista escrita a mano). Lo que la lectura no puede cubrir es el runtime: que la serialización del RemoteEvent no agregue nada y que ese camino sea el que realmente se ejecuta. Se retoma en Etapa 2, cuando exista la UI de duelo (E2) y mirar los envoltorios en la mesa sea natural.
 >
