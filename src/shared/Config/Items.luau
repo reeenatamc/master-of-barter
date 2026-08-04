@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Items.luau -- squishy catalog: id, rarity, baseValue
+	Items.luau -- object catalog: id, rarity, baseValue
 
 	Pure data, no logic (docs/arquitectura.md §3). Display names are text the
 	player reads, so by our own convention they live in Strings.luau, not here.
@@ -9,7 +9,7 @@
 	with made-up values. They exist to answer one question -- is bluffing fun --
 	so do not polish them; they get replaced by the real 12-15 set in Etapa 2.
 
-	Adding a squishy = one entry here + one name in Strings.luau. No new code
+	Adding an object = one entry here + one name in Strings.luau. No new code
 	anywhere (backlog card C1).
 ]]
 
@@ -21,14 +21,14 @@ type ItemDef = Types.ItemDef
 --[=[
 	@class Items
 
-	Squishy catalog: id, rarity and baseValue. Pure data, no logic. Display names
+	Object catalog: id, rarity and baseValue. Pure data, no logic. Display names
 	are text the player reads, so by our own convention they live in Strings.
 
 	These are the 6 prototype items docs/plan-etapas.md asks for in Etapa 1, with
 	made-up values. They exist to answer one question -- is bluffing fun -- so do
 	not polish them; they get replaced by the real 12-15 set in Etapa 2.
 
-	Adding a squishy = one entry here + one name in Strings. No new code anywhere
+	Adding an object = one entry here + one name in Strings. No new code anywhere
 	(backlog card C1).
 ]=]
 
@@ -36,15 +36,27 @@ type ItemDef = Types.ItemDef
 	@prop catalog { [ItemId]: ItemDef }
 	@within Items
 
-	Every squishy in the game, keyed by id.
+	Every object in the game, keyed by id.
 ]=]
+--- [propuesta] Twelve originals, awaiting approval at checkpoint 2.
+---
+--- The joke is household objects treated as relics: gdd.md §22's brainrot
+--- register with nobody else's characters in it. Three rarities, because §18
+--- fixes three -- a fourth was drafted and removed, since adding one is
+--- altering a GDD mechanic rather than adding detail to it.
 local catalog: { [ItemId]: ItemDef } = {
-	blue_octopus = { id = "blue_octopus", rarity = "Common", baseValue = 10 },
-	sleepy_bread = { id = "sleepy_bread", rarity = "Common", baseValue = 15 },
-	mint_turtle = { id = "mint_turtle", rarity = "Rare", baseValue = 40 },
-	jelly_dragon = { id = "jelly_dragon", rarity = "Rare", baseValue = 60 },
-	galaxy_fox = { id = "galaxy_fox", rarity = "Legendary", baseValue = 200 },
-	rainbow_unicorn = { id = "rainbow_unicorn", rarity = "Legendary", baseValue = 300 },
+	golden_maruchan = { id = "golden_maruchan", rarity = "Common", baseValue = 12 },
+	potato_rock = { id = "potato_rock", rarity = "Common", baseValue = 15 },
+	grandma_remote = { id = "grandma_remote", rarity = "Common", baseValue = 18 },
+	chewed_pencil = { id = "chewed_pencil", rarity = "Common", baseValue = 22 },
+	sock_one = { id = "sock_one", rarity = "Common", baseValue = 26 },
+	expired_yogurt = { id = "expired_yogurt", rarity = "Rare", baseValue = 48 },
+	first_tooth = { id = "first_tooth", rarity = "Rare", baseValue = 62 },
+	frozen_pizza = { id = "frozen_pizza", rarity = "Rare", baseValue = 78 },
+	wifi_router = { id = "wifi_router", rarity = "Rare", baseValue = 96 },
+	dad_screwdriver = { id = "dad_screwdriver", rarity = "Legendary", baseValue = 210 },
+	lost_charger = { id = "lost_charger", rarity = "Legendary", baseValue = 270 },
+	last_empanada = { id = "last_empanada", rarity = "Legendary", baseValue = 340 },
 }
 
 --[=[
@@ -56,12 +68,18 @@ local catalog: { [ItemId]: ItemDef } = {
 	this list whenever order is visible to the player.
 ]=]
 local order: { ItemId } = {
-	"blue_octopus",
-	"sleepy_bread",
-	"mint_turtle",
-	"jelly_dragon",
-	"galaxy_fox",
-	"rainbow_unicorn",
+	"golden_maruchan",
+	"potato_rock",
+	"grandma_remote",
+	"chewed_pencil",
+	"sock_one",
+	"expired_yogurt",
+	"first_tooth",
+	"frozen_pizza",
+	"wifi_router",
+	"dad_screwdriver",
+	"lost_charger",
+	"last_empanada",
 }
 
 return {

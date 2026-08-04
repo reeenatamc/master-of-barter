@@ -32,15 +32,39 @@ type Rarity = Types.Rarity
 	@prop itemNames { [ItemId]: string }
 	@within Strings
 
-	Display name for each squishy in the Items catalog.
+	Display name for each object in the Items catalog.
 ]=]
 local itemNames: { [ItemId]: string } = {
-	blue_octopus = "Pulpito Azul",
-	sleepy_bread = "Pan Dormilón",
-	mint_turtle = "Tortuga Menta",
-	jelly_dragon = "Dragón Gelatina",
-	galaxy_fox = "Zorro Galaxia",
-	rainbow_unicorn = "Unicornio Arcoíris",
+	golden_maruchan = "Sopa Maruchan Dorada",
+	potato_rock = "Piedra que Parece Papa",
+	grandma_remote = "Control de la Abuela",
+	chewed_pencil = "Lápiz Mordido",
+	sock_one = "La Media Que Falta",
+	expired_yogurt = "Yogur Vencido en 2011",
+	first_tooth = "Tu Primer Diente",
+	frozen_pizza = "Pizza del Fondo",
+	wifi_router = "Módem Que Sí Andaba",
+	dad_screwdriver = "Destornillador de Papá",
+	lost_charger = "El Cargador Perdido",
+	last_empanada = "La Última Empanada",
+}
+
+--- [propuesta] Una línea por objeto, para la inspección. El chiste es que son
+--- cosas de tu casa tratadas como reliquias: el absurdo cotidiano elevado, que
+--- es el tono de gdd.md §22 sin tomar prestado el personaje de nadie.
+local itemFlavour: { [ItemId]: string } = {
+	golden_maruchan = "Sabor camarón. Nunca la vas a cocinar.",
+	potato_rock = "O una papa que parece piedra. Nadie mordió.",
+	grandma_remote = "Forrado en plástico desde 1994. Impecable.",
+	chewed_pencil = "Mordido por alguien famoso. Eso dicen.",
+	sock_one = "La otra está en la secadora. Desde siempre.",
+	expired_yogurt = "Sin abrir. Técnicamente sigue siendo yogur.",
+	first_tooth = "El ratón nunca vino. Vos te lo quedaste.",
+	frozen_pizza = "Del fondo del freezer. Tiene escarcha propia.",
+	wifi_router = "Lo desenchufaste una vez y nunca más fue igual.",
+	dad_screwdriver = "No es para tornillos. Es para todo lo demás.",
+	lost_charger = "Nadie sabe de quién es. Todos lo reclaman.",
+	last_empanada = "Estaba en la bandeja. Ahora es tuya. Ganaste.",
 }
 
 local rarityNames: { [Rarity]: string } = {
@@ -120,6 +144,7 @@ local currencyName = "Clips"
 
 return {
 	itemNames = itemNames,
+	itemFlavour = itemFlavour,
 	rarityNames = rarityNames,
 	duelButtons = duelButtons,
 	duelScreen = duelScreen,

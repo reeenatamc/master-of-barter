@@ -63,7 +63,7 @@ export type ItemDef = {
 	.copyId string
 	.itemId ItemId
 
-	One squishy in a player's duel inventory: what they can put on the table.
+	One object in a player's duel inventory: what they can put on the table.
 	Copies are what gets bet; the permanent collection is never touched
 	(docs/gdd.md §21, option A). A copy is always genuine -- forgeries do not
 	exist until someone wraps one at offer time.

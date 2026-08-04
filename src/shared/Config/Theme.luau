@@ -144,12 +144,18 @@ export type ItemLook = {
 }
 
 local items: { [ItemId]: ItemLook } = {
-	blue_octopus = { color = Color3.fromRGB(86, 146, 206), corner = 0.5 },
-	sleepy_bread = { color = Color3.fromRGB(212, 176, 116), corner = 0.15 },
-	mint_turtle = { color = Color3.fromRGB(118, 190, 158), corner = 0.35 },
-	jelly_dragon = { color = Color3.fromRGB(198, 104, 158), corner = 0.1 },
-	galaxy_fox = { color = Color3.fromRGB(134, 104, 198), corner = 0.28 },
-	rainbow_unicorn = { color = Color3.fromRGB(228, 174, 76), corner = 0.45 },
+	golden_maruchan = { color = Color3.fromRGB(226, 176, 70), corner = 0.12 },
+	potato_rock = { color = Color3.fromRGB(150, 132, 112), corner = 0.42 },
+	grandma_remote = { color = Color3.fromRGB(96, 104, 118), corner = 0.1 },
+	chewed_pencil = { color = Color3.fromRGB(216, 164, 64), corner = 0.08 },
+	sock_one = { color = Color3.fromRGB(198, 110, 140), corner = 0.3 },
+	expired_yogurt = { color = Color3.fromRGB(232, 220, 196), corner = 0.16 },
+	first_tooth = { color = Color3.fromRGB(240, 236, 222), corner = 0.34 },
+	frozen_pizza = { color = Color3.fromRGB(206, 96, 72), corner = 0.2 },
+	wifi_router = { color = Color3.fromRGB(72, 132, 180), corner = 0.06 },
+	dad_screwdriver = { color = Color3.fromRGB(198, 72, 60), corner = 0.05 },
+	lost_charger = { color = Color3.fromRGB(58, 60, 66), corner = 0.14 },
+	last_empanada = { color = Color3.fromRGB(212, 158, 92), corner = 0.38 },
 }
 
 --- Anything without its own entry shows up as a grey blob: visible enough to

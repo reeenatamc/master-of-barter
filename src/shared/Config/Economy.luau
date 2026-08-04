@@ -34,7 +34,7 @@ local startingClips = 250
 	@within Economy
 
 	Crafting a fake costs a share of what it imitates, so lying about an
-	expensive squishy is expensive. That scaling is the rule from docs/gdd.md
+	expensive object is expensive. That scaling is the rule from docs/gdd.md
 	§19; the exact numbers are not.
 
 	`cost = baseValue * valueShare + flatFee`
@@ -69,7 +69,7 @@ local duelReward = {
 	@within Economy
 
 	Shop prices are derived from baseValue, never stored per item, so a new
-	squishy is priced automatically.
+	object is priced automatically.
 ]=]
 local shop = {
 	buyMultiplier = 1.35,
