@@ -173,7 +173,8 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 | Pedir más: límite de 3 por lado, enmienda validada por cantidad | A2.2 | Lógica de juego pura, agrupable. |
 | Revelación: `isFake` aparece **solo** al aceptar, igual para los dos, y nunca antes | A3 | Es el momento en que la regla de oro se levanta. Mirar que en ninguna fase previa llegue `reveal` al cliente. |
 | Marcador: genuino = `baseValue`, fake = 0, gana quien recibió más | A3 | Crudo a propósito. Se espera que "falsificá todo" domine hasta que exista A4. |
-| Ficha ¡ES FAKE!: una por lado, acierto → te llevás la oferta del tramposo, fallo → perdés tu apuesta | A4 | Lógica de juego. Probar los dos desenlaces y que la segunda ficha del mismo lado se rechace. |
+| ~~Ficha ¡ES FAKE!: acierto → te llevás la oferta del tramposo~~ | A4 | ✅ **2026-08-04.** Acierto verificado. Falta probar el fallo (acusar a quien no mintió) y que la segunda ficha del mismo lado se rechace. |
+| ~~**E0 — mesa de duelo fea**~~ | E0 | ✅ **2026-08-04.** Duelo completo jugado con botones: elegir real/falso, ofertar, negociar, aceptar, revelar, acusar. Sin teclado, sin Output. Ese era el criterio de aceptación de la tarjeta. |
 | **Equilibrio del bucle completo** | A2–A4 | No es una prueba de código, es la pregunta de la Etapa 1. Ver la hipótesis "acusá siempre" en la tarjeta A4. |
 | Watchdog por generación: tras un raise + enmienda, el duelo **no** se cancela antes de tiempo por el timer viejo | A2.2 | Sutil. El fallo se ve como un duelo que muere solo a mitad de negociación, y es fácil confundirlo con otra cosa. Hacer al menos un raise + enmienda y esperar a que el reloj pase el deadline original. |
 
