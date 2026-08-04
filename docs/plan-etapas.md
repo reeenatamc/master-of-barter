@@ -51,7 +51,7 @@ Leyenda de tareas: 🟥 Imprescindible · 🟨 Importante · 🟩 Opcional · �
 **Entregables:** prototipo jugable feo + notas de las pruebas (qué dio risa, qué aburrió, qué confundió).
 **Dependencias:** Etapa 0; Nivel 2 de la ruta (remotos y validación).
 **Riesgos:** ⚠️ el mayor del proyecto: que la mecánica NO sea divertida. Si tras iterar 2–3 veces las pruebas no producen risas ni tensión, se replantea el núcleo ANTES de construir nada más. Este es el punto de salida barato.
-**Criterio de aceptación:** dos personas que no eres tú piden "otra partida" sin que se lo sugieras.
+**Criterio de aceptación:** dos personas que no eres tú piden "otra partida" sin que se lo sugieras. — ✅ **CUMPLIDO el 2026-08-04.** Textual: *"ahora es mi turno, otra, otra"*, sin que nadie lo sugiriera, con el prototipo feo y sin chat. Ver `prueba-diversion.md`.
 
 **Protocolo de la prueba de diversión — la ficha ¡ES FAKE! es un experimento, no una decisión.**
 

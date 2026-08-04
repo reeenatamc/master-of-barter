@@ -117,11 +117,17 @@ Esto refuerza tres cosas que ya estaban escritas y que ahora dejan de ser intuic
 - **`gdd.md` §11**, la escena cara a cara, deja de ser sólo un tema de miniaturas: si vas a vender algo actuando, tenés que ver a quién se lo vendés.
 - **La tarjeta A7 (emotes)** estaba marcada P1. Con este dato mira a P0.
 
-## Lo que NO se puede concluir todavía
+## ✅ CRITERIO DE ACEPTACIÓN CUMPLIDO
 
-**No está confirmado el criterio de aceptación de la etapa**, que es *dos personas piden "otra partida" sin que se lo sugieras*. "Interesante" no es "otra". Pendiente de confirmar con quien corrió la sesión.
+> *"Ahora es mi turno. Otra, otra."*
 
-**No se comparó (a) con ficha vs (b) sin ficha.** El protocolo de las dos configuraciones quedó sin ejecutar, así que sobre la ficha ¡ES FAKE! seguimos sin dato.
+Dicho por los testers, sin que nadie se lo sugiriera. Es exactamente el criterio que `plan-etapas.md` fija para cerrar la Etapa 1: **dos personas que no sos vos piden otra partida**.
+
+La pregunta que la etapa existía para responder —*¿negociar con fakes es divertido?*— está contestada, y con el peor prototipo posible: sin arte, sin sonido, sin animaciones, sin chat, con los objetos como filas de texto. Que enganche **así** es la mejor noticia que podía dar esta prueba, porque todo lo que falta suma encima de algo que ya funciona.
+
+## Lo que sigue sin dato
+
+**No se comparó (a) con ficha vs (b) sin ficha.** El protocolo de las dos configuraciones quedó sin ejecutar, así que sobre la ficha ¡ES FAKE! seguimos sin saber si aporta o estorba. Queda pendiente para la segunda sesión, y no es un detalle: de eso depende que la mecánica entre o no a la Etapa 2.
 
 ## Sospecha técnica a verificar antes de diseñar nada
 
