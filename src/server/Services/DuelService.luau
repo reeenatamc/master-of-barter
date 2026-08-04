@@ -29,6 +29,8 @@ local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelSceneService = require(script.Parent.DuelSceneService)
 local EconomyService = require(script.Parent.EconomyService)
+local DataService = require(script.Parent.DataService)
+local InventoryService = require(script.Parent.InventoryService)
 
 type Slot = Types.Slot
 type DuelCopy = Types.DuelCopy
@@ -103,11 +105,16 @@ local counters = {
 
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- Etapa 1 shortcut: every player starts with one copy of each prototype item.
---- Real duel inventories come from InventoryService (card B3, Etapa 2).
-local function buildStarterHand(): { DuelCopy }
+--- The hand comes from the player's own stakeable copies now (card B3), not
+--- from thin air.
+---
+--- The profile stores counts per item; a duel needs individual things it can
+--- point at, so the counts are expanded into copies with ids that live only for
+--- this duel. Those ids are never saved: what persists is how many you have,
+--- and which particular one crossed the table is not a fact worth keeping.
+local function buildHand(player: Player): { DuelCopy }
 	local hand: { DuelCopy } = {}
-	for _, itemId in Items.order do
+	for _, itemId in InventoryService.stakeableList(player) do
 		table.insert(hand, {
 			copyId = HttpService:GenerateGUID(false),
 			itemId = itemId,
@@ -270,6 +277,15 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		return nil
 	end
 
+	-- A spectator has no profile (see DataService), so they cannot stake a copy
+	-- and cannot be paid. Letting them duel would mean a duel whose stakes and
+	-- rewards silently go nowhere -- which looks exactly like a working duel
+	-- until somebody notices their collection never changed.
+	if DataService.isSpectator(playerA) or DataService.isSpectator(playerB) then
+		warn("[DuelService] refused to start a duel: a spectator cannot stake anything")
+		return nil
+	end
+
 	local raises = DuelRules.limits.raiseOffersPerSide
 	local tokens = DuelRules.limits.fakeCallsPerDuel
 
@@ -280,8 +296,8 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		turn = 1,
 		deadline = 0,
 		sides = {
-			{ slot = 1, player = playerA, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
-			{ slot = 2, player = playerB, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
+			{ slot = 1, player = playerA, hand = buildHand(playerA), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
+			{ slot = 2, player = playerB, hand = buildHand(playerB), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
 		},
 		trove = Trove.new(),
 		resolving = false,
@@ -360,7 +376,41 @@ function DuelService.finish(duelId: string, reason: string)
 	-- Only a duel that reached a reveal pays: a declined or timed-out duel had
 	-- no trade, so there is nothing to reward. docs/gdd.md §19 says losing still
 	-- pays something, and losing is not the same as never finishing.
+	-- The stakes come out of escrow. Everything each side ends up holding is
+	-- written into their profile as duel copies; nothing is written to whoever
+	-- is no longer here, because their copies left at offer time.
+	--
+	-- Only genuine wrappers are worth anything: a forgery held nothing, so
+	-- receiving one gives you nothing. That is the mechanic, not an oversight.
 	local reveal = duel.reveal
+	if reveal then
+		for _, side in duel.sides do
+			local won = reveal.sides[side.slot]
+			if won then
+				for _, wrapped in won.received do
+					if not wrapped.isFake then
+						InventoryService.giveCopy(side.player, wrapped.claim)
+					end
+				end
+			end
+		end
+	end
+
+	-- A duel that never reached a reveal returns every stake untouched: nobody
+	-- agreed to anything, so nobody loses anything.
+	if not reveal then
+		for _, side in duel.sides do
+			-- Annotated: `x or {}` infers a union with the empty-table type,
+			-- which is not iterable.
+			local staked: { WrappedItem } = side.offer or {}
+			for _, wrapped in staked do
+				if not wrapped.isFake then
+					InventoryService.giveCopy(side.player, wrapped.claim)
+				end
+			end
+		end
+	end
+
 	if reveal then
 		for _, side in duel.sides do
 			local mine = reveal.sides[side.slot]
@@ -529,6 +579,7 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 
 	local limits = DuelRules.limits
 	local previous = side.offer
+	local alreadyWrapped = if previous then #previous else 0
 
 	-- "Add or improve" is validated by COUNT, never by real value.
 	--
@@ -612,6 +663,33 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 			-- Refused BEFORE anything is stored, so a rejected offer leaves the
 			-- duel exactly as it was.
 			return reject(player, `cannot pay {owed} Clips for the forgeries ({refusal})`)
+		end
+	end
+
+	-- ESCROW. The genuine copies leave the profile HERE, at the moment they go
+	-- on the table -- not when the duel resolves (docs/decisiones.md).
+	--
+	-- That is what makes a mid-duel disconnect safe: once a copy is out, ending
+	-- the duel writes nothing to the player who left, so there is no ordering
+	-- problem between the transfer and their profile being released. The race
+	-- stops existing instead of being sequenced.
+	--
+	-- Only the NEW wrappers are escrowed. An amendment adds to an offer whose
+	-- copies already left; taking them again would charge the stake twice.
+	local newlyStaked: { Types.ItemId } = {}
+	for index = alreadyWrapped + 1, #wrapped do
+		local item = wrapped[index]
+		if not item.isFake then
+			local claim = item.claim
+			if not InventoryService.takeCopy(player, claim) then
+				-- Put back whatever was already taken in this call, so a
+				-- half-escrowed offer cannot exist.
+				for _, back in newlyStaked do
+					InventoryService.giveCopy(player, back)
+				end
+				return reject(player, `no longer owns a copy of {claim}`)
+			end
+			table.insert(newlyStaked, claim)
 		end
 	end
 

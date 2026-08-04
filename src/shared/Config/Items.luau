@@ -67,6 +67,22 @@ local catalog: { [ItemId]: ItemDef } = {
 	server. Iterating `catalog` with pairs() gives no ordering guarantee, so use
 	this list whenever order is visible to the player.
 ]=]
+--- [propuesta] What a brand new player has to duel with.
+---
+--- Duel copies, not collection: the collection is what you have WON, and
+--- handing somebody a collection before they play makes the first win worth
+--- nothing (docs/gdd.md §21).
+---
+--- Three commons and one rare: enough to make an offer, not enough to make a
+--- convincing one. The first duel should feel like scraping something
+--- together.
+local starterCopies: { ItemId } = {
+	"golden_maruchan",
+	"potato_rock",
+	"grandma_remote",
+	"expired_yogurt",
+}
+
 local order: { ItemId } = {
 	"golden_maruchan",
 	"potato_rock",
@@ -85,4 +101,5 @@ local order: { ItemId } = {
 return {
 	catalog = catalog,
 	order = order,
+	starterCopies = starterCopies,
 }

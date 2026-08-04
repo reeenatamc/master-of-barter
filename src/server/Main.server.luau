@@ -16,12 +16,16 @@ local Net = require(ReplicatedStorage.Shared.Util.Net)
 local DataService = require(script.Parent.Services.DataService)
 local DuelService = require(script.Parent.Services.DuelService)
 local EconomyService = require(script.Parent.Services.EconomyService)
+local InventoryService = require(script.Parent.Services.InventoryService)
 
 Net.createAll()
 
 -- DataService first, always. Everything else may read a profile, and a service
 -- that reads one before it exists is a service that invents one.
 DataService.init()
+-- Inventory before duels: it listens for profiles loading, and a profile that
+-- loads before it is listening never gets its starter copies.
+InventoryService.init()
 DuelService.init()
 
 -- EconomyService has nothing to wire: it is a gate, not a listener. Required

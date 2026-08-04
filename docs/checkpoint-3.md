@@ -6,7 +6,7 @@ sidebar_label: Checkpoint 3 · persistencia
 
 **Este no se agrupa y no se difiere.** Es la regla que ya fijamos: los datos que se guardan no se auto-certifican. Un duelo roto se ve en un segundo; un guardado roto se ve la semana que viene, cuando a alguien le falta la colección.
 
-**Tiempo: 20 minutos.** Cuatro pruebas, en orden.
+**Tiempo: 25 minutos.** Cinco pruebas, en orden. La quinta es la que más importa: apostar objetos de verdad y cortar la conexión a mitad.
 
 ---
 
@@ -118,9 +118,43 @@ Sin esa línea, un checkbox apagado y un bug de guardado producen exactamente el
 
 ---
 
+## Prueba 5 — desconexión con copias reales en juego
+
+**Esta es la que B3 agrega, y es la más importante de las cinco.** Prueba que apostar objetos de verdad no pierde ni duplica nada cuando alguien se va a mitad.
+
+1. Test → **2** jugadores → **Start**.
+2. En la Command Bar, contexto **Server**, anotá qué tiene cada uno:
+
+```lua
+local D = require(game.ServerScriptService.Services.DataService)
+for _, p in game.Players:GetPlayers() do print(p.Name, D.get(p).duelCopies) end
+```
+
+Los dos arrancan con las mismas cuatro copias iniciales.
+
+3. En **un** cliente, armá una oferta con **objetos reales** (botón *Real*, no *Falso*) y **OFERTAR**.
+4. Imprimí de nuevo. **Al que ofertó le faltan esas copias** — salieron del perfil al ofertar, no al resolver. Eso es el escrow.
+5. **Cerrá esa ventana** (la X, no Stop) a mitad del duelo.
+6. Imprimí el perfil del que **quedó**.
+
+**Qué tiene que pasar:** el que se quedó **recibió** las copias apostadas por el que se fue.
+
+**Los dos fallos que esta prueba busca:**
+
+| Si ves | Es | Gravedad |
+|---|---|---|
+| El que se quedó **no recibió nada** | **Pérdida** | Malo. Alguien perdió lo suyo |
+| El que se fue **conserva** las copias que apostó | **Duplicación** | Peor. Eso infla la economía de todos, para siempre |
+
+7. Volvé a entrar con el jugador que se fue y revisá su perfil. **No puede tener de vuelta lo que apostó.**
+
+Y una que no cuesta nada mirar: **la colección de los dos tiene que estar igual que al empezar**. Un duelo mueve copias, nunca colección (§21). Si la colección cambió, eso es un fallo del pilar anti-frustración del juego.
+
+---
+
 ## Lo que este checkpoint NO prueba
 
-**Que la colección se llene.** `DataService` guarda el perfil, pero todavía nada escribe en `collection` ni en `duelCopies` — eso es B3, y los duelos siguen repartiendo objetos de prueba en memoria. Acá se prueba que el perfil **persiste**, no que el juego lo use.
+**Que la colección se llene.** Los duelos mueven **copias**, nunca colección — a propósito (§21). Qué te gana un lugar en la colección permanente es otra pregunta, y B3 no la contesta.
 
 **Las migraciones.** La cadena existe y funciona, pero está vacía: la versión 1 es la primera, así que no hay de dónde migrar. Se prueba cuando exista una versión 2.
 
