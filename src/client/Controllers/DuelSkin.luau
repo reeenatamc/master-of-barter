@@ -22,6 +22,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 
 local DuelViewModel = require(script.Parent.DuelViewModel)
@@ -81,10 +82,19 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 		screenGui:Destroy()
 	end)
 
+	-- Card E0.1: the top of the screen belongs to Roblox's chat, not to us.
+	--
+	-- The chat was never missing -- it renders above this ScreenGui and works
+	-- fine. It just auto-hides, and a panel covering the whole screen meant
+	-- nobody noticed they could talk. Both testers in the first session asked
+	-- for exactly the thing that was already there.
+	--
+	-- No chat features of our own: the window, the filter and the moderation
+	-- are Roblox's (TextChatService). This card is layout, nothing else.
 	local root = Instance.new("Frame")
-	root.Size = UDim2.fromScale(0.94, 0.94)
-	root.Position = UDim2.fromScale(0.5, 0.5)
-	root.AnchorPoint = Vector2.new(0.5, 0.5)
+	root.Size = UDim2.fromScale(0.94, 0.7)
+	root.Position = UDim2.fromScale(0.5, 0.98)
+	root.AnchorPoint = Vector2.new(0.5, 1)
 	root.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
 	root.BorderSizePixel = 0
 	root.Parent = screenGui
@@ -94,13 +104,19 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 	header.Position = UDim2.fromScale(0, 0.01)
 	header.Parent = root
 
-	local subheader = label("", UDim2.fromScale(1, 0.04), DIM, Enum.TextXAlignment.Center)
-	subheader.Position = UDim2.fromScale(0, 0.08)
+	local subheader = label("", UDim2.fromScale(1, 0.05), DIM, Enum.TextXAlignment.Center)
+	subheader.Position = UDim2.fromScale(0, 0.09)
 	subheader.Parent = root
 
+	-- Pointing up at the chat, which lives above this panel now.
+	local talkHint = label(Strings.duelScreen.talkHint, UDim2.fromScale(1, 0.045), DIM, Enum.TextXAlignment.Center)
+	talkHint.Position = UDim2.fromScale(0, 0.145)
+	talkHint.TextTransparency = 0.35
+	talkHint.Parent = root
+
 	local body = Instance.new("ScrollingFrame")
-	body.Size = UDim2.fromScale(0.96, 0.72)
-	body.Position = UDim2.fromScale(0.02, 0.13)
+	body.Size = UDim2.fromScale(0.96, 0.62)
+	body.Position = UDim2.fromScale(0.02, 0.2)
 	body.BackgroundTransparency = 1
 	body.BorderSizePixel = 0
 	body.ScrollBarThickness = 6
@@ -114,8 +130,8 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 	bodyLayout.Parent = body
 
 	local actionBar = Instance.new("Frame")
-	actionBar.Size = UDim2.fromScale(0.96, 0.11)
-	actionBar.Position = UDim2.fromScale(0.02, 0.87)
+	actionBar.Size = UDim2.fromScale(0.96, 0.14)
+	actionBar.Position = UDim2.fromScale(0.02, 0.84)
 	actionBar.BackgroundTransparency = 1
 	actionBar.Parent = root
 
