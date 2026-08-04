@@ -177,29 +177,33 @@ Criterios: agresivo y tímido difieren medible en ratio de fakes, uso de Pedir m
 
 ---
 
-## Iteración corta post-prueba (Etapa 1) — ⏱️ TIMEBOX: 1–2 semanas de ratos
+## ✅ Iteración corta post-prueba (Etapa 1) — CERRADA el 2026-08-04, dentro del timebox
 
 Sale de la primera sesión con personas (`prueba-diversion.md`): el concepto engancha, pero **los dos testers pidieron poder hablarse** para venderse el objeto y hacerse los graciosos, y la pantalla parece una planilla.
 
 **Objetivo:** llegar a la segunda sesión —la del experimento de la ficha— con un prototipo donde la actuación de venta sea posible. Nada más.
 
+> **Resultado.** Las tres cerradas. El chat resultó existir desde siempre (`TextChatService` viene encendido) y sólo estaba tapado, así que E0.1 fue mover un frame y decir la tecla; los emotes se montaron sobre el contrato de botones que ya había, sin conceptos nuevos; y los objetos ganaron forma y color desde `Theme.luau`, que estrenó contenido — placeholder, C2 lo reemplaza.
+>
+> **Deuda menor abierta:** `DuelSkin.luau` quedó en 357 líneas, sobre el límite de 300 de CLAUDE.md. No se dividió porque es el archivo que E2 descarta entero, y dividirlo es trabajo que se tira con él. Queda anotado para no darlo por no visto.
+
 **Regla de esta iteración:** cualquier otra cosa que salga de las pruebas va al backlog, **no acá**. El timebox es duro; se cierra por tiempo, no por completitud.
 
-### E0.1 · Hacerle sitio al chat en la pantalla de duelo
+### ✅ E0.1 · Hacerle sitio al chat en la pantalla de duelo
 
-**Prioridad:** P0 · S
+**Prioridad:** P0 · S — **hecha**
 
 Criterios: la conversación se ve **mientras** negociás, no en otra pantalla ni tapada por la UI del duelo. **Cero features de chat propias** — el filtro, la ventana y la moderación son de Roblox (`TextChatService`, ya habilitado por defecto en places nuevos). Esto es una tarjeta de *layout*, no de chat.
 
 Diagnóstico previo obligatorio: comprobar en Play si el chat ya aparece. Lo más probable es que exista y que la pantalla de E0 —que ocupa el 94% del ancho con `IgnoreGuiInset`— simplemente lo tape. Si es eso, la tarjeta es encoger un frame.
 
-### A7 · Emotes — **sube de P1 a P0**
+### ✅ A7 · Emotes — **subió de P1 a P0** — hecha
 
 Ver la tarjeta en la ÉPICA A. Sube por el dato de la primera sesión: en móvil, que es la plataforma principal, **seis botones de reacción venden más rápido que escribir**, y escribir a mitad de un duelo cronometrado es incómodo. Seis emotes prediseñados, visibles por el rival, con cooldown anti-spam.
 
-### E0.2 · Objetos que parezcan objetos
+### ✅ E0.2 · Objetos que parezcan objetos
 
-**Prioridad:** P0 · S
+**Prioridad:** P0 · S — **hecha**
 
 Criterios: cada objeto se ve como una cosa y no como una fila de texto — **placeholder**: forma simple + color + nombre grande. Suficiente para que los testers juzguen el juego y no la planilla.
 

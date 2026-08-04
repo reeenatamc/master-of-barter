@@ -66,9 +66,28 @@ Cualquiera de los tres desenlaces es un buen resultado. El único mal resultado 
 
 ---
 
-## Controles
+## Controles — todo con botones
 
-*Pendiente: se completa cuando cierre la iteración corta (E0.1, A7, E0.2), con los controles que existan de verdad. Hasta entonces, no hay instrucciones que dar — y escribirlas antes sería inventarlas.*
+**No hace falta el teclado para nada del juego.** Esto es lo único que tenés que explicarles, y sólo si preguntan:
+
+| Para… | Hacen esto |
+|---|---|
+| Elegir qué ofrecer | En **Tu colección**, tocan **Real** (algo que tienen de verdad) o **Falso** (una falsificación) |
+| Sacar algo elegido | La **X** en Tu oferta |
+| Mandar la oferta | **OFERTAR** |
+| Negociar | **Aceptar** · **Rechazar** · **Pedir más** |
+| Acusar *(sólo versión a)* | **¡ES FAKE!** |
+| Reaccionar | Los seis botones de **Reacciones** — 🤩 🤨 😂 🙏 💀 🔥 |
+| **Hablar** | Apretar **`/`** y escribir. El cartel gris arriba se los recuerda |
+
+**Lo de hablar es lo nuevo y es lo que esta sesión viene a mirar.** No se los subrayes: si tienen que preguntarte cómo hablar, eso ya es información.
+
+## Antes de que lleguen
+
+1. `rojo serve` corriendo, plugin conectado.
+2. `src/shared/Config/DuelRules.luau` → `fakeCallsPerDuel` en el valor de la versión que va primero.
+3. Studio → **Test** → **2** jugadores → **Start**, ventanas lado a lado.
+4. Que cada persona **haga click sobre su ventana** una vez, para que tome el teclado y puedan escribir.
 
 ---
 
