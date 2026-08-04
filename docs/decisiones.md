@@ -227,3 +227,33 @@ Con B2 llegó ese día. El pago del duelo vive **dentro** de esa guarda, y desde
 Ahora el aviso lleva `DataStoreState`, así que `NoAccess` y `Access` los separan de un vistazo.
 
 **Y de dónde salió:** de escribir el guion de prueba, no de programar. Documentar cómo se prueba algo obligó a pensar qué vería quien lo prueba, y ahí apareció que dos cosas distintas se veían igual.
+
+---
+
+## 2026-08-04 · Escrow: las copias salen del perfil al ofertar, no al resolver
+
+**El problema.** Desde B3, "el que se queda gana la apuesta" significa escribir en **dos** perfiles. Y el del que se fue puede estar liberándose (`PlayerRemoving` → ProfileStore) en el mismo instante en que `finish()` intenta descontarle las copias. Si el perfil se libera antes de que la transferencia escriba: o el ganador no recibe (**pérdida**), o el perdedor conserva lo que ya entregó (**duplicación**).
+
+**Decidido:** las copias apostadas **salen del perfil al ofertar**. El duelo las retiene. Al resolver, se devuelven o se entregan.
+
+**Por qué el escrow y no "transferir antes de liberar":**
+
+La razón que más pesa no es que haga imposible el dupe —que también—, sino que **elimina la carrera en vez de ordenarla**. Con escrow, al resolver un duelo por desconexión **no hay nada que escribir en el perfil del que se fue**: sus copias salieron al ofertar. Solo se escribe en el perfil del que se quedó, que sigue conectado y con su perfil vivo.
+
+O sea: el problema de orden entre transferencia y liberación **deja de existir**, en vez de resolverse con una secuencia que hay que mantener correcta para siempre. Ordenar dos listeners de `PlayerRemoving` es una convención que el próximo cambio puede romper en silencio; que no haya nada que escribir no se rompe.
+
+**Qué pasa si el servidor se cae a mitad:** las copias en escrow se pierden. Es aceptable y es la elección correcta entre los dos fallos posibles: una **pérdida** lastima a una persona una vez, una **duplicación** infla la economía de todos para siempre. Cuando hay que elegir cuál fallo tener, se elige el que no se propaga.
+
+**Alternativa descartada:** transferir antes de liberar. Se descartó porque depende de un orden entre dos manejadores de `PlayerRemoving` que Roblox no garantiza, y porque una caída del servidor entre ambos pasos produce dupe, que es el peor de los dos fallos.
+
+---
+
+## 2026-08-04 · La colección no decrece porque la operación no existe
+
+**Decidido:** `InventoryService` no tiene ninguna función que reste de `collection`. Ninguna.
+
+**Por qué así:** `gdd.md` §21 dice que la colección permanente nunca se pierde 🔒, y eso ahora se vuelve código. Se podía cumplir por convención —"acordate de no restar de la colección"— o por control de acceso —"el módulo de transferencias no recibe permiso de escritura"—.
+
+Se eligió algo más fuerte: **la operación no existe**. No se puede llamar a una función que no está. Un camino de código que reste de la colección tendría que escribirla primero, que es un acto deliberado y visible en el diff, no un descuido.
+
+**Consecuencia a resolver en B4, no acá:** `Economy.shop.sellMultiplier` sugiere vender objetos, y vender restaría de la colección. Eso contradice §21 tal como está escrito. Cuando llegue el kiosco hay que decidir si se venden **copias de duelo** (coherente) o si §21 cambia (caso (c): preguntar). Anotado, no resuelto.
