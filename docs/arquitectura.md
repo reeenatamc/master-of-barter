@@ -23,7 +23,7 @@ Workspace (lobby y mesas) · ReplicatedStorage (config, remotos, assets comparti
 ReplicatedStorage/
   Shared/
     Config/
-      Items.luau        -- catálogo de squishies: id, nombre, rareza, valorBase
+      Items.luau        -- catálogo de objetos: id, rareza, valorBase (nombres en Strings)
       Economy.luau      -- costos de fakes, recompensas, precios del kiosco
       DuelRules.luau    -- fases, tiempos, límites (pedirMás=3, fakes=2, ficha=1)
       Theme.luau        -- PIEL INTERCAMBIABLE: assets visuales/sonoros del tema activo

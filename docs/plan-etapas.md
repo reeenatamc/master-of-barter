@@ -48,6 +48,22 @@ Leyenda de tareas: 🟥 Imprescindible · 🟨 Importante · 🟩 Opcional · �
 **Dependencias:** Etapa 0; Nivel 2 de la ruta (remotos y validación).
 **Riesgos:** ⚠️ el mayor del proyecto: que la mecánica NO sea divertida. Si tras iterar 2–3 veces las pruebas no producen risas ni tensión, se replantea el núcleo ANTES de construir nada más. Este es el punto de salida barato.
 **Criterio de aceptación:** dos personas que no eres tú piden "otra partida" sin que se lo sugieras.
+
+**Protocolo de la prueba de diversión — la ficha ¡ES FAKE! es un experimento, no una decisión.**
+
+El razonamiento está en `gdd.md` §8: la diversión del meme original vive en la *actuación de venta*, y eso ya funciona sin que exista ninguna falsificación física. La ficha es capa nuestra encima. Así que la sesión no pregunta "¿te gustó?", compara dos versiones:
+
+| | Configuración | Cómo se defiende quien recibe |
+|---|---|---|
+| **(a) Con ficha** | `fakeCallsPerDuel = 1` | Acusar, rechazar o pedir más |
+| **(b) Sin ficha** | `fakeCallsPerDuel = 0` | Solo rechazar o pedir más; el fake se descubre recién en la revelación |
+
+Se juegan varias partidas de cada una, **alternando cuál va primero entre parejas** para que el orden no contamine el resultado. No se le explica a nadie que hay dos versiones.
+
+Lo que se observa, y en este orden de importancia: **dónde hubo más risas**, **cuál produjo más "otra"**, y sólo después qué dijeron cuando se les preguntó. Lo que la gente hace pesa más que lo que opina.
+
+Posibles desenlaces: la ficha multiplica la tensión (se queda), la ficha agrega una regla a algo que ya funcionaba (se elimina y §8 se simplifica), o no se nota diferencia (se elimina por ser complejidad que no paga).
+
 **Resultado jugable:** un duelo completo horrible de ver y divertido de jugar.
 
 ---
@@ -68,6 +84,16 @@ Leyenda de tareas: 🟥 Imprescindible · 🟨 Importante · 🟩 Opcional · �
 | BotService v1: 2 personalidades (agresivo, tímido) | 🟥 |
 | DuelService definitivo: FSM completa, watchdogs, desconexiones, Trove por duelo | 🟥 |
 | Validación en 4 capas de todos los remotos + rate limiting | 🟥 |
+| UI papel v1: mesa, negociación, revelación animada (versión sencilla), HUD, kiosco | 🟥 |
+| **Juice: feedback audiovisual tras CADA acción significativa** — poner un objeto en la mesa, pedir más, aceptar, acusar, revelar. No sólo la Revelación™ | 🟥 |
+| Emulador móvil como parte del cierre de cada pantalla | 🟥 |
+| Kiosco: comprar objetos/copias con Clips | 🟥 |
+| 12 objetos en 3 rarezas con pistas de fake (3 tipos de imperfección) | 🟥 |
+| 1–2 game passes cosméticos (un envoltorio + un efecto de revelación) con ProcessReceipt | 🟨 |
+| Sonidos base (papel, cinta, revelación) desde Theme.luau | 🟨 |
+| Emotes prediseñados (6) | 🟨 |
+| Vitrina simple en lobby | 🟩 |
+
 <!--
 Nota de rate limiting (detectada al cerrar A1.3): no alcanza con throttlear las
 acciones VÁLIDAS. Un cliente puede spamear solicitudes inválidas sin límite:
@@ -86,18 +112,11 @@ entrar a Etapa 2, con criterios como cualquier P0:
 Una regla sin criterio de aceptación es una intención, no una tarea.
 -->
 
-| UI papel v1: mesa, negociación, revelación animada (versión sencilla), HUD, kiosco | 🟥 |
-| Emulador móvil como parte del cierre de cada pantalla | 🟥 |
-| Kiosco: comprar squishies/copias con Clips | 🟥 |
-| 12 squishies en 3 rarezas con pistas de fake (3 tipos de imperfección) | 🟥 |
-| 1–2 game passes cosméticos (un envoltorio + un efecto de revelación) con ProcessReceipt | 🟨 |
-| Sonidos base (papel, cinta, revelación) desde Theme.luau | 🟨 |
-| Emotes prediseñados (6) | 🟨 |
-| Vitrina simple en lobby | 🟩 |
-
 **Entregables:** juego completo jugable de punta a punta en servidor privado.
 **Dependencias:** Etapa 1 validada (¡divertido!); Nivel 3 de la ruta en curso.
 **Riesgos:** scope creep ("ya que estoy, agrego…" → NO: al backlog de post-MVP); fatiga de mitad de proyecto (mitigación: publicar avances a amigos cada 2 semanas).
+
+**Sobre el juice, que subió de prioridad:** la guía de retención de Roblox es explícita en que un loop funciona cuando **la siguiente acción es obvia y cada acción devuelve feedback inmediato**. Reservar todo el jugo para la revelación deja el 90 % del duelo mudo: ofertar, pedir más y aceptar tienen que sonar y moverse también. Es barato (TweenService y sonidos que ya están en `Theme.luau`) y es la diferencia entre un prototipo que se siente vivo y uno que se siente un formulario.
 **Criterio de aceptación:** una persona nueva entra, juega 3 duelos contra humano y contra bot sin distinguirlo con certeza, compra algo en el kiosco, cierra el juego, vuelve y su progreso está intacto. Cero errores en consola.
 **Resultado jugable:** Master of Barter reconocible, feo en los bordes, sólido en el centro.
 
@@ -110,10 +129,10 @@ Una regla sin criterio de aceptación es una intención, no una tarea.
 
 | Tarea | Prio |
 |---|---|
-| Onboarding con Don Trueque: duelo guiado, primer squishy regalado, fake obvio didáctico | 🟥 |
+| Onboarding con Don Trueque: duelo guiado, primer objeto regalado, fake obvio didáctico. **Primeros ~10 segundos: se entiende qué está pasando y hay una recompensa al alcance; primer trade dentro del primer minuto** | 🟥 |
 | AnalyticsService: funnel de onboarding + eventos de duelo/kiosco | 🟥 |
 | Misiones diarias (3) | 🟨 |
-| Completar a 15 squishies; pasada de arte a los que quedaron feos | 🟨 |
+| Completar a 15 objetos; pasada de arte a los que quedaron feos | 🟨 |
 | Pruebas cerradas: 10–20 jugadores invitados (amigos, conocidos, algún server de Discord) | 🟥 |
 | Ciclo semanal: leer datos + feedback → ajustar economía/pistas en Config → repetir | 🟥 |
 | Corrección de todos los bugs de consola reportados | 🟥 |
@@ -121,6 +140,8 @@ Una regla sin criterio de aceptación es una intención, no una tarea.
 **Entregables:** build alfa + primer informe de métricas (funnel, duración de duelo, uso de fakes/acusaciones).
 **Riesgos:** tomar el feedback de 10 personas como verdad absoluta (los datos moderan las anécdotas); descuidar el balance del bluff (es EL trabajo de esta etapa).
 **Criterio de aceptación:** >60 % de jugadores nuevos completa el onboarding y juega ≥3 duelos; el ratio de ofertas con fake está entre 25–60 % (ni "nadie miente" ni "todos mienten").
+
+**El primer minuto es su propio criterio.** No alcanza con que el tutorial sea completable: en los primeros ~10 segundos el jugador tiene que **entender qué está pasando** y tener **una recompensa a la vista**, y estar en su primer trade antes del minuto. El funnel de §36 tiene que medir ese tramo con su propio paso, porque es donde se cae la gente que nunca llega a saber si el juego le gusta.
 **Resultado jugable:** un juego que desconocidos entienden solos.
 
 ---
@@ -167,7 +188,7 @@ Una regla sin criterio de aceptación es una intención, no una tarea.
 
 **Objetivo:** vivir por temporadas sin quemarte.
 
-- Cadencia: temporada nueva cada 6–8 semanas (tema del trend vigente vía `Theme.luau` + 4–6 squishies + misiones). 🟥
+- Cadencia: temporada nueva cada 6–8 semanas (tema del trend vigente vía `Theme.luau` + 4–6 objetos + misiones). 🟥
 - Corrección de bugs semanal; revisión de métricas quincenal contra el plan. 🟥
 - Escuchar jugadores con filtro: las sugerencias entran al backlog, no al código. 🟨
 - Contenido futuro según la lista ordenada del GDD §40 (Trade-Up Run primero) SOLO si la retención lo justifica. 💤

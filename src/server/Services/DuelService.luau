@@ -49,7 +49,7 @@ type Side = {
 	--- continue. Cleared when the amendment lands.
 	amendRequested: boolean,
 	raisesLeft: number,
-	fakeCallUsed: boolean,
+	fakeCallsLeft: number,
 }
 
 type Duel = {
@@ -146,7 +146,7 @@ local function stateFor(duel: Duel, slot: Slot): DuelState
 			handCount = #side.hand,
 			raisesLeft = side.raisesLeft,
 			mustAmend = side.amendRequested,
-			fakeCallUsed = side.fakeCallUsed,
+			fakeCallsLeft = side.fakeCallsLeft,
 			-- Censored for everyone, including the owner: the owner gets the
 			-- truth through `yourOffer` below instead.
 			offer = offerView,
@@ -268,6 +268,7 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 	end
 
 	local raises = DuelRules.limits.raiseOffersPerSide
+	local tokens = DuelRules.limits.fakeCallsPerDuel
 
 	local duel: Duel = {
 		id = HttpService:GenerateGUID(false),
@@ -276,8 +277,8 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		turn = 1,
 		deadline = 0,
 		sides = {
-			{ slot = 1, player = playerA, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallUsed = false },
-			{ slot = 2, player = playerB, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallUsed = false },
+			{ slot = 1, player = playerA, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
+			{ slot = 2, player = playerB, hand = buildStarterHand(), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
 		},
 		trove = Trove.new(),
 		resolving = false,
@@ -739,11 +740,14 @@ function DuelService.negotiate(player: Player, action: unknown)
 	elseif action == "Decline" then
 		resolve(duel, "Cancelled", `slot {side.slot} declined`)
 	elseif action == "FakeCall" then
-		-- One token per side per duel (DuelRules.limits.fakeCallsPerDuel).
-		if side.fakeCallUsed then
-			return reject(player, "your FakeCall token is already spent")
+		-- Governed entirely by DuelRules.limits.fakeCallsPerDuel, including the
+		-- value 0: the play-test in Etapa 1 runs one configuration with the
+		-- token and one without, and "without" has to mean the server refuses
+		-- it, not just that the button is hidden.
+		if side.fakeCallsLeft <= 0 then
+			return reject(player, "no FakeCall tokens left")
 		end
-		side.fakeCallUsed = true
+		side.fakeCallsLeft -= 1
 
 		local correct, takenBy = settleFakeCall(duel, side.slot)
 		duel.reveal = buildReveal(duel, takenBy, { by = side.slot, correct = correct })

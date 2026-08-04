@@ -75,7 +75,7 @@ Criterios: toda mutación pasa por EconomyService; recompensas de duelo desde Co
 **B3 · Como jugador quiero una colección permanente intocable y copias de duelo apostables** — P0 · M
 Criterios: la colección nunca decrece por duelos; las copias se compran con Clips y son lo único transferible en la mesa. Dependencias: B1, B2. Riesgo: es la decisión 🧪 del GDD §21 — mantener la frontera clarísima en la UI.
 
-**B4 · Como jugador quiero comprar squishies y copias en el kiosco** — P0 · M
+**B4 · Como jugador quiero comprar objetos y copias en el kiosco** — P0 · M
 Criterios: catálogo desde Config; compra validada y reflejada al instante; precios nunca leídos del cliente. Dependencias: B2, B3.
 
 **B5 · Como jugadora quiero vender game passes y productos sin riesgo de fraude** — P1 · M
@@ -85,8 +85,8 @@ Criterios: ProcessReceipt idempotente (tabla Recibos); pass detectado al entrar;
 
 ## ÉPICA C — Configuración y contenido
 
-**C1 · Catálogo de squishies en Config con rarezas y valores** — P0 · S (estructura) + M (15 ítems con arte)
-Criterios: añadir un squishy = añadir una entrada, cero código nuevo. Dependencias: ninguna.
+**C1 · Catálogo de objetos en Config con rarezas y valores** — P0 · S (estructura) + M (15 ítems con arte)
+Criterios: añadir un objeto = añadir una entrada, cero código nuevo. El panteón es propio y el tono es brainrot; nunca personajes brainrot existentes (ver `gdd.md` §22). Dependencias: ninguna.
 
 **C2 · Sistema de temas (Theme.luau) con el tema Papelito v1** — P0 · M
 Objetivo: el seguro anti-caducidad del meme. Criterios: todo asset visual/sonoro del sabor papel se resuelve vía tema activo; probar creando un mini-tema alternativo de 3 assets y alternándolo. Dependencias: ninguna. Riesgo: disciplina — un solo asset hardcodeado rompe la promesa.
@@ -118,6 +118,8 @@ Criterios: caminar, unirse a cola desde una mesa, volver del duelo al mismo punt
 
 **E2 · UI de duelo estilo papel usable en móvil** — P0 · L
 Criterios: 3 botones grandes, oferta legible, inspección cómoda con dedo; aprobada en emulador (teléfono chico y tablet) antes de cerrarse. Dependencias: C2. Riesgo: es la superficie de mayor esfuerzo del MVP — dividir en sub-tarjetas por pantalla.
+> **Criterio añadido — escena canónica (`gdd.md` §11).** El duelo se ve con los dos avatares **frente a frente** y la tabla de papel **en medio**, cámara lateral/cenital sobre la mesa. No es decoración: es el encuadre que hace reconocible una miniatura o un clip, y ver al rival (avatar + emotes) es parte de la información con la que se lo lee. Una UI que ocupe la pantalla entera y esconda al rival **no cumple E2**, por bonita que sea.
+> E0 no se toca: sigue siendo la pantalla fea que ya está, y se descarta cuando esta entre.
 
 **E3 · HUD, kiosco y vitrina** — P0 (HUD, kiosco) / P2 (vitrina) · M
 Criterios: Clips y colección siempre coherentes con servidor; vitrina filtra textos con TextService.
@@ -130,7 +132,7 @@ Criterios: banco desde Theme; papel, cinta, revelación, victoria/derrota; volú
 ## ÉPICA F — Onboarding, misiones y analítica
 
 **F1 · Tutorial con Don Trueque** — P0 · M
-Criterios: duelo guiado, primer squishy regalado, un fake obvio didáctico; completable en <4 min; saltable para cuentas con progreso. Dependencias: núcleo A completo. Pruebas: persona real sin ayuda verbal.
+Criterios: duelo guiado, primer objeto regalado, un fake obvio didáctico; completable en <4 min; saltable para cuentas con progreso. Dependencias: núcleo A completo. Pruebas: persona real sin ayuda verbal.
 
 **F2 · Misiones diarias** — P1 · M
 Criterios: 3 diarias desde Config, progreso persistente, reseteo diario correcto en zonas horarias distintas.
@@ -152,7 +154,7 @@ Criterios: documento con los pasos de §11–12 de la arquitectura (móvil, red 
 Criterios: 3–5 clips de <20 s capturados de partidas reales; publicados el día del lanzamiento.
 
 **G4 · Pipeline de temporadas** — P3 · M
-Criterios: checklist para lanzar una temporada (tema + squishies + misiones) en <2 semanas de ratos; se construye tras el lanzamiento, cuando la retención lo justifique.
+Criterios: checklist para lanzar una temporada (tema + objetos + misiones) en <2 semanas de ratos; se construye tras el lanzamiento, cuando la retención lo justifique.
 
 ---
 

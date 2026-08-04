@@ -23,6 +23,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local Types = require(ReplicatedStorage.Shared.Types)
 
@@ -47,12 +48,23 @@ local function buildActions(state: Types.DuelState): { DuelViewModel.Button }
 	local yourTurn = state.phase == "Negotiating" and state.turn == state.yourSlot
 	local labels = Strings.duelButtons
 
-	return {
+	local actions = {
 		button("accept", labels.accept, yourTurn, "primary"),
 		button("decline", labels.decline, yourTurn, "plain"),
 		button("raise", labels.raiseOffer, yourTurn and you ~= nil and you.raisesLeft > 0, "plain"),
-		button("fakecall", labels.fakeCall, yourTurn and you ~= nil and not you.fakeCallUsed, "danger"),
 	}
+
+	-- With the token configured to zero the mechanic does not exist, so the
+	-- button is absent rather than permanently greyed. A disabled button says
+	-- "not now"; this needs to say "not in this game". Etapa 1 play-tests both
+	-- configurations, and a leftover grey button would prompt questions about a
+	-- rule the testers were never given.
+	if DuelRules.limits.fakeCallsPerDuel > 0 then
+		local left = if you ~= nil then you.fakeCallsLeft else 0
+		table.insert(actions, button("fakecall", labels.fakeCall, yourTurn and left > 0, "danger"))
+	end
+
+	return actions
 end
 
 local function buildHeader(state: Types.DuelState): (string, string)

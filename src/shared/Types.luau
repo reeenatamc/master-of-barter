@@ -173,7 +173,10 @@ export type DuelPlayerView = {
 	--- The rival spent a raise on this side, so it owes a bigger offer. Public
 	--- to both players: everyone saw the raise happen.
 	mustAmend: boolean,
-	fakeCallUsed: boolean,
+	--- Accusations this side has left. A counter rather than a "used" flag so
+	--- that DuelRules.limits.fakeCallsPerDuel actually governs it -- including
+	--- the value 0, which turns the mechanic off entirely for a play-test.
+	fakeCallsLeft: number,
 	offer: OfferView?,
 }
 
