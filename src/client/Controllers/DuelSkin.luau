@@ -107,6 +107,9 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 	screenGui.Name = "DuelScreenUgly"
 	screenGui.ResetOnSpawn = false
 	screenGui.IgnoreGuiInset = true
+	-- Sibling ordering, so ZIndex means what it looks like it means instead of
+	-- being resolved per ancestor chain.
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.Parent = parent
 	trove:Add(function()
 		screenGui:Destroy()
@@ -263,7 +266,7 @@ function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
 				-- logic noticing.
 				local textLeft = 0.02
 				if row.itemId then
-					local swatch = Theme.itemSwatches[row.itemId] or Theme.defaultSwatch
+					local swatch = Theme.items[row.itemId] or Theme.defaultItem
 
 					local blob = Instance.new("Frame")
 					blob.Size = UDim2.fromScale(0.06, 0.66)
