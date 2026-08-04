@@ -95,7 +95,7 @@ function DuelPanels.picker(state: Types.DuelState, draft: Draft): Panel
 		})
 	end
 
-	return { title = UI.yourHand, rows = rows }
+	return { kind = "picker", title = UI.yourHand, rows = rows }
 end
 
 --- What has been picked but not yet sent.
@@ -125,7 +125,7 @@ function DuelPanels.draft(draft: Draft): Panel
 		},
 	})
 
-	return { title = UI.yourOffer, rows = rows }
+	return { kind = "mine", title = UI.yourOffer, rows = rows }
 end
 
 --- Your own committed offer, with the truth on it: you know what you wrapped.
@@ -143,7 +143,7 @@ function DuelPanels.ownOffer(state: Types.DuelState): Panel
 		})
 	end
 
-	return { title = UI.yourOffer, rows = rows }
+	return { kind = "mine", title = UI.yourOffer, rows = rows }
 end
 
 --- The rival's side: only what the server chose to send, a claim and how the
@@ -175,7 +175,7 @@ function DuelPanels.rival(state: Types.DuelState): Panel
 		end
 	end
 
-	return { title = UI.theirOffer, rows = rows }
+	return { kind = "rival", title = UI.theirOffer, rows = rows }
 end
 
 --- The reaction bar. Ordinary buttons carrying ordinary ids, so the skin needs
@@ -187,6 +187,7 @@ function DuelPanels.emotes(): Panel
 	end
 
 	return {
+		kind = "emotes",
 		title = UI.emotes,
 		rows = { { label = "", tone = "plain" :: Tone, buttons = buttons } },
 	}
@@ -236,7 +237,7 @@ function DuelPanels.reveal(reveal: Types.RevealResult, yourSlot: Types.Slot): Pa
 
 	table.insert(rows, { label = verdict, tone = verdictTone, buttons = {} })
 
-	return { title = UI.reveal, rows = rows }
+	return { kind = "reveal", title = UI.reveal, rows = rows }
 end
 
 return DuelPanels

@@ -39,7 +39,17 @@ export type Row = {
 	buttons: { Button },
 }
 
+--- What a panel IS, so a skin can decide where it goes.
+---
+--- Semantic like `Row.itemId`, and for the same reason. The E0 skin stacks
+--- panels in a scrolling column and ignores this; the paper skin puts the
+--- rival's at the far edge of the sheet and yours at the near one, because on a
+--- shared sheet seen from opposite sides, WHOSE something is decides where it
+--- sits. Neither arrangement belongs in the brain.
+export type PanelKind = "rival" | "mine" | "picker" | "emotes" | "reveal"
+
 export type Panel = {
+	kind: PanelKind,
 	title: string,
 	rows: { Row },
 }
@@ -51,6 +61,16 @@ export type ViewModel = {
 	--- The negotiation bar. Always the same four, enabled or not, so a player
 	--- learns where they live. A button that vanishes teaches nothing.
 	actions: { Button },
+}
+
+--- What every skin must provide. Lives here rather than in one skin, because
+--- two implementations now answer to it and neither is the reference.
+export type Handle = {
+	render: (viewModel: ViewModel) -> (),
+	--- Shows a reaction for a moment. Not part of `render` because an emote is
+	--- an event, not state: re-rendering the screen must not replay it.
+	flashEmote: (symbol: string, mine: boolean) -> (),
+	destroy: () -> (),
 }
 
 function DuelViewModel.button(id: string, label: string, enabled: boolean, tone: Tone): Button

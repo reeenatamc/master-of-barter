@@ -2,14 +2,19 @@
 --[[
 	UIController.luau -- mounts/unmounts screens according to state.
 
-	Sits between the brain (DuelScreen, what to show) and the skin (DuelSkin,
-	how to draw it), and owns the one piece of state neither of them should:
-	the offer the player is assembling but has not sent.
+	Sits between the brain (DuelScreen, what to show) and whichever skin is
+	active (how to draw it), and owns the one piece of state neither should: the
+	offer the player is assembling but has not sent.
 
 	That draft is client-only and deliberately unauthoritative. It exists so the
 	screen has something to display while you decide; the server sees it once,
 	as a finished offer, and validates it from scratch (docs/arquitectura.md §4).
 	Nothing here decides anything the server will not re-decide.
+
+	Two skins answer to the same contract: the paper sheet standing on the table
+	(card E2) and the flat panel from E0, kept as a fallback. `Theme.screen`
+	picks between them, and nothing else in this file knows which is running --
+	that is what the contract bought.
 ]]
 
 local Players = game:GetService("Players")
@@ -18,20 +23,26 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
+local Theme = require(ReplicatedStorage.Shared.Config.Theme)
+local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local DuelCamera = require(script.Parent.DuelCamera)
 local DuelController = require(script.Parent.DuelController)
+local DuelPaperSkin = require(script.Parent.DuelPaperSkin)
 local DuelScreen = require(script.Parent.DuelScreen)
 local DuelSkin = require(script.Parent.DuelSkin)
+local DuelViewModel = require(script.Parent.DuelViewModel)
 
 local UIController = {}
 
 local draft: DuelScreen.Draft = {}
-local handle: DuelSkin.Handle? = nil
+local handle: DuelViewModel.Handle? = nil
+--- Everything the current duel's screen owns. Cleaned when the duel changes or
+--- ends, by every route -- the same discipline as the server's per-duel trove.
+local sceneTrove: Trove.Trove? = nil
+local mountedDuelId: string? = nil
 
---- Repaints from whatever the controller last received. Called after a state
---- arrives and after any local edit to the draft, so both kinds of change take
---- the same single path.
 local function refresh()
 	local screen = handle
 	local state = DuelController.getState()
@@ -41,8 +52,6 @@ local function refresh()
 	screen.render(DuelScreen.build(state, draft))
 end
 
---- Adds a genuine wrapper holding a copy the player actually owns and has not
---- already committed to this draft.
 local function addGenuine(itemId: Types.ItemId)
 	local state = DuelController.getState()
 	if not state then
@@ -70,8 +79,8 @@ local function addForgery(itemId: Types.ItemId)
 	table.insert(draft, { isFake = true, claim = itemId })
 end
 
---- Turns a button id into something that happens. The skin reports ids and
---- knows nothing beyond that; this is the only place an id means anything.
+--- Turns a button id into something that happens. Skins report ids and know
+--- nothing beyond that; this is the only place an id means anything.
 local function handleAction(id: string)
 	local kind, argument = string.match(id, "^(%a+):(.+)$")
 
@@ -112,20 +121,86 @@ local function handleAction(id: string)
 	refresh()
 end
 
+local function teardown()
+	local screen = handle
+	if screen then
+		screen.destroy()
+	end
+	handle = nil
+
+	local trove = sceneTrove
+	if trove then
+		trove:Clean()
+	end
+	sceneTrove = nil
+	mountedDuelId = nil
+end
+
+--- Slot 1 stands on the negative side of the sheet and so reads its Back face;
+--- slot 2 reads the Front. Derived from the same rule DuelSceneService uses to
+--- place them, which is why neither has to tell the other.
+local function faceFor(slot: Types.Slot): Enum.NormalId
+	return if slot == 1 then Enum.NormalId.Back else Enum.NormalId.Front
+end
+
+local function mountFlat(playerGui: Instance)
+	handle = DuelSkin.mount(playerGui, handleAction)
+	refresh()
+end
+
+--- Puts the duel on the paper sheet standing on the table. Yields until the
+--- table has replicated, which is why it runs in its own thread.
+local function mountPaper(playerGui: Instance, state: Types.DuelState)
+	local model = workspace:WaitForChild(`Duel_{state.duelId}`, 10)
+	local sheet = if model then model:WaitForChild("Sheet", 5) else nil
+
+	if not sheet or not sheet:IsA("BasePart") then
+		-- Falling back rather than failing: a player with no screen at all
+		-- cannot even tell you what went wrong.
+		warn("[UI] the duel table never arrived; using the flat screen instead")
+		mountFlat(playerGui)
+		return
+	end
+
+	local trove = Trove.new()
+	sceneTrove = trove
+
+	handle = DuelPaperSkin.mount(playerGui, sheet, faceFor(state.yourSlot), handleAction)
+	DuelCamera.focus(sheet, state.yourSlot)
+	trove:Add(DuelCamera.release)
+
+	-- The server tears the table down when the duel ends, by any route. Handing
+	-- the camera back has to follow it: a scriptable camera outliving its
+	-- subject leaves the player staring at nothing.
+	trove:Connect(sheet.Destroying, teardown)
+
+	refresh()
+end
+
 --- Called whenever the server sends a new duel state.
 local function onDuelState(state: Types.DuelState)
-	-- Once the offer is committed, the draft has served its purpose.
 	if state.yourOffer then
 		table.clear(draft)
 	end
+
+	if mountedDuelId ~= state.duelId then
+		teardown()
+		mountedDuelId = state.duelId
+		table.clear(draft)
+
+		local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+		if Theme.screen == "table" then
+			task.spawn(mountPaper, playerGui, state)
+			return
+		end
+
+		mountFlat(playerGui)
+	end
+
 	refresh()
 end
 
 function UIController.start()
-	local player = Players.LocalPlayer
-	local playerGui = player:WaitForChild("PlayerGui")
-
-	handle = DuelSkin.mount(playerGui, handleAction)
 	DuelController.onStateChanged(onDuelState)
 
 	DuelController.onEmote(function(slot: Types.Slot, emoteId: string)
@@ -136,11 +211,8 @@ function UIController.start()
 		end
 	end)
 
-	-- The debug keys stay while diagnostics are on, but every one of them maps
-	-- to a button that also exists on screen. Nothing is reachable by keyboard
-	-- alone, so removing the keys in E2 cannot orphan an action.
 	if DuelRules.debugLogs then
-		print("[UI] duel screen mounted (ugly skin, card E0)")
+		print(`[UI] ready, screen = {Theme.screen}`)
 	end
 end
 

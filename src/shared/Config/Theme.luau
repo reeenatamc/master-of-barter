@@ -209,6 +209,23 @@ local tableSpec = {
 	pixelsPerStud = 96,
 }
 
+--- [propuesta] Where the camera sits during a duel. Over your own shoulder,
+--- looking at the sheet with the rival's avatar visible past it -- the framing
+--- of docs/gdd.md §11. Fixed, not orbiting: §11 says fija, and a camera the
+--- player has to manage is one more thing between them and the game.
+local camera = {
+	--- Behind your own side of the sheet.
+	distance = 11,
+	--- Eye height above the table.
+	height = 7.5,
+	--- What it aims at: the middle of the sheet, so the rival's head sits just
+	--- above the far edge.
+	aimHeight = 4.5,
+	--- Seconds to glide in when the duel opens. Cutting is jarring; sliding in
+	--- reads as sitting down at the table.
+	settle = 0.8,
+}
+
 --- How much a taped cut-out is rotated, in degrees. Nothing is ever perfectly
 --- straight: §28 says the imperfection is the aesthetic, not a defect, and a
 --- perfectly aligned grid of paper cards stops reading as paper immediately.
@@ -225,6 +242,7 @@ return {
 	motion = motion,
 	tiltDegrees = tiltDegrees,
 	table = tableSpec,
+	camera = camera,
 	--- Which duel screen is used. "table" is the card E2 scene: a paper sheet
 	--- standing on a table in the world. "flat" is the E0 panel, kept working so
 	--- there is always something to fall back to if the new one misbehaves

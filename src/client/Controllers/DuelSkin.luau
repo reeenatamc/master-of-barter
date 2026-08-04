@@ -44,14 +44,6 @@ local COLORS: { [DuelViewModel.Tone]: Color3 } = {
 local TEXT = Color3.fromRGB(238, 238, 238)
 local DIM = Color3.fromRGB(150, 150, 156)
 
-export type Handle = {
-	render: (viewModel: DuelViewModel.ViewModel) -> (),
-	--- Shows a reaction for a moment. Not part of `render` because an emote is
-	--- an event, not state: re-rendering the screen must not replay it.
-	flashEmote: (symbol: string, mine: boolean) -> (),
-	destroy: () -> (),
-}
-
 local function corner(parent: Instance, scale: number)
 	local ui = Instance.new("UICorner")
 	ui.CornerRadius = UDim.new(scale, 0)
@@ -100,7 +92,7 @@ end
 ---
 --- `onAction` receives the id of whatever was pressed. The skin never decides
 --- what an id means.
-function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): Handle
+function DuelSkin.mount(parent: Instance, onAction: (id: string) -> ()): DuelViewModel.Handle
 	local trove = Trove.new()
 
 	local screenGui = Instance.new("ScreenGui")
