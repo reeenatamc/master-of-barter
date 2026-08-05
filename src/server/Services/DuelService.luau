@@ -33,6 +33,8 @@ local EconomyService = require(script.Parent.EconomyService)
 local DataService = require(script.Parent.DataService)
 local InventoryService = require(script.Parent.InventoryService)
 
+local DuelTypes = require(script.Parent.DuelTypes)
+
 type Slot = Types.Slot
 type DuelCopy = Types.DuelCopy
 type DuelPhase = Types.DuelPhase
@@ -43,45 +45,10 @@ type WrapAppearance = Types.WrapAppearance
 type WrappedItem = Types.WrappedItem
 type WrappedItemView = Types.WrappedItemView
 type WrapRequest = Types.WrapRequest
+type Side = DuelTypes.Side
+type Duel = DuelTypes.Duel
 
---- One side of a duel, as the server knows it. Never replicated as-is.
-type Side = {
-	slot: Slot,
-	player: Player,
-	hand: { DuelCopy },
-	--- nil until this side has offered. Holds the truth, including isFake.
-	offer: { WrappedItem }?,
-	--- The rival spent a raise on you: you owe a bigger offer before play can
-	--- continue. Cleared when the amendment lands.
-	amendRequested: boolean,
-	raisesLeft: number,
-	fakeCallsLeft: number,
-}
-
-type Duel = {
-	id: string,
-	phase: DuelPhase,
-	round: number,
-	turn: Slot,
-	deadline: number,
-	--- Indexed by slot: sides[1] and sides[2].
-	sides: { Side },
-	--- Owns every connection and timer this duel creates. Cleaned on finish,
-	--- whichever way the duel ends.
-	trove: Trove.Trove,
-	--- Set by the first terminal path to claim the duel. See `resolve`.
-	resolving: boolean,
-	--- Bumped every time the phase deadline is re-armed, so timers from an
-	--- earlier arming can tell they are stale. See `armPhaseWatchdog`.
-	watchdogGeneration: number,
-	--- nil until the duel enters Reveal. See `buildReveal`.
-	reveal: Types.RevealResult?,
-}
-
---- 1 <-> 2. Duels are always two-sided (docs/gdd.md §32).
-local function otherSlot(slot: Slot): Slot
-	return 3 - slot
-end
+local otherSlot = DuelTypes.otherSlot
 
 local DuelService = {}
 
