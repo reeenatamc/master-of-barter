@@ -358,7 +358,17 @@ El veredicto del ¡ES FAKE! necesita dos humanos bluffeándose, porque **la mét
 2. **Acota la inflación**, que es lo único que había que acotar. Lo que se propaga no es que alguien gane Clips, es que los gane sin límite.
 3. **El único que llega al tope es el que ya está farmeando** — o sea, alguien que ya descubrió que son bots. La señal aparece exactamente para quien ya no la necesitaba.
 
-**Costo aceptado:** un campo nuevo en el perfil (`botEarnings = { date, clips }`). Toca datos persistentes, así que `arquitectura.md` §7 se actualiza en el mismo commit, y la fuente de Clips queda anotada en §19.
+### 3-bis. El agujero: los bots también acuñan OBJETOS
+
+**Encontrado al revisar el plan, y el tope de Clips no lo tapaba.** La cadena: el bot no tiene perfil → sus envoltorios no salen de ningún inventario → cuando un humano le gana una oferta, esas copias **se acuñan de la nada** al entrar a su perfil. Es una fuente de copias que §19 no lista, farmeable igual que los Clips y por el mismo truco.
+
+El caso inverso está bien y no hace falta tocarlo: humano pierde contra bot → sus copias salen del escrow y se van a la nada → es un **sumidero**, no infla.
+
+**Resuelto con el mismo instrumento, no con uno nuevo:** el tope diario cuenta **valor total extraído de bots** — Clips ganados **más** el `baseValue` de las copias recibidas — contra un único límite. Un número, una cuenta en el perfil, ninguna señal nueva por debajo del tope, las dos monedas acotadas de una.
+
+**Detalle de aplicación, para que no haya entregas a medias:** el tope se consulta **antes** de pagar un duelo contra bot. Si ya está alcanzado, no se paga nada —ni Clips ni copias—; si no, se paga completo y se suma el valor. Un duelo puede pasarse un poco del tope, y eso es preferible a repartir media recompensa: el exceso está acotado por el valor de un duelo, mientras que una entrega parcial es una regla nueva que el jugador tendría que deducir.
+
+**Costo aceptado:** un campo nuevo en el perfil (`botEarnings = { date, value }`). Toca datos persistentes, así que `arquitectura.md` §7 se actualiza en el mismo commit, y la fuente queda anotada en §19 — **incluida la de copias, que hoy el doc no menciona en absoluto**.
 
 ### Prerrequisito: partir `DuelService` primero
 
