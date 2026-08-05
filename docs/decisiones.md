@@ -481,3 +481,50 @@ Auditar esto es contar hasta seis. Ese es todo el punto de que el número sea co
 **Ediciones declaradas** (porque este no fue movimiento puro): `rollAppearance`, `toRequests`, `findCopy` y `parseRequests` se mudaron textuales; `reject` y `sideOf` se quedaron, porque `negotiate` y `emote` también los usan. Dentro de la región movida, cada `return reject(player, MSG)` pasó a `return nil, MSG` con el **mensaje intacto**, así los logs se leen igual — el que rechaza es quien llama. `Items`, `WrapAppearance` y `WrapRequest` salieron de `DuelService`: el corte los dejó huérfanos.
 
 **Deuda que queda anotada:** `DuelService` sigue en 712 líneas, más del doble del límite de 300. Lo que queda adentro es todo ciclo de vida (arranque, watchdog, fases terminales, negociación, emotes), que es una sola responsabilidad — pero es grande. **No se parte más ahora**: los cortes que faltan no tienen un consumidor que los pida, y partir sin consumidor es inventar fronteras. D1 va a decir dónde duele.
+
+---
+
+## 2026-08-04 · D1 entregada, y tres cosas que aparecieron al construirla
+
+Las tres condiciones aprobadas se cumplieron. Lo que sigue son los desvíos y hallazgos, que es la parte que importa.
+
+### La condición 1 quedó estructural, no prometida
+
+`DuelStakes` es el único módulo que sabe que un bot no tiene perfil. Todas las demás capas reciben un `Side` y no preguntan quién es. Verificado: **toda escritura a perfil dentro de un duelo pasa por ahí**; los usos de `.player` que quedan son sentar gente en la mesa y mandarle cosas a un cliente.
+
+Y `Side.player` es opcional en vez de haber un tipo `BotSide` aparte. Con dos tipos, las reglas —turno, fase, límites, tope de fakes, coherencia del modelo A— podrían separarse sin que nada avise. Con uno solo, no hay dónde separarse.
+
+### Se borraron `isBot` y `userId` del payload replicado
+
+Estaban en `DuelPlayerView`: `isBot` fijo en `false`, `userId` sin ningún lector. **Esperando que D1 los llenara.** Y llenarlos es el movimiento natural: §34 dice que el jugador no recibe señales obvias de que el rival es un bot, y un booleano replicado llamado `isBot` es la señal más obvia que existe — una línea de inspección del cliente. `userId` es la misma fuga disfrazada: un bot no tiene cuenta, así que lo que fuera a ese campo (0, -1, un id prestado) **era** el dato.
+
+Misma especie que el remoto `DuelReveal`, misma respuesta. Si el tutorial necesita anunciar a Don Trueque, eso es un hecho **del tutorial** y viaja con él, no una bandera general en todos los duelos.
+
+### Desvío del plan: el tope se aplica en la cola, no al pagar
+
+El plan decía: al llegar al tope, no pagar nada. Al implementarlo apareció el problema: **un duelo que llegó a la revelación ya intercambió las apuestas.** No pagarle a alguien que ya entregó sus copias no es "no cobrar", es **perder**. El tope, pensado neutro, se convertía en un castigo por jugar estando topeado.
+
+Mismo instrumento, mismo número único en el perfil, un momento antes: al alcanzar el tope, **la cola deja de ofrecer rivales de relleno**. No se saca nada, no se paga a medias, y el jugador sigue esperando a una persona — que es para lo que la cola existe.
+
+La señal que esto genera ("hay bots") es la misma que el plan ya había aceptado: le llega solo a quien ya extrajo un día entero de valor de ellos.
+
+---
+
+## 2026-08-04 · ⚠️ El bot casi nunca decide, y no es culpa del bot
+
+**Hallazgo al trazar el flujo completo, y hay que decirlo antes de que los números de `Bots.luau` prometan algo que no pasa.**
+
+`beginNegotiating` fija `duel.turn = 1` siempre, y en un duelo contra bot el humano es siempre el slot 1. El slot 2 solo recibe el turno cuando le deben una enmienda. Entonces:
+
+| Lo que el bot hace contra un humano | Lo que no |
+|---|---|
+| Arma su oferta | Aceptar |
+| Enmienda cuando le piden más | Rechazar |
+| | Pedir más |
+| | Acusar ¡ES FAKE! |
+
+**`Bots.raiseChance`, `fakeCallChance` y `declineChance` hoy solo tienen efecto en duelos bot-contra-bot.** Quedan escritos igual porque el consumidor existe y está probado —`decide()` corre—, solo que la alternancia de turnos no le da la oportunidad.
+
+**Esto no lo introdujo D1.** Es el modelo de turnos actual, que `arquitectura.md` §5 ya marca como provisional: *"el que oferta mueve primero. El slot 1 abre por ahora; alternar turnos es A2."* En humano-contra-humano pasa lo mismo: el slot 2 nunca abre.
+
+**No lo cambio acá.** Alternar turnos es una decisión de diseño de negociación —quién puede presionar a quién y cuándo— y pertenece a A2, no a una tarjeta de bots. Pero D1 se entrega con esta limitación a la vista y no descubierta después: **un rival que nunca te presiona es la mitad del juego.**
