@@ -33,8 +33,18 @@ local NAMES = {
 	ShopBuy = "ShopBuy",
 
 	-- Server -> client. These carry already-censored views, never raw truth.
+	--
+	-- THERE IS NO DuelReveal REMOTE, AND ITS ABSENCE IS THE POINT. The reveal
+	-- travels inside DuelState, gated on the phase actually being Reveal, so the
+	-- only replicated object carrying `isFake` has exactly ONE way out of the
+	-- server (docs/decisiones.md, case (d) on the DuelReveal remote).
+	--
+	-- One existed here, declared and never fired. Whoever came to write the
+	-- reveal animation would have found a remote with the perfect name and used
+	-- it -- no error of judgement, just the thing that was lying there -- and
+	-- that path has no phase gate. If you are about to add it back, you are
+	-- about to open the second exit. Broadcast a state instead.
 	DuelState = "DuelState",
-	DuelReveal = "DuelReveal",
 	PlayerData = "PlayerData",
 	Notice = "Notice",
 }

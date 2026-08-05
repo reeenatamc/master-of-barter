@@ -120,17 +120,21 @@ sequenceDiagram
     S-->>B: OfertaActualizada(...)
     B->>S: Accion("Aceptar")
     Note over S: Resuelve: revela, transfiere,<br/>calcula Clips y XP
-    S-->>A: Revelacion(resultado completo)
-    S-->>B: Revelacion(resultado completo)
+    S-->>A: Estado(fase=Revelacion + verdad completa)
+    S-->>B: Estado(fase=Revelacion + verdad completa)
 ```
 
 **Catálogo de remotos del MVP (todos con rate limit y validación de fase):**
 - `Duel/Ofertar`, `Duel/Accion` (Aceptar|Rechazar|PedirMas|AcusarFake), `Duel/EmoteUsado`
 - `Matchmaking/EntrarCola`, `Matchmaking/SalirCola`
 - `Shop/Comprar` (con Clips) — las compras Robux van por MarketplaceService, no por remotos propios
-- Servidor→cliente: `Duel/Estado`, `Duel/Revelacion`, `Player/DatosActualizados`, `Notificacion`
+- Servidor→cliente: `Duel/Estado`, `Player/DatosActualizados`, `Notificacion` — **tres, y no hay un cuarto.**
 
 Sin RemoteFunctions en MVP: todo es evento + respuesta por evento (evita clientes que cuelgan al servidor).
+
+**No existe un remoto `Duel/Revelacion`, y su ausencia es la decisión.** Un borrador de este documento lo listaba; el código mandó la revelación adentro de `Duel/Estado`, con la compuerta de fase, y el código eligió mejor. La revelación es el único objeto replicado que carga `isFake`: darle su propio remoto le da una **segunda salida**, sin compuerta, a la única regla inviolable del proyecto.
+
+El remoto llegó a existir declarado y sin disparar. Eso no es una línea muerta: es un arma cargada sobre la mesa, con el nombre exacto que buscaría quien vaya a implementar la animación de la revelación en Etapa 4. La defensa no es acordarse de no usarlo — es que no exista (ver `decisiones.md`, caso (d)).
 
 ## 7. Sistema de datos y esquema de guardado
 

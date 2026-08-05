@@ -408,7 +408,7 @@ Partir bien no solo no debilitó la regla: la endureció, porque las fronteras d
 
 ---
 
-## 2026-08-04 · ⏸ PENDIENTE — caso (d): el remoto `DuelReveal` existe y nadie lo usa
+## 2026-08-04 · ✅ RESUELTO — caso (d): el remoto `DuelReveal` existe y nadie lo usa
 
 **Primero, la respuesta a "¿por dónde sale el `RevealResult`?": por el mismo embudo.** Viaja **dentro** del `DuelState`, con la compuerta `if duel.phase == "Reveal"` adentro de `stateFor`. El inventario de salidas sancionadas sigue siendo **UNA**, no dos.
 
@@ -425,4 +425,34 @@ Y eso crearía exactamente lo que la auditoría de salidas existe para impedir: 
 
 **Alternativa, por completitud:** conservar `DuelReveal` y mover la revelación ahí. Se descarta porque duplica la superficie donde la regla de oro puede fallar, a cambio de nada — el estado ya llega en ese mismo instante.
 
-**No lo borro hasta tener respuesta.** Mientras tanto sigo con los cortes, que no dependen de esto.
+**Resolución: borrado.** El remoto salió de `Net.luau` y §6 quedó con los tres que el código realmente tiene — el doc contando lo que existe, no lo que un borrador imaginó.
+
+**Y ella nombró el principio, que vale más que el caso:** *las estructuras enseñan; un arma cargada sobre la mesa enseña a disparar.* El que la habría disparado no cometía ningún error de juicio: encontraba un remoto llamado `DuelReveal` justo cuando implementa la animación de la revelación, con el nombre perfecto, y usaba lo que estaba puesto. La defensa no es esperar que nadie lo use — es que no exista. **Mismo movimiento de siempre: convertir la convención en imposibilidad**, como `WrappedItemView` sin campo `isFake` y como `InventoryService` sin función que reste de la colección.
+
+**Verificado al borrar:** cero listeners huérfanos. `DuelController` conecta exactamente dos remotos —`DuelState` y `DuelEmote`— y ninguno era éste. Nada quedó esperando algo que ya no existe.
+
+En su lugar quedó un comentario en `Net.luau` que dice por qué el hueco está ahí. Un borrado sin explicación se deshace: el próximo que necesite mandar una revelación ve tres remotos, piensa "falta uno", y lo agrega. Ahora lo primero que lee es que agregarlo **es** abrir la segunda salida.
+
+---
+
+## 2026-08-04 · 🔒 La compuerta de fase es pieza load-bearing de la regla de oro
+
+Confirmar la salida única dejó algo que hasta ahora estaba implícito, y va explícito porque de esto depende la regla:
+
+```lua
+reveal = if duel.phase == "Reveal" then duel.reveal else nil,
+```
+
+Esa línea, **dentro de `stateFor` en `DuelView.luau`**, es el **único punto del código donde la regla de oro se levanta**. Y se levanta **por fase, no por camino**: no importa quién pidió el estado ni desde dónde, importa en qué fase está el duelo. Por eso no hay forma de llegar a la verdad tomando otra ruta — no hay otra ruta.
+
+**Cualquier refactor futuro de `stateFor` o `DuelView` hereda la obligación de preservar esa compuerta.** No es una optimización ni una comodidad: sacarla no rompe ningún test de tipos, no rompe ninguna prueba de Studio, y filtra `isFake` al rival en toda fase de negociación. Es el fallo silencioso más caro que el proyecto puede tener.
+
+**Inventario oficial de salidas servidor→cliente:**
+
+| Salida | Qué manda | Regla de oro |
+|---|---|---|
+| **UNA** de estado: `broadcast` → `stateFor` | `DuelState` | Censura por defecto (`viewOf`), verdad **solo** en fase `Reveal` |
+| **Cinco** triviales | strings de aviso y emotes | No las tocan: no cargan objetos de duelo |
+| **Cero** remotos sin consumidor | — | Ninguna arma cargada esperando |
+
+Auditar esto es contar hasta seis. Ese es todo el punto de que el número sea conocido y chico.
