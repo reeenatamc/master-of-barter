@@ -159,6 +159,33 @@ function DuelOffers.build(
 		return nil, `{what} has {#requests} wrappers, needs {minimum}-{limits.maxItemsPerOffer}`
 	end
 
+	-- AN AMENDMENT MUST BEGIN WITH THE OFFER IT AMENDS, UNCHANGED. Resend what
+	-- is already on the table, then append.
+	--
+	-- This is not tidiness, it is what makes "only the new wrappers are
+	-- escrowed" true. Both the escrow delta below and the cost delta are
+	-- positional: they skip the first `#previous` entries. Without this check
+	-- they only ASSUME those entries are the previous offer, and a client
+	-- chooses what it sends.
+	--
+	-- Reordering was the exploit. Offer [genuine A], amend with [genuine B,
+	-- genuine A]: escrow skips index 1 and takes A a second time, while B goes
+	-- on the table WITHOUT ever leaving the profile. Win or lose, the rival
+	-- receives B and the sender still has it. That is duplication, which by
+	-- rule 5 is the failure that spreads.
+	--
+	-- Dropping was the other half. An amendment that leaves out a staked copy
+	-- satisfies the count while abandoning that copy in escrow, where nothing
+	-- returns it -- a silent loss instead of a silent gain.
+	if amending and previous then
+		for index, was in previous do
+			local now = requests[index]
+			if now.copyId ~= was.copyId or now.isFake ~= was.isFake or now.claim ~= was.claim then
+				return nil, `amendment changed wrapper {index}; it may only append`
+			end
+		end
+	end
+
 	-- Layers 2 and 4: existence against Config, then ownership.
 	local wrapped: { WrappedItem } = {}
 	local usedCopies: { [string]: boolean } = {}
@@ -241,6 +268,10 @@ function DuelOffers.build(
 	--
 	-- Only the NEW wrappers are escrowed. An amendment adds to an offer whose
 	-- copies already left; taking them again would charge the stake twice.
+	--
+	-- Skipping the first `alreadyWrapped` entries is safe ONLY because the
+	-- prefix check above proved they are the previous offer. If that check ever
+	-- goes away, this loop becomes a duplication exploit again.
 	local newlyStaked: { Types.ItemId } = {}
 	for index = alreadyWrapped + 1, #wrapped do
 		local item = wrapped[index]

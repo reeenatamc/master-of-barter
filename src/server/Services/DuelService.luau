@@ -422,49 +422,41 @@ local function sideOf(duel: Duel, player: Player): Side?
 	return nil
 end
 
---- Commits one side's offer.
+--- Commits one side's offer, on a side that MAY BE A BOT.
+---
+--- The inner half of card D1's split: this is the action itself, and it knows
+--- nothing about who asked for it. The outer half (`submitOffer`) exists only
+--- to answer "who are you" for a remote. A bot calls straight in here, so it
+--- runs the same phase checks, the same four layers and the same order a person
+--- does -- one implementation, not two kept in agreement by hand.
+---
+--- Returns nil on success, or the reason it was refused. Refusing is the
+--- caller's job: a bot has no client to warn about and no name in a log line.
 ---
 --- The PHASE half of an offer: which duel, whose turn, and what happens to the
 --- turn afterwards. Whether the offer itself is legal -- types, catalogue,
---- ownership, Clips, escrow -- is DuelOffers' question, and it answers with
---- wrappers or a reason. Any failure means "ignore and log", never a partial
---- offer.
----
---- NOT rate limited yet. Repeat calls are cheap (the "already offered" check
---- rejects them immediately), but per-player rate limiting on every remote is
---- still outstanding and belongs in one place for all of them, not here.
-function DuelService.submitOffer(player: Player, payload: unknown)
-	-- Layer 3: state.
-	local duelId = duelIdOf[player]
-	local duel = if duelId then duels[duelId] else nil
-	if not duel then
-		return reject(player, "not in a duel")
-	end
-	local side = sideOf(duel, player)
-	if not side then
-		return reject(player, "not a participant")
-	end
-
+--- ownership, Clips, escrow -- is DuelOffers' question.
+function DuelService.applyOffer(duel: Duel, side: Side, payload: unknown): string?
 	-- An offer is legal twice: once when building it, and again when the rival
 	-- has spent a raise demanding a bigger one.
 	local amending: boolean
 	if duel.phase == "BuildingOffers" then
 		if side.offer then
-			return reject(player, "already offered")
+			return "already offered"
 		end
 		amending = false
 	elseif duel.phase == "Negotiating" then
 		if not side.amendRequested then
-			return reject(player, "no raise is pending on you")
+			return "no raise is pending on you"
 		end
 		amending = true
 	else
-		return reject(player, `wrong phase ({duel.phase})`)
+		return `wrong phase ({duel.phase})`
 	end
 
 	local wrapped, refusal = DuelOffers.build(duel, side, amending, payload)
 	if not wrapped then
-		return reject(player, refusal or "offer refused")
+		return refusal or "offer refused"
 	end
 
 	side.offer = wrapped
@@ -481,6 +473,30 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 	end
 
 	broadcast(duel)
+	return nil
+end
+
+--- The remote's half: turns a Player into a duel and a side, then hands over.
+--- This is the ONLY thing in an offer that a bot does not do.
+---
+--- NOT rate limited yet. Repeat calls are cheap (the "already offered" check
+--- rejects them immediately), but per-player rate limiting on every remote is
+--- still outstanding and belongs in one place for all of them, not here.
+function DuelService.submitOffer(player: Player, payload: unknown)
+	local duelId = duelIdOf[player]
+	local duel = if duelId then duels[duelId] else nil
+	if not duel then
+		return reject(player, "not in a duel")
+	end
+	local side = sideOf(duel, player)
+	if not side then
+		return reject(player, "not a participant")
+	end
+
+	local refusal = DuelService.applyOffer(duel, side, payload)
+	if refusal then
+		reject(player, refusal)
+	end
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -496,39 +512,33 @@ local IMPLEMENTED: { [string]: boolean } = {
 	FakeCall = true,
 }
 
---- One of the three negotiation buttons. Validated in the four layers of
---- docs/arquitectura.md §8, same as offers.
+--- One of the three negotiation buttons, on a side that MAY BE A BOT.
 ---
---- Like submitOffer, this is NOT rate limited yet.
-function DuelService.negotiate(player: Player, action: unknown)
+--- The inner half, exactly like `applyOffer`. Layers 1 and 2 are in here rather
+--- than in the remote's half on purpose: a bot with a bug can produce a
+--- nonsense action just as a hostile client can, and "the bot goes through the
+--- same validation" has to mean ALL of it, not the convenient part.
+---
+--- Returns nil on success, or the reason it was refused.
+function DuelService.applyAction(duel: Duel, side: Side, action: unknown): string?
 	-- Layer 1: type.
 	if type(action) ~= "string" then
-		return reject(player, "action is not a string")
+		return "action is not a string"
 	end
 
 	-- Layer 2: existence.
 	if not IMPLEMENTED[action] then
-		return reject(player, `action "{action}" is not available yet`)
+		return `action "{action}" is not available yet`
 	end
 
 	-- Layer 3: state.
-	local duelId = duelIdOf[player]
-	local duel = if duelId then duels[duelId] else nil
-	if not duel then
-		return reject(player, "not in a duel")
-	end
 	if duel.phase ~= "Negotiating" then
-		return reject(player, `wrong phase ({duel.phase})`)
-	end
-
-	local side = sideOf(duel, player)
-	if not side then
-		return reject(player, "not a participant")
+		return `wrong phase ({duel.phase})`
 	end
 
 	-- Layer 4: permission. Only whoever holds the turn may act on it.
 	if duel.turn ~= side.slot then
-		return reject(player, `not your turn (slot {duel.turn} is up)`)
+		return `not your turn (slot {duel.turn} is up)`
 	end
 
 	if action == "Accept" then
@@ -553,7 +563,7 @@ function DuelService.negotiate(player: Player, action: unknown)
 		-- token and one without, and "without" has to mean the server refuses
 		-- it, not just that the button is hidden.
 		if side.fakeCallsLeft <= 0 then
-			return reject(player, "no FakeCall tokens left")
+			return "no FakeCall tokens left"
 		end
 		side.fakeCallsLeft -= 1
 
@@ -567,12 +577,12 @@ function DuelService.negotiate(player: Player, action: unknown)
 	else
 		-- RaiseOffer: hand the turn to the rival, who now owes a bigger offer.
 		if side.raisesLeft <= 0 then
-			return reject(player, `no raises left (limit is {DuelRules.limits.raiseOffersPerSide} per side)`)
+			return `no raises left (limit is {DuelRules.limits.raiseOffersPerSide} per side)`
 		end
 
 		local rival = duel.sides[otherSlot(side.slot)]
 		if rival.amendRequested then
-			return reject(player, "a raise is already pending on the rival")
+			return "a raise is already pending on the rival"
 		end
 
 		side.raisesLeft -= 1
@@ -581,6 +591,28 @@ function DuelService.negotiate(player: Player, action: unknown)
 		-- The rival gets a fresh deadline to answer the demand.
 		armPhaseWatchdog(duel)
 		broadcast(duel)
+	end
+
+	return nil
+end
+
+--- The remote's half. Same shape as `submitOffer`: identity, then hand over.
+---
+--- Like submitOffer, this is NOT rate limited yet.
+function DuelService.negotiate(player: Player, action: unknown)
+	local duelId = duelIdOf[player]
+	local duel = if duelId then duels[duelId] else nil
+	if not duel then
+		return reject(player, "not in a duel")
+	end
+	local side = sideOf(duel, player)
+	if not side then
+		return reject(player, "not a participant")
+	end
+
+	local refusal = DuelService.applyAction(duel, side, action)
+	if refusal then
+		reject(player, refusal)
 	end
 end
 
