@@ -200,6 +200,15 @@ Objetivo: matar el arranque en frío. Criterios: cola en servidor; si no hay riv
 
 Criterios: agresivo y tímido difieren medible en ratio de fakes, uso de Pedir más y tiempos de respuesta con jitter humano. Dependencias: D1. Pruebas: 200 duelos bot-vs-bot sin errores ni estados colgados (sirve también como test de estrés del núcleo).
 
+**Partida en dos, y el arnés ya está hecho:**
+
+| | Estado | Por qué |
+|---|---|---|
+| **Arnés de auto-juego** (`BotService.selfPlay`) | ✅ **2026-08-04** | No depende de nada y paga hoy: cada duelo que corre es una pasada completa por la partición, la validación, el escrow y la revelación. Reporta fugas y fases colgadas con números |
+| **Las personalidades** | ⏸ **bloqueada por A2** | Hasta que los turnos alternen, el slot 2 solo puede responder a un "Pedir más". Un bot "agresivo" y uno "tímido" serían **indistinguibles contra un humano**, porque ninguno de los dos puede acusar ni presionar. Escribirlas ahora es escribir diferencias que nadie puede percibir |
+
+Y A2 espera a la sesión de diversión 2, así que la cadena real es: **ficha → alternancia de turnos → personalidades.**
+
 ---
 
 ## ÉPICA E — Lobby, UI y sonido

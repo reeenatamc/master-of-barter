@@ -84,6 +84,46 @@ Tiene que imprimir **RESULT: PASS** con los seis números en lo esperado. Es la 
 
 ---
 
+## Prueba 4 — 200 duelos en un minuto (opcional, pero es la que más paga)
+
+**Bot contra bot, sin nadie mirando.** Ejercita la partición entera, la validación de ofertas, el escrow y la revelación en cientos de secuencias que ningún humano tipearía, y busca las dos cosas que un fallo silencioso deja: **fugas** y **fases colgadas**.
+
+1. `DuelRules.debugLogs = true`.
+2. **Play** con un jugador. Command Bar, contexto **Server**:
+
+```lua
+require(game.ServerScriptService.Services.BotService).selfPlay(200)
+```
+
+3. Esperá — tarda alrededor de un minuto (los bots piensan a 0,03s en este modo).
+
+**Qué tiene que salir:**
+
+```
+[BotService] self-play: 200/200 duels in 58.3s
+  accepted: 171
+  fake called: 21
+  declined: 8
+  duels that leaked a live object: 0   (expected 0)
+  RESULT: PASS
+```
+
+Los repartos varían; lo que **no** puede variar son tres cosas:
+
+| Línea | Qué significa si sale mal |
+|---|---|
+| `200/200` | Si es menos, un duelo **nunca terminó**: una fase colgada. Es el peor fallo de esta lista |
+| `TIMED OUT: n` | Un watchdog tuvo que rescatar un duelo. Los bots actúan en 0,03s: no debería hacer falta nunca |
+| `leaked: 0` | Cualquier otro número es una conexión o un temporizador que sobrevivió a su duelo |
+
+4. Volvé `debugLogs` a `false`.
+
+**No toca ningún perfil:** los dos lados son bots, así que todas las escrituras son no-ops. Podés correrlo mil veces sin ensuciar datos.
+
+**Lo que esta prueba no puede contestar:** si algo de esto es divertido. Para eso siguen haciendo falta dos personas en una habitación.
+
+---
+
 ## Lo que necesita tu sí o tu no
 
 ### 1. 🔴 Caso (a) — arreglé un agujero de duplicación en el escrow

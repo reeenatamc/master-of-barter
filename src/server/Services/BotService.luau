@@ -53,7 +53,14 @@ local thinking: { [string]: boolean } = {}
 --- leak on a server that stays up for days.
 local watched: { [string]: boolean } = {}
 
+--- Set while a self-play run is going (see the bottom of this file). Without
+--- it, 200 duels at a human's pace is half an hour of waiting.
+local fastThinking = false
+
 local function thinkTime(): number
+	if fastThinking then
+		return 0.03
+	end
 	return rng:NextNumber(Bots.thinkSeconds.min, Bots.thinkSeconds.max)
 end
 
@@ -214,6 +221,95 @@ local function onStateChanged(duel: Duel)
 		end)
 
 		return
+	end
+end
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Self-play (card D2's stress run, brought forward)
+--
+-- Bot against bot, hundreds of duels, nobody watching. Card D2 lists this under
+-- its tests and docs/arquitectura.md §11 calls it out as a whole testing
+-- strategy, for a good reason: it exercises leaks, hung phases and lopsided
+-- balance without costing a person an evening.
+--
+-- It is here BEFORE the personalities D2 is really about, because the
+-- personalities are not worth writing yet -- until A2 alternates turns, slot 2
+-- can only ever answer a raise, so a "timid" and an "aggressive" bot would be
+-- indistinguishable against a human. The harness has no such dependency and
+-- pays off today: every duel it runs is a full pass through the split, the
+-- offer validation, the escrow and the reveal.
+--
+-- What it CANNOT check is the thing bots are worst at: whether any of this is
+-- fun. That is still a room with two people in it.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- Runs `count` duels back to back and reports numbers rather than impressions.
+---
+--- DEBUG ONLY: leans on DuelService.startBotDuel, which refuses unless
+--- DuelRules.debugLogs is on.
+function BotService.selfPlay(count: number)
+	if fastThinking then
+		warn("[BotService] a self-play run is already going")
+		return
+	end
+
+	local outcomes: { [string]: number } = {}
+	local leaks = 0
+	local done = 0
+
+	local connection
+	connection = DuelService.duelFinished:connect(function(_duelId: string, reason: string, live: number)
+		-- Grouped by the shape of the reason, not the whole string: it carries a
+		-- slot number, so counting raw strings would produce one bucket each.
+		local kind = if string.find(reason, "accepted", 1, true)
+			then "accepted"
+			elseif string.find(reason, "called fake", 1, true) then "fake called"
+			elseif string.find(reason, "declined", 1, true) then "declined"
+			elseif string.find(reason, "timed out", 1, true) then "TIMED OUT"
+			else reason
+
+		outcomes[kind] = (outcomes[kind] or 0) + 1
+		if live ~= 0 then
+			leaks += 1
+		end
+		done += 1
+	end)
+
+	fastThinking = true
+	local startedAt = os.clock()
+
+	for index = 1, count do
+		if not DuelService.startBotDuel() then
+			warn(`[BotService] self-play stopped at duel {index}: could not start`)
+			break
+		end
+
+		-- Waited for one at a time on purpose. Overlapping duels would make a
+		-- hang look like slowness, and a hang is exactly what this is hunting.
+		local waitedFrom = done
+		local deadline = os.clock() + 30
+		while done == waitedFrom and os.clock() < deadline do
+			task.wait(0.05)
+		end
+
+		if done == waitedFrom then
+			warn(`[BotService] duel {index} NEVER FINISHED -- a phase is hung. Stopping.`)
+			break
+		end
+	end
+
+	fastThinking = false
+	connection:disconnect()
+
+	print(`[BotService] self-play: {done}/{count} duels in {string.format("%.1f", os.clock() - startedAt)}s`)
+	for kind, n in outcomes do
+		print(`  {kind}: {n}`)
+	end
+	print(`  duels that leaked a live object: {leaks}   (expected 0)`)
+	if leaks == 0 and done == count then
+		print("  RESULT: PASS")
+	else
+		print("  RESULT: FAIL")
 	end
 end
 

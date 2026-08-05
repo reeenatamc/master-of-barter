@@ -77,6 +77,14 @@ local DuelService = {}
 --- looks exactly like a hung duel.
 DuelService.stateChanged = Signal.new()
 
+--- Fired once a duel is over and fully released, with its id, why it ended, and
+--- how many objects its Trove still had alive (0 unless something leaked).
+---
+--- docs/arquitectura.md §9 names this listener list: AnalyticsService (card F3)
+--- and the bot self-play harness. Fired at the very END of `finish`, inside the
+--- idempotency guard, so it cannot fire twice for one duel.
+DuelService.duelFinished = Signal.new()
+
 local function broadcast(duel: Duel)
 	DuelView.broadcast(duel)
 	DuelService.stateChanged:fire(duel)
@@ -506,6 +514,25 @@ function DuelService.finish(duelId: string, reason: string)
 	elseif DuelRules.debugLogs then
 		print(`[DuelService] duel {duelId} ended ({reason}): expected 0 live objects, got 0`)
 	end
+
+	DuelService.duelFinished:fire(duelId, reason, live)
+end
+
+--- Starts a duel between two filler opponents, with nobody watching.
+---
+--- DEBUG ONLY, and gated on the same flag as the race check: this creates
+--- duels on demand, which is not something any client gets to ask for. It
+--- exists for the self-play harness (card D2), whose whole value is running
+--- thousands of sequences no human would type.
+---
+--- Nothing is written to any profile: both sides are bots, so every DuelStakes
+--- call is a no-op. A self-play run cannot touch anybody's data.
+function DuelService.startBotDuel(): string?
+	if not DuelRules.debugLogs then
+		warn("[DuelService] startBotDuel needs DuelRules.debugLogs = true")
+		return nil
+	end
+	return openDuel(sideOfBot(1, raises(), tokens()), sideOfBot(2, raises(), tokens()))
 end
 
 -- ─────────────────────────────────────────────────────────────────────────────
