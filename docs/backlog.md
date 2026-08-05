@@ -41,6 +41,10 @@ Objetivo: base de toda la mecánica. Criterios: selecciono 1–4 objetos de mi i
 **Prioridad:** P0 · M
 
 Objetivo: el loop del meme. Criterios: turnos alternos validados en servidor; Pedir más obliga al rival a añadir/mejorar y tiene límite 3 por lado; Rechazar termina sin transferencias; timeouts por fase con resultado definido. Dependencias: A1. Pruebas: pulsar fuera de turno, spamear botones, dejar expirar cada timeout.
+
+> **🔒 Los turnos alternos se abren DESPUÉS de la sesión de diversión 2, no antes.** Hoy `beginNegotiating` le da el turno siempre al slot 1, así que el slot 2 —sea persona o bot— solo puede responder a un "Pedir más": nunca acepta, rechaza, pide más ni acusa por iniciativa propia. Eso deja `Bots.raiseChance`, `fakeCallChance` y `declineChance` sin efecto fuera de duelos bot-contra-bot (ver D1).
+> **Por qué esperar:** el veredicto de la ficha ¡ES FAKE! cambia *qué tiene que poder hacer un rival*. Si la ficha sobrevive, alternar turnos tiene que dejar espacio para acusar en el momento correcto; si se cae, la negociación es otro juego y los turnos se diseñan para ese. Rediseñar la alternancia antes de saberlo es diseñar para una mecánica que puede no existir.
+> **Costo de esperar, a la vista:** hasta entonces un rival nunca te presiona, que es la mitad del juego, y D1 no sirve para probar el bluff en soledad.
 > **Condición de cierre — test determinista de doble `finish()` (movida desde A1.3).** Con A2 existen por primera vez los tres caminos que compiten de verdad: aceptar, rechazar y el watchdog de fase, los tres disparables desde el servidor. El test dispara dos de ellos sobre el mismo duelo y verifica que la segunda entrada no hace nada: no limpia el Trove dos veces, no emite el fin dos veces, y el contador de vivos sigue cerrando en 0.
 > Se movió desde A1.3 a propósito, no se olvidó: en A1.2 y A1.3 los únicos caminos existentes eran los watchdogs y la desconexión, y una desconexión cancela el watchdog antes de que dispare, así que la carrera casi no ocurría. Escribir el test antes de A2 era escribirlo contra caminos que no son los que importan, y reescribirlo después.
 > Por qué importa más de lo que parece: en cuanto aceptar una oferta cuelgue el guardado del perfil del fin del duelo (Etapa 2), la guarda de idempotencia deja de ser defensiva y pasa a ser **lo único que impide un doble guardado**. No es una optimización, es la red.
@@ -157,6 +161,18 @@ Objetivo: el seguro anti-caducidad del meme. Criterios: todo asset visual/sonoro
 **Prioridad:** P0 · S
 
 Criterios: costos de fakes, recompensas, precios y límites en un módulo; cambiar un número no requiere tocar servicios.
+
+---
+
+### Deuda · `prueba-etapa1.md` usa `_G.dc`, que no llega al controlador
+
+**Prioridad:** P1 · S
+
+Los bloques C y D de `prueba-etapa1.md` mandan payloads con `_G.dc.offer({...})` desde la Command Bar. **Eso no funciona:** la Command Bar de Studio tiene su propio caché de módulos y sus propios globales, así que `require` ahí devuelve una segunda copia vacía del controlador y `_G` no es el mismo `_G`. Se descubrió al construir A2 y la solución fue atar acciones a teclas.
+
+Quedan por pasar a teclas los payloads con forma arbitraria (claim inexistente, `isFake` en desacuerdo, 3 fakes, oferta vacía). El caso C-DUPE ya está hecho: tecla **V**.
+
+**Por qué importa:** una batería de regresión que no se puede correr no es una batería de regresión. Hoy la mitad de la validación de A1.3 está escrita y no ejercitada.
 
 ---
 

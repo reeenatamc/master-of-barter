@@ -84,7 +84,8 @@ Posibles desenlaces: la ficha multiplica la tensión (se queda), la ficha agrega
 | Migrar a Rojo + Git; primer commit limpio | 🟨 |
 | DataService con ProfileStore: perfil completo, BindToClose, prueba de cierre abrupto | 🟥 |
 | EconomyService (Clips) + InventoryService (colección + copias de duelo) | 🟥 |
-| MatchmakingService: cola en servidor + entrada de bots por timeout | 🟥 |
+| MatchmakingService: cola en servidor + entrada de bots por timeout ✅ | 🟥 |
+| Tope diario de **valor extraído de bots** (Clips + `baseValue` de las copias, un solo número). Se aplica en la **admisión** —al alcanzarlo la cola deja de ofrecer bots—, no en el pago: un duelo que llegó a la revelación ya intercambió las apuestas, así que confiscar en el asentamiento castiga a quien cumplió ✅ | 🟥 |
 | BotService v1: 2 personalidades (agresivo, tímido) | 🟥 |
 | DuelService definitivo: FSM completa, watchdogs, desconexiones, Trove por duelo | 🟥 |
 | Validación en 4 capas de todos los remotos + rate limiting | 🟥 |
