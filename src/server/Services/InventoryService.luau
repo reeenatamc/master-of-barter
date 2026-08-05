@@ -65,10 +65,26 @@ end
 --- on the table LEAVES the profile at that moment. Once it is out, resolving
 --- the duel writes nothing to this player -- which is what makes a disconnect
 --- mid-duel free of any ordering problem between transfer and profile release.
-function InventoryService.takeCopy(player: Player, itemId: Types.ItemId, duelId: string): boolean
+function InventoryService.takeCopy(player: Player, itemId: Types.ItemId, duelId: string, copyId: string): boolean
 	local profile = DataService.get(player)
 	if not profile then
 		return false
+	end
+
+	-- IDENTITY, NOT POSITION. A copy already on a table cannot be staked a
+	-- second time, whatever order a client sends its wrappers in.
+	--
+	-- This is the structural half of the amendment fix. DuelOffers also checks
+	-- that an amendment begins with the offer it amends -- that check gives a
+	-- clear refusal message and keeps the cost delta honest -- but if it were
+	-- ever removed, or if some future path made the same assumption about
+	-- ordering, THIS is what still makes duplication impossible. The difference
+	-- is between "the current path does not duplicate" and "no path does".
+	for _, entry in profile.escrow do
+		if entry.copyId == copyId then
+			warn(`[Inventory] {player.Name}: copy {copyId} is already staked; refused`)
+			return false
+		end
 	end
 
 	local held = profile.duelCopies[itemId] or 0
@@ -88,7 +104,7 @@ function InventoryService.takeCopy(player: Player, itemId: Types.ItemId, duelId:
 	-- Written down, so that losing it to a crash is DISTINGUISHABLE from never
 	-- having had it. The copy is gone from duelCopies either way; this is what
 	-- makes the difference reportable later.
-	table.insert(profile.escrow, { itemId = itemId, duelId = duelId })
+	table.insert(profile.escrow, { itemId = itemId, duelId = duelId, copyId = copyId })
 	return true
 end
 
@@ -103,28 +119,32 @@ function InventoryService.giveCopy(player: Player, itemId: Types.ItemId, count: 
 	profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + amount
 end
 
---- The exact inverse of `takeCopy`: gives the copy back AND removes ONE
---- matching escrow entry.
+--- The exact inverse of `takeCopy`: removes THIS copy's escrow entry and gives
+--- the copy back.
 ---
---- One, not all of them. A player can have several copies staked in the same
---- duel, and an offer that fails halfway has to put back only what it took --
---- clearing every entry for the duel would erase the record of copies still
---- legitimately on the table.
-function InventoryService.returnCopy(player: Player, itemId: Types.ItemId, duelId: string)
+--- Matched by copyId, so it returns the copy that was actually staked rather
+--- than any copy of the same kind. And the return happens ONLY if the entry was
+--- there: giving back something that was never taken is how a fix for a loss
+--- becomes a duplication.
+function InventoryService.returnCopy(player: Player, itemId: Types.ItemId, duelId: string, copyId: string)
 	local profile = DataService.get(player)
 	if not profile then
 		return
 	end
 
-	profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + 1
-
 	for index = #profile.escrow, 1, -1 do
 		local entry = profile.escrow[index]
-		if entry.duelId == duelId and entry.itemId == itemId then
+		if entry.copyId == copyId then
 			table.remove(profile.escrow, index)
+			profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + 1
 			return
 		end
 	end
+
+	-- Nothing to return means somebody asked to un-stake a copy that was never
+	-- staked. That is a bug in the caller, and it is loud rather than silently
+	-- generous: the silent version invents a copy.
+	warn(`[Inventory] {player.Name}: copy {copyId} was not in escrow for duel {duelId}; nothing returned`)
 end
 
 --- Forgets this duel's escrow entries WITHOUT returning anything.

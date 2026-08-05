@@ -198,6 +198,63 @@ function DuelController.offerHonest()
 	})
 end
 
+--- ATTACK, on purpose: the duplication exploit, as a permanent regression case.
+---
+--- Amends with the NEW wrapper first and the previous offer after it. The server
+--- used to escrow "everything past index #previous", trusting that the first
+--- entries were the offer being amended -- so this ordering made it stake the
+--- old copy a second time while the new one went on the table WITHOUT ever
+--- leaving the profile. Win or lose, the rival received a copy the sender still
+--- had. Duplication.
+---
+--- Two independent things must refuse this now, and BOTH are the point:
+---   DuelOffers   an amendment must begin with the offer it amends
+---   takeCopy     a copyId already in escrow cannot be staked again
+--- The first gives the clear message; the second is why no future path can
+--- reintroduce the hole by assuming an order again.
+---
+--- Kept in the client rather than a test script because there is no other way
+--- to send a hand-built payload: Studio's Command Bar has its own module cache
+--- and its own globals, so it cannot reach this controller (see bindDebugKeys).
+function DuelController.dupeAttempt()
+	local state = current
+	if not state or not state.yourOffer then
+		warn("[Duel] no offer of yours to amend -- offer first, then have the rival raise")
+		return
+	end
+
+	local spare: Types.DuelCopy? = nil
+	for _, copy in state.yourHand do
+		local staked = false
+		for _, wrapped in state.yourOffer do
+			if wrapped.copyId == copy.copyId then
+				staked = true
+				break
+			end
+		end
+		if not staked then
+			spare = copy
+			break
+		end
+	end
+
+	if not spare then
+		warn("[Duel] every copy is already on the table; the attack needs a spare one")
+		return
+	end
+
+	-- The new wrapper FIRST. That is the whole attack.
+	local requests: { Types.WrapRequest } = {
+		{ copyId = spare.copyId, isFake = false, claim = spare.itemId },
+	}
+	for _, wrapped in state.yourOffer do
+		table.insert(requests, { copyId = wrapped.copyId, isFake = wrapped.isFake, claim = wrapped.claim })
+	end
+
+	print("[Duel] sending the dupe payload: new wrapper first, previous offer after")
+	DuelController.offer(requests)
+end
+
 --- TEMP: re-sends your offer with one extra forgery, which is the cheapest way
 --- to satisfy a raise. Real amendment UI is card E2.
 function DuelController.amendDemo()
@@ -236,6 +293,7 @@ local function bindDebugKeys()
 		[Enum.KeyCode.Z] = { label = "raise", run = DuelController.raise },
 		[Enum.KeyCode.X] = { label = "amend", run = DuelController.amendDemo },
 		[Enum.KeyCode.C] = { label = "ES FAKE", run = DuelController.fakeCall },
+		[Enum.KeyCode.V] = { label = "DUPE ATTACK (must be refused)", run = DuelController.dupeAttempt },
 	}
 
 	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)

@@ -272,20 +272,24 @@ function DuelOffers.build(
 	-- Skipping the first `alreadyWrapped` entries is safe ONLY because the
 	-- prefix check above proved they are the previous offer. If that check ever
 	-- goes away, this loop becomes a duplication exploit again.
-	local newlyStaked: { Types.ItemId } = {}
+	-- Both halves of the identity, so the rollback can un-stake exactly what it
+	-- staked rather than any copy of the same kind.
+	local newlyStaked: { { itemId: Types.ItemId, copyId: string } } = {}
 	for index = alreadyWrapped + 1, #wrapped do
 		local item = wrapped[index]
-		if not item.isFake then
-			local claim = item.claim
-			if not DuelStakes.take(side, claim, duel.id) then
+		local copyId = item.copyId
+		-- A genuine wrapper always names a copy: model A consistency was
+		-- checked above, so this is a narrowing, not a maybe.
+		if not item.isFake and copyId then
+			if not DuelStakes.take(side, item.claim, duel.id, copyId) then
 				-- Put back whatever was already taken in this call, so a
 				-- half-escrowed offer cannot exist.
 				for _, back in newlyStaked do
-					DuelStakes.giveBack(side, back, duel.id)
+					DuelStakes.giveBack(side, back.itemId, duel.id, back.copyId)
 				end
-				return nil, `no longer owns a copy of {claim}`
+				return nil, `cannot stake copy {copyId} of {item.claim}`
 			end
-			table.insert(newlyStaked, claim)
+			table.insert(newlyStaked, { itemId = item.claim, copyId = copyId })
 		end
 	end
 

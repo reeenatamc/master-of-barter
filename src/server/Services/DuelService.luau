@@ -448,10 +448,12 @@ function DuelService.finish(duelId: string, reason: string)
 			-- which is not iterable.
 			local staked: { WrappedItem } = side.offer or {}
 			for _, wrapped in staked do
-				if not wrapped.isFake then
-					-- returnCopy rather than giveCopy: this is a stake coming
-					-- back, so its escrow record goes with it.
-					DuelStakes.giveBack(side, wrapped.claim, duelId)
+				local copyId = wrapped.copyId
+				if not wrapped.isFake and copyId then
+					-- giveBack rather than grant: this is a stake coming back,
+					-- so its escrow record goes with it -- matched by copyId, so
+					-- exactly the copy that was staked is the copy returned.
+					DuelStakes.giveBack(side, wrapped.claim, duelId, copyId)
 				end
 			end
 		end

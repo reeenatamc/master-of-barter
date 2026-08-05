@@ -344,6 +344,19 @@ export type DuelState = {
 export type EscrowEntry = {
 	itemId: ItemId,
 	duelId: string,
+	--- WHICH copy is on the table, not just which kind.
+	---
+	--- Not bookkeeping: `InventoryService.takeCopy` refuses a copyId that is
+	--- already in here, which is what makes staking the same copy twice
+	--- IMPOSSIBLE rather than merely absent from the current call path. The
+	--- duplication exploit that motivated this got in by controlling the ORDER
+	--- of a list; identity cannot be reordered.
+	---
+	--- Ephemeral by nature -- copyIds are minted per duel -- and that is fine:
+	--- every escrow entry present when a profile loads is an orphan by
+	--- definition and gets cleared. Entries saved before this field existed
+	--- have no copyId, are never read for one, and are cleared the same way.
+	copyId: string,
 }
 
 export type Stats = {

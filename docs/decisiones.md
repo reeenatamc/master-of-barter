@@ -528,3 +528,43 @@ La señal que esto genera ("hay bots") es la misma que el plan ya había aceptad
 **Esto no lo introdujo D1.** Es el modelo de turnos actual, que `arquitectura.md` §5 ya marca como provisional: *"el que oferta mueve primero. El slot 1 abre por ahora; alternar turnos es A2."* En humano-contra-humano pasa lo mismo: el slot 2 nunca abre.
 
 **No lo cambio acá.** Alternar turnos es una decisión de diseño de negociación —quién puede presionar a quién y cuándo— y pertenece a A2, no a una tarjeta de bots. Pero D1 se entrega con esta limitación a la vista y no descubierta después: **un rival que nunca te presiona es la mitad del juego.**
+
+---
+
+## 2026-08-04 · 🔒 DOCTRINA — el cliente controla la forma, no solo el contenido
+
+**Sale del agujero de duplicación del escrow, y es la lección más cara del proyecto hasta ahora.**
+
+El código validaba con cuidado **cada entrada** de una oferta: el tipo, que el claim exista en el catálogo, que `isFake` concuerde con `copyId`, que la copia sea tuya, que un genuino no mienta. Cinco capas por elemento, escritas con atención.
+
+Y después confiaba en el **orden de la lista**.
+
+> **La suposición era: "las primeras N entradas de una enmienda son la oferta anterior."**
+> Nadie la escribió como suposición. Estaba implícita en un `for index = alreadyWrapped + 1, #wrapped`.
+
+**El principio general:** toda propiedad de una estructura que el cliente arma —**el orden, la longitud, la unicidad, que un prefijo se repita, que dos listas se correspondan**— no existe hasta que el servidor la verifica. Validar los elementos y confiar en la forma es validar la mitad.
+
+Es la misma familia que la regla de oro, pero un piso más abajo: la regla de oro dice *no le mandes al cliente lo que no debe saber*; esta dice *no le creas al cliente cómo ordenó lo que te mandó*.
+
+**Y la defensa fuerte no es verificar el orden — es que el orden no importe.** El arreglo tiene dos mitades y la diferencia entre ellas es la doctrina entera:
+
+| | Qué garantiza |
+|---|---|
+| **Débil:** la enmienda debe empezar con la oferta que enmienda (`DuelOffers`) | *este camino* no dupea |
+| **Fuerte:** `takeCopy` rechaza un `copyId` que ya está en escrow (`InventoryService`) | *no existe camino* que dupee |
+
+La débil se queda porque da el mensaje claro y mantiene exacta la cuenta del costo. Pero la que hace el trabajo es la fuerte: **el ledger de escrow ahora guarda identidad (`copyId`), no solo tipo**, y la identidad no se puede reordenar. Si mañana alguien vuelve a suponer un orden, la doble toma sigue siendo imposible.
+
+Mismo movimiento de siempre —convertir la convención en imposibilidad— aplicado por tercera vez: `WrappedItemView` sin campo donde poner `isFake`, `InventoryService` sin función que reste de la colección, y ahora un escrow donde una copia no puede entrar dos veces.
+
+### Cómo apareció: el bot fue el primer usuario adversarial
+
+**No lo encontré leyendo el código. Lo encontré escribiendo un actor que lo usa.**
+
+Al programar cómo enmienda el bot tuve que preguntarme qué manda exactamente en el segundo payload, y ahí la suposición de orden quedó a la vista. Leer `submitOffer` cien veces no la muestra, porque leyendo uno reconstruye la intención; **escribiendo un cliente uno tiene que producir los bytes**.
+
+Esa es la moraleja que se lleva D1 más allá de los bots: **un actor programado contra tu propia superficie encuentra lo que leerla no encuentra**, porque no comparte tus suposiciones — solo tiene la firma. Vale para el bot de hoy y para el auto-juego de D2, que va a ejercitar miles de secuencias que ningún humano tipearía.
+
+### Protocolo aclarado para agujeros activos
+
+Renata lo fijó al ratificar el arreglo, y queda como regla: **en un agujero de seguridad activo, el orden correcto es arreglar y reportar.** Un dupe abierto esperando aprobación es peor que cualquier error de criterio en el arreglo. El caso (a) exige que el **veredicto ocurra**, no que el arreglo espere.

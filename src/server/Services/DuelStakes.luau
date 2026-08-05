@@ -62,19 +62,19 @@ end
 --- Returns true for a bot with nothing behind it. That is the minting noted
 --- above, and it is deliberate: the alternative is giving bots profiles, which
 --- means real DataStore keys for players who do not exist.
-function DuelStakes.take(side: Side, itemId: Types.ItemId, duelId: string): boolean
+function DuelStakes.take(side: Side, itemId: Types.ItemId, duelId: string, copyId: string): boolean
 	local player = side.player
 	if not player then
 		return true
 	end
-	return InventoryService.takeCopy(player, itemId, duelId)
+	return InventoryService.takeCopy(player, itemId, duelId, copyId)
 end
 
 --- The exact inverse of `take`: a stake coming back, with its escrow record.
-function DuelStakes.giveBack(side: Side, itemId: Types.ItemId, duelId: string)
+function DuelStakes.giveBack(side: Side, itemId: Types.ItemId, duelId: string, copyId: string)
 	local player = side.player
 	if player then
-		InventoryService.returnCopy(player, itemId, duelId)
+		InventoryService.returnCopy(player, itemId, duelId, copyId)
 	end
 end
 

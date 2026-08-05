@@ -115,6 +115,47 @@ Cinco rechazos más: claim inexistente · genuino mintiendo sobre su identidad �
 
 Y las fichas: `_G.dc.fakeCall()` dos veces desde slot 1 → la segunda da `your FakeCall token is already spent`.
 
+### C-DUPE 🔴 — el ataque de duplicación, caso de regresión permanente
+
+**Este no se saltea nunca.** Es el agujero más serio que tuvo el proyecto: el escrow confiaba en el **orden** de una lista que arma el **cliente**. Está arreglado en dos lugares independientes, y esta prueba verifica que los dos siguen ahí.
+
+> Va por tecla y no por consola porque la Command Bar de Studio tiene su propio caché de módulos y sus propios globales: `_G.dc` no llega al controlador vivo. Los bloques de arriba que usan `_G.dc` están **desactualizados por esa razón** y hay que pasarlos a teclas (anotado en el backlog).
+
+**Pasos:**
+
+1. Dos jugadores. Los dos ofertan (**Q**).
+2. Desde **slot 1**, pedí más (**Z**).
+3. Desde **slot 2** —que ahora debe una enmienda— apretá **V**.
+
+**El payload que manda V** es el ataque exacto: el envoltorio **nuevo primero**, la oferta anterior después.
+
+```
+oferta original:  [ real A ]
+enmienda enviada: [ real B , real A ]     ← B adelante: eso es todo el ataque
+```
+
+**Qué tiene que salir en el Output del servidor:**
+
+```
+[Duel] sending the dupe payload: new wrapper first, previous offer after   (cliente)
+[DuelService] request from Player2 rejected: amendment changed wrapper 1; it may only append
+```
+
+**Y lo que tiene que seguir siendo cierto después:** el perfil del slot 2 no cambió. Ni ganó una copia ni perdió una:
+
+```lua
+print(require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[2]).duelCopies)
+```
+
+**Las dos defensas, y por qué son dos:**
+
+| Defensa | Dónde | Qué aporta |
+|---|---|---|
+| Una enmienda debe **empezar** con la oferta que enmienda | `DuelOffers` | El rechazo claro, y que la cuenta del costo siga siendo exacta |
+| `takeCopy` **rechaza un `copyId` que ya está en escrow** | `InventoryService` | Que ninguna ruta futura pueda reabrir el agujero suponiendo un orden otra vez |
+
+La primera dice *"este camino no dupea"*. La segunda dice *"no existe camino que dupee"*. Si algún día alguien borra la primera, el ataque tiene que seguir fallando — con un mensaje más feo (`cannot stake copy ... `) pero fallando igual. **Esa es la prueba de que el arreglo es estructural y no una convención.**
+
 ---
 
 ## Bloque D — límites y timeouts
