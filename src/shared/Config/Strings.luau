@@ -145,6 +145,10 @@ local notices = {
 	spectatorNoDuel = "No pudimos cargar tu progreso, así que no podés apostar todavía. Salí y volvé a entrar para reintentar.",
 	shopNotStocked = "Eso ya no está en el kiosco. Don Trueque rota lo que ofrece cada tanto.",
 	shopCannotAfford = "No te alcanzan los Clips para eso.",
+	--- Llegó al tope diario contra rivales de relleno. Dice qué pasa ahora
+	--- ("seguís en la cola"), no solo qué no pasa: un aviso que solo niega deja
+	--- al jugador sin saber si tiene que hacer algo.
+	botCapReached = "Por hoy ya no hay rivales de relleno. Seguís en la cola esperando a alguien de verdad.",
 }
 
 local currencyName = "Clips"

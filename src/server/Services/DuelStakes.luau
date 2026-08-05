@@ -32,8 +32,10 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local DataService = require(script.Parent.DataService)
 local DuelTypes = require(script.Parent.DuelTypes)
 local EconomyService = require(script.Parent.EconomyService)
 local InventoryService = require(script.Parent.InventoryService)
@@ -106,5 +108,72 @@ end
 --- Re-exported so callers that genuinely need the question -- payouts capped
 --- against bot farming, for one -- ask it in one vocabulary.
 DuelStakes.isBot = isBot
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- The daily bot-earnings cap (card D1, condition 3)
+--
+-- The problem: filler opponents mint. A bot's genuine wrappers come from
+-- nowhere and its Clips cost nobody anything, so beating bots is a source with
+-- no sink behind it. With simple personalities somebody finds the trick fast,
+-- Clips inflate, forging goes back to being free, and the brake card B2 just
+-- installed comes off. By rule 5 that is the failure that spreads.
+--
+-- Why a cap and not a smaller reward: a different payout against a bot is an
+-- obvious tell in the very first duel, and docs/gdd.md §34 rules that out.
+-- Below the cap a bot duel pays exactly like a duel against a person.
+--
+-- ONE number for both currencies, because a bot mints both. Capping the Clips
+-- alone would leave the copies farmable by the same trick.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- UTC, so the reset does not move with the player's timezone -- or with a
+--- client clock, which is not ours to trust.
+local function today(): string
+	return os.date("!%Y-%m-%d")
+end
+
+--- Value pulled out of bots today. Zero for a bot, and zero for anyone whose
+--- counter is from another day: a stale date IS the reset, which is why nothing
+--- schedules one.
+function DuelStakes.botEarningsToday(player: Player): number
+	local profile = DataService.get(player)
+	if not profile then
+		return 0
+	end
+	if profile.botEarnings.date ~= today() then
+		return 0
+	end
+	return profile.botEarnings.value
+end
+
+--- Whether this player may still take value out of filler opponents today.
+function DuelStakes.mayEarnFromBots(player: Player): boolean
+	return DuelStakes.botEarningsToday(player) < Economy.botEarningsCapPerDay
+end
+
+--- Adds to the day's total, resetting it first if it belongs to another day.
+---
+--- A single duel may carry the total PAST the cap, and that is on purpose: the
+--- alternative is paying half a duel's reward, which is a rule the player would
+--- have to deduce from a number that came out wrong. The overshoot is bounded
+--- by one duel; a partial payout is a permanent confusion.
+function DuelStakes.recordBotEarnings(side: Side, value: number)
+	local player = side.player
+	if not player or value <= 0 then
+		return
+	end
+
+	local profile = DataService.get(player)
+	if not profile then
+		return
+	end
+
+	local stamp = today()
+	if profile.botEarnings.date ~= stamp then
+		profile.botEarnings.date = stamp
+		profile.botEarnings.value = 0
+	end
+	profile.botEarnings.value += value
+end
 
 return DuelStakes

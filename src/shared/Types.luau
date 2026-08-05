@@ -374,6 +374,19 @@ export type Profile = {
 		date: string,
 		progress: { [string]: number },
 	},
+	--- Total VALUE pulled out of filler opponents today: Clips won plus the
+	--- baseValue of the copies received (card D1).
+	---
+	--- One number for both currencies, because a bot mints both. Its genuine
+	--- wrappers come from nowhere (see DuelStakes), so capping only the Clips
+	--- would leave the copies farmable by the same trick.
+	---
+	--- `date` is a UTC day string. A different day means the counter is stale,
+	--- which is how it resets without a scheduled job anywhere.
+	botEarnings: {
+		date: string,
+		value: number,
+	},
 	--- Ids of purchases already granted, for ProcessReceipt idempotency
 	--- (docs/arquitectura.md §8). Written before the grant is acknowledged.
 	receipts: { [string]: boolean },

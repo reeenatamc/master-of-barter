@@ -151,12 +151,20 @@ El remoto llegó a existir declarado y sin disparar. Eso no es una línea muerta
   Misiones = { Fecha = "", Progreso = {} },
   Recibos = {},          -- ids de ProcessReceipt ya otorgados (idempotencia)
   Escrow = {},           -- { {itemId, duelId} } copias apostadas y sin resolver
+  BotEarnings = { Fecha = "", Valor = 0 },  -- valor extraído hoy de rivales de relleno
 }
 ```
 
 **Sobre `Escrow` (agregado en B3):** las copias apostadas salen del perfil al **ofertar**, no al resolver. Eso hace que terminar un duelo por desconexión no tenga que escribir nada en el perfil del que se fue, y por lo tanto que no exista carrera entre la transferencia y la liberación del perfil.
 Si el servidor se cae a mitad, esas copias se pierden. Es la elección deliberada entre los dos fallos posibles: una pérdida lastima a una persona una vez, una duplicación infla la economía de todos para siempre. Por eso **no hay auto-devolución** — devolver tras una caída ocurrida entre el pago al ganador y la limpieza del perdedor duplicaría.
 La lista existe para que esa pérdida sea **detectable**: al cargar un perfil, toda entrada de `Escrow` es huérfana por definición (un duelo vivo no sobrevive a la sesión que lo sostenía), se reporta y se limpia sin devolver. Sin esa lista, "lo perdí en una caída" y "nunca lo tuve" serían el mismo síntoma.
+
+**Sobre `BotEarnings` (agregado en D1):** un rival de relleno **acuña**. Sus envoltorios genuinos no salen de ningún inventario y sus Clips no le cuestan a nadie, así que ganarle es una fuente sin sumidero detrás. Sin tope, el que descubre el truco infla los Clips y desarma el freno que instaló B2.
+Es **un solo número para las dos monedas** —Clips ganados **más** el `baseValue` de las copias recibidas— porque el bot acuña las dos: topear solo los Clips dejaría las copias farmeables por el mismo camino.
+El tope **no reduce el pago**: por debajo, un duelo contra bot paga exactamente igual que uno contra persona, porque un pago distinto sería una señal obvia en el primer duelo (§34 del GDD lo prohíbe). Lo que hace al alcanzarlo es **dejar de ofrecer bots en la cola**. Se aplica ahí y no al pagar porque un duelo que llegó a la revelación ya intercambió las apuestas: no pagarle a alguien que ya entregó sus copias convierte un tope neutro en un castigo.
+`Fecha` es un día UTC. Que esté vencida **es** el reinicio, así que nada agenda uno.
+
+**Agregar un campo NO requiere subir `DataVersion`:** `profile:Reconcile()` corre en cada carga, antes de `migrate`, y completa las claves faltantes desde la plantilla. La versión y la cadena de migraciones son para **cambiar** una forma —renombrar, reestructurar, que un campo pase a significar otra cosa—, que es lo que Reconcile no puede adivinar. Subirla por un agregado dejaría un paso de migración que no hace nada.
 
 Reglas: ProfileStore gestiona auto-save y session locking; jamás se llama a guardar por cambio pequeño. Toda mutación de Clips pasa por `EconomyService` (un solo lugar para logs, validación y balance). `DataVersion` permite migraciones: al cargar, si la versión es vieja, se ejecutan funciones de migración en cadena. Si un perfil no carga (lock ajeno, error), el jugador entra en modo espectador con aviso y reintento — nunca con datos por defecto que luego sobrescriban los reales.
 

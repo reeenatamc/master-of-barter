@@ -26,8 +26,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
+local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 
 local DuelService = require(script.Parent.DuelService)
+local DuelStakes = require(script.Parent.DuelStakes)
 
 local MatchmakingService = {}
 
@@ -77,6 +79,29 @@ local function armBotTimer(player: Player)
 			return
 		end
 		if not player.Parent or not table.find(queue, player) then
+			return
+		end
+
+		-- THE DAILY CAP IS APPLIED HERE, not at payout. Card D1's plan put it at
+		-- payout time -- pay nothing once the cap is reached -- and implementing
+		-- it showed that does not work: a duel that reaches a reveal has ALREADY
+		-- swapped the stakes, so a side that is paid nothing has still lost the
+		-- copies it put on the table. That turns a cap meant to be neutral into
+		-- a penalty for playing while capped.
+		--
+		-- Same instrument, same single number in the profile, one moment
+		-- earlier: once the cap is reached the queue simply stops offering
+		-- filler opponents. Nothing is taken away, nothing is paid in half, and
+		-- the player keeps waiting for a person -- which is what the queue was
+		-- always for.
+		--
+		-- Yes, this is a signal that bots exist. It reaches only somebody who
+		-- has already extracted a day's worth of value from them, which is the
+		-- trade the plan already accepted: the tell appears exactly for the
+		-- player who no longer needed it.
+		if not DuelStakes.mayEarnFromBots(player) then
+			warn(`[Matchmaking] {player.Name} is at the daily bot cap; no filler opponent offered`)
+			Net.get(Net.names.Notice):FireClient(player, Strings.notices.botCapReached)
 			return
 		end
 

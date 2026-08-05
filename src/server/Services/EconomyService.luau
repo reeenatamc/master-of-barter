@@ -140,10 +140,12 @@ function EconomyService.offerCost(wraps: { Types.WrapRequest }): number
 	return total
 end
 
---- Pays out the end of a duel: one call, one log line, one balance change,
---- rather than four credits that could half-apply if something failed between
---- them.
-function EconomyService.payDuel(player: Player, payout: Types.DuelPayout): boolean
+--- What a duel's end is worth, without paying it.
+---
+--- Split out from `payDuel` so the bot-earnings cap can ask the price before
+--- deciding (card D1). Two copies of this arithmetic would be two answers to
+--- one question, and the cap would drift from what was actually paid.
+function EconomyService.duelPayoutValue(payout: Types.DuelPayout): number
 	local rewards = Economy.duelReward
 	local total = rewards.participation
 
@@ -158,6 +160,14 @@ function EconomyService.payDuel(player: Player, payout: Types.DuelPayout): boole
 	total += payout.fakesSlipped * rewards.perFakeSlipped
 	total += payout.fakesCaught * rewards.perFakeCaught
 
+	return total
+end
+
+--- Pays out the end of a duel: one call, one log line, one balance change,
+--- rather than four credits that could half-apply if something failed between
+--- them.
+function EconomyService.payDuel(player: Player, payout: Types.DuelPayout): boolean
+	local total = EconomyService.duelPayoutValue(payout)
 	return (EconomyService.credit(player, total, `duel:{payout.result}`))
 end
 

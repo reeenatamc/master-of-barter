@@ -47,8 +47,14 @@ DataService.profileLoaded = Signal.new()
 DataService.profileReleased = Signal.new()
 
 --- The starting profile. Every field of docs/arquitectura.md §7 is here,
---- including the ones nothing reads yet: a field present from the first save
---- costs nothing, while a field added later needs a migration.
+--- including the ones nothing reads yet.
+---
+--- ADDING a field needs no version bump: `profile:Reconcile()` runs before
+--- `migrate` on every load and fills missing keys from this template. The
+--- version and the migration chain are for CHANGING a shape -- a rename, a
+--- restructure, a field that means something different than it used to --
+--- which Reconcile cannot guess at. Bumping for a plain addition would add a
+--- migration step that does nothing and a gap in the chain to explain later.
 local TEMPLATE: Profile = {
 	dataVersion = DataConfig.version,
 	clips = Economy.startingClips,
@@ -61,6 +67,7 @@ local TEMPLATE: Profile = {
 	quests = { date = "", progress = {} },
 	receipts = {},
 	escrow = {},
+	botEarnings = { date = "", value = 0 },
 }
 
 local realStore = ProfileStore.New(DataConfig.storeName, TEMPLATE)

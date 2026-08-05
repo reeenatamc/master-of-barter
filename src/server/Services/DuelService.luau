@@ -39,6 +39,7 @@ local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelSceneService = require(script.Parent.DuelSceneService)
+local EconomyService = require(script.Parent.EconomyService)
 local DataService = require(script.Parent.DataService)
 local InventoryService = require(script.Parent.InventoryService)
 
@@ -466,7 +467,7 @@ function DuelService.finish(duelId: string, reason: string)
 					elseif reveal.winner == side.slot then "win"
 					else "loss"
 
-					DuelStakes.pay(side, {
+				local payout: Types.DuelPayout = {
 					result = result,
 					fakesSlipped = mine.fakesPassed,
 					fakesCaught = if reveal.fakeCall ~= nil
@@ -474,7 +475,21 @@ function DuelService.finish(duelId: string, reason: string)
 							and reveal.fakeCall.correct
 						then 1
 						else 0,
-				})
+				}
+				DuelStakes.pay(side, payout)
+
+				-- Everything that came out of a filler opponent, against the
+				-- day's total: the Clips just paid plus the value of the copies
+				-- received. Both are minted (see DuelStakes), so both count.
+				--
+				-- Recorded AFTER the fact rather than checked before it. The
+				-- cap decides whether the next bot duel is offered at all; it
+				-- never docks a duel that already happened, because by the time
+				-- we are here the stake has already crossed the table.
+				if DuelStakes.isBot(duel.sides[otherSlot(side.slot)]) then
+					local extracted = EconomyService.duelPayoutValue(payout) + mine.valueReceived
+					DuelStakes.recordBotEarnings(side, extracted)
+				end
 			end
 		end
 	end

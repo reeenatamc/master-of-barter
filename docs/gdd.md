@@ -106,6 +106,12 @@ Diarias (3/día, moneda) y semanales (1, recompensa mayor). Diseñadas para empu
 ### 19. Economía
 Moneda blanda única: **Clips** 📎 (guiño al clip rojo). Fuentes: duelos (ganar > perder, pero perder da algo), misiones, rachas. Sumideros: fabricar fakes, comprar objetos/cajas del kiosco, reintentos de misión. Regla de oro: el sumidero de fakes escala con el valor imitado para que mentir caro cueste caro. Toda la economía en un módulo de configuración central para poder balancear sin tocar código. 🧪 valores iniciales a calibrar en alfa.
 
+**Los rivales de relleno son una fuente aparte, y de las dos monedas (agregado en D1).** Un bot no tiene perfil: sus envoltorios genuinos no salen de ningún inventario y sus Clips no le cuestan a nadie. Entonces ganarle **acuña** —Clips *y* copias— sin sumidero detrás. Esto no estaba listado arriba y es real, así que queda escrito.
+
+Está **acotado, no cerrado**: un tope diario de **valor total extraído de bots** (Clips ganados más el `baseValue` de las copias recibidas, contra un único número). Por debajo del tope no cambia nada —un duelo contra bot paga igual que uno contra persona, porque un pago distinto sería una señal obvia en el primer duelo y §34 lo prohíbe—; al alcanzarlo, la cola deja de ofrecer bots.
+
+El camino inverso está bien y no necesita tope: humano pierde contra bot → sus copias se van a la nada. Eso es **sumidero**, y el fallo que se propaga es el que infla, no el que achica.
+
 ### 20. Monedas
 Solo Clips en el MVP 🔒. 💤 posible moneda dura cosmética ("Estrellitas Doradas") si el catálogo cosmético crece; evitar doble moneda al inicio (complejidad y percepción de casino).
 

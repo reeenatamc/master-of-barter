@@ -109,6 +109,24 @@ local shop = {
 	Four slots out of twelve objects: enough that a rotation is worth checking,
 	few enough that what is missing is felt.
 ]=]
+--[=[
+	@prop botEarningsCapPerDay number
+	@within Economy
+
+	How much VALUE one player may pull out of filler opponents in a day: Clips
+	won plus the baseValue of the copies received, against this single number.
+
+	Anti-farming, and shaped so that nothing changes below it (card D1). A duel
+	against a bot pays exactly like a duel against a person until the cap is
+	reached -- no reduced reward, because a different payout would be an obvious
+	tell in the first duel, and docs/gdd.md §34 rules that out.
+
+	Set around four generous duels' worth: enough that an ordinary session in an
+	empty server never touches it, low enough that farming is not a living.
+	[propuesta] -- it calibrates in alpha, like every other figure here.
+]=]
+local botEarningsCapPerDay = 900
+
 local kiosk = {
 	slots = 4,
 	rotationSeconds = 900,
@@ -121,4 +139,5 @@ return {
 	duelReward = duelReward,
 	shop = shop,
 	kiosk = kiosk,
+	botEarningsCapPerDay = botEarningsCapPerDay,
 }
