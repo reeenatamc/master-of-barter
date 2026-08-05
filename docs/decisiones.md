@@ -323,3 +323,45 @@ Los dos últimos se borraron con `sellMultiplier`.
 `clearEscrow` quedó únicamente para duelos que llegaron a revelación, donde las copias cambiaron de manos y los registros sí están todos obsoletos.
 
 **La regla:** una operación de estado que pueda revertirse parcialmente necesita su **inversa exacta**, no una limpieza general. "Borrar todo lo del duelo" era un martillo donde hacía falta una pinza, y los martillos no dejan de golpear de más cuando el caso es raro — golpean de más justo ahí.
+
+---
+
+## 2026-08-04 · Plan de D1, con las tres condiciones resueltas
+
+### 1. Los bots actúan por la misma superficie validada
+
+**El problema concreto:** las funciones validadas de hoy toman un `Player`, y un bot no tiene ninguno. La salida fácil sería que el bot mute el estado del duelo directo — y eso es exactamente el atajo prohibido: el día que cambie una validación y el atajo no, hay dos juegos distintos corriendo en el mismo servidor.
+
+**La solución:** partir cada acción en dos mitades. La de afuera resuelve *quién sos* (Player → duelo + lado) y existe solo para los remotos; la de adentro hace *la acción sobre un lado*, con las cuatro capas completas. El bot llama a la mitad de adentro. **Misma función, mismas validaciones, mismo orden.**
+
+**La única divergencia, y es un hecho, no un atajo:** un bot no tiene perfil, así que no hay de dónde sacarle copias ni a quién cobrarle Clips. Eso queda aislado en dos funciones —`takeStake` y `giveStake`— que no hacen nada cuando el lado es un bot. La divergencia vive en la capa de **persistencia**, nunca en la de **reglas**: turno, fase, límites, tope de fakes y coherencia del modelo A corren idénticas para los dos.
+
+**Corolario que acepto de antemano:** si el bot no puede hacer algo por la superficie pública, eso es una carencia de la superficie y se arregla ahí.
+
+### 2. D1 **no** reemplaza la sesión de diversión 2
+
+D1 permite que Renata pruebe sola y que el juego viva sin población. **No decide la ficha.**
+
+El veredicto del ¡ES FAKE! necesita dos humanos bluffeándose, porque **la métrica es la risa** y un bot no se ríe. D1 la *facilita* —Renata puede sentir las dos configuraciones ella misma antes, y los testers pueden calentar contra bots en vez de aprender el juego durante la medición— pero la sesión con personas sigue siendo la llave. Queda escrito en la tarjeta.
+
+### 3. El farmeo: tope diario, no pago reducido
+
+**El problema:** si ganarle a un bot paga igual que a un humano, y las personalidades de D1 son simples, alguien le encuentra el truco rápido. Los Clips se inflan, falsificar vuelve a ser gratis, y **el freno que B2 acaba de instalar queda deshecho**. Por la regla 5, esa es la falla que se propaga.
+
+**Descartado — pago reducido:** `gdd.md` §15 pide que el jugador no reciba señales obvias de que es un bot, y un pago distinto **es** una señal obvia. Se ve en el primer duelo.
+
+**Descartado — no pagar:** la señal es todavía más fuerte.
+
+**Elegido — tope diario de Clips ganados contra bots, con la misma tasa por debajo del tope.** Tres razones:
+
+1. **No hay señal por duelo.** Por debajo del tope, un duelo contra bot paga exactamente igual que uno contra persona: indistinguible en el juego normal, que es lo que §15 pide.
+2. **Acota la inflación**, que es lo único que había que acotar. Lo que se propaga no es que alguien gane Clips, es que los gane sin límite.
+3. **El único que llega al tope es el que ya está farmeando** — o sea, alguien que ya descubrió que son bots. La señal aparece exactamente para quien ya no la necesitaba.
+
+**Costo aceptado:** un campo nuevo en el perfil (`botEarnings = { date, clips }`). Toca datos persistentes, así que `arquitectura.md` §7 se actualiza en el mismo commit, y la fuente de Clips queda anotada en §19.
+
+### Prerrequisito: partir `DuelService` primero
+
+Está en **1095 líneas**, tres veces y media el límite, y la deuda está marcada desde el checkpoint 2. Meter D1 adentro sería empeorar a propósito un archivo que ya hay que partir — y peor, el cambio de D1 es justo el que toca todos sus rincones.
+
+Se parte primero, con el comportamiento intacto, y D1 entra después sobre algo legible.
