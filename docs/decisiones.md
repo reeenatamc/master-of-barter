@@ -375,3 +375,33 @@ El caso inverso está bien y no hace falta tocarlo: humano pierde contra bot →
 Está en **1095 líneas**, tres veces y media el límite, y la deuda está marcada desde el checkpoint 2. Meter D1 adentro sería empeorar a propósito un archivo que ya hay que partir — y peor, el cambio de D1 es justo el que toca todos sus rincones.
 
 Se parte primero, con el comportamiento intacto, y D1 entra después sobre algo legible.
+
+---
+
+## 2026-08-04 · La regla de oro gobierna también DÓNDE VIVEN LOS TIPOS
+
+**Doctrina, para todo tipo futuro.** La frontera de seguridad no es solo qué datos viajan en runtime: es también **qué formas son alcanzables al escribir código**.
+
+- **`Shared/Types` guarda los tipos de VISTA** — lo que el cliente puede ver. `WrappedItemView` no tiene dónde poner `isFake`.
+- **El servidor guarda los tipos de VERDAD** — `Side`, `Duel`. Contienen `offer`, que contiene `isFake`.
+
+**La frontera de tipos calca la frontera de datos.**
+
+**Por qué importa:** un `Side` importable desde el cliente es un molde esperando que alguien, con la mejor intención, serialice la verdad a través de él. No haría falta ningún error de juicio: bastaría con que el tipo estuviera disponible y pareciera el adecuado.
+
+**Antes de crear un tipo, la pregunta es de qué lado de la frontera carga información.** Si carga verdad, no vive en Shared, por conveniente que resulte.
+
+---
+
+## 2026-08-04 · El embudo de censura salió más fuerte de la partición
+
+**Verificado, no supuesto.** La condición del corte de la vista era que después siguiera habiendo **un solo** camino por el que el estado del duelo se vuelve enviable. Se comprobó con cuatro búsquedas:
+
+1. `stateFor` y `viewOf` existen **únicamente** en `DuelView`, y son locales al archivo.
+2. El remoto `DuelState` se dispara desde **un solo lugar** en todo el servidor: `DuelView:99`.
+3. `side.offer` —la tabla con la verdad— se toca en `DuelService` (apuestas, validación, armado de la revelación) y en `DuelView` (censura). Ninguno de los usos de `DuelService` llega a un remoto.
+4. `DuelView` exporta **solo** `broadcast`.
+
+**Y quedó más protegido que antes.** `stateFor` era local dentro de un archivo de mil líneas: cualquier función de ese archivo podía llamarlo y mandar el resultado. Ahora ningún módulo puede siquiera **obtener** un `DuelState`; la única salida es `broadcast`, que censura al pasar.
+
+Partir bien no solo no debilitó la regla: la endureció, porque las fronteras de módulo son más difíciles de cruzar por descuido que las de una función local.
