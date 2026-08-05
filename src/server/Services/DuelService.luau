@@ -9,11 +9,20 @@
 	Card A1.2 adds the phase watchdog and the per-duel Trove, together: the
 	moment a timer exists, its cleanup exists too.
 
-	The one rule this module exists to protect (docs/gdd.md §39): every table in
-	here is server-only. Nothing leaves except through `stateFor`, which builds
-	a per-recipient view. Today the only thing being censored is the rival's
-	hand (they get a count, not the items); once forgeries exist, the same
-	funnel is what keeps `isFake` from ever reaching the other client.
+	What is left here after the split is the duel's LIFE: who is in one, what
+	phase it is in, whose turn, when it ends and how. The parts that answer a
+	question rather than run the clock live next door:
+
+	  DuelTypes   the shapes
+	  DuelView    the only way a state reaches a client
+	  DuelReveal  the whole truth, built as a value
+	  DuelOffers  whether an offer is legal, and what it puts on the table
+
+	The one rule all four exist to protect (docs/gdd.md §39): every table in
+	here is server-only, and the ONLY sanctioned exit for duel state is
+	`DuelView.broadcast`. This module cannot build a DuelState even if it wanted
+	to -- `stateFor` and `viewOf` are local to DuelView. Censorship is the
+	default there, and the truth is unlocked by PHASE, not by caller.
 ]]
 
 local HttpService = game:GetService("HttpService")
@@ -21,7 +30,6 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
-local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
@@ -34,6 +42,7 @@ local DataService = require(script.Parent.DataService)
 local InventoryService = require(script.Parent.InventoryService)
 
 local DuelTypes = require(script.Parent.DuelTypes)
+local DuelOffers = require(script.Parent.DuelOffers)
 local DuelReveal = require(script.Parent.DuelReveal)
 local DuelView = require(script.Parent.DuelView)
 
@@ -373,20 +382,6 @@ end
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Offers (card A1.3)
 
-local rng = Random.new()
-
---- Both genuine and forged wrappers get all three dimensions rolled. The only
---- difference is which band they are drawn from, so the payload shape can never
---- betray which is which.
-local function rollAppearance(isFake: boolean): WrapAppearance
-	local band = if isFake then DuelRules.appearanceBands.forged else DuelRules.appearanceBands.genuine
-	return {
-		colorTone = rng:NextNumber(band.min, band.max),
-		seam = rng:NextNumber(band.min, band.max),
-		label = rng:NextNumber(band.min, band.max),
-	}
-end
-
 --- A rejected remote is either a bug in our own client or somebody probing.
 --- Either way it has to be visible and cheap (docs/arquitectura.md §8).
 --- Feeding these to analytics, so spam patterns become exploit candidates, is
@@ -404,64 +399,13 @@ local function sideOf(duel: Duel, player: Player): Side?
 	return nil
 end
 
---- The requests an existing offer was built from, so its cost can be worked
---- out again without storing a price alongside it. A stored price is a second
---- source of truth that goes stale the moment Config changes.
-local function toRequests(wrapped: { WrappedItem }): { WrapRequest }
-	local requests: { WrapRequest } = {}
-	for _, item in wrapped do
-		table.insert(requests, { copyId = item.copyId, isFake = item.isFake, claim = item.claim })
-	end
-	return requests
-end
-
-local function findCopy(side: Side, copyId: string): DuelCopy?
-	for _, copy in side.hand do
-		if copy.copyId == copyId then
-			return copy
-		end
-	end
-	return nil
-end
-
---- Validation layer 1: shape. This is where values coming off a remote stop
---- being `unknown`. Nothing below this function ever sees an unchecked field.
---- Bails as soon as the entry count passes the limit, so a huge payload cannot
---- make the server walk it.
-local function parseRequests(payload: unknown): { WrapRequest }?
-	if type(payload) ~= "table" then
-		return nil
-	end
-
-	local requests: { WrapRequest } = {}
-
-	for _, entry in payload :: { [any]: any } do
-		if #requests >= DuelRules.limits.maxItemsPerOffer + 1 then
-			return nil
-		end
-		if type(entry) ~= "table" then
-			return nil
-		end
-
-		local raw = entry :: { [string]: any }
-		local copyId, isFake, claim = raw.copyId, raw.isFake, raw.claim
-
-		if type(isFake) ~= "boolean" or type(claim) ~= "string" then
-			return nil
-		end
-		if copyId ~= nil and type(copyId) ~= "string" then
-			return nil
-		end
-
-		table.insert(requests, { copyId = copyId, isFake = isFake, claim = claim })
-	end
-
-	return requests
-end
-
---- Commits one side's offer. Validates in the four layers of
---- docs/arquitectura.md §8: types, existence against Config, duel state, then
---- ownership. Any failure means "ignore and log", never a partial offer.
+--- Commits one side's offer.
+---
+--- The PHASE half of an offer: which duel, whose turn, and what happens to the
+--- turn afterwards. Whether the offer itself is legal -- types, catalogue,
+--- ownership, Clips, escrow -- is DuelOffers' question, and it answers with
+--- wrappers or a reason. Any failure means "ignore and log", never a partial
+--- offer.
 ---
 --- NOT rate limited yet. Repeat calls are cheap (the "already offered" check
 --- rejects them immediately), but per-player rate limiting on every remote is
@@ -495,126 +439,9 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 		return reject(player, `wrong phase ({duel.phase})`)
 	end
 
-	-- Layer 1: types.
-	local requests = parseRequests(payload)
-	if not requests then
-		return reject(player, "malformed payload")
-	end
-
-	local limits = DuelRules.limits
-	local previous = side.offer
-	local alreadyWrapped = if previous then #previous else 0
-
-	-- "Add or improve" is validated by COUNT, never by real value.
-	--
-	-- The server knows what every wrapper truly is, so judging whether an
-	-- amendment is genuinely worth more would make the rejection itself leak
-	-- that knowledge: a client could probe amendments and read the truth off
-	-- which ones pass. Same family as the overlapping appearance bands -- the
-	-- server never answers in a way that reveals what it knows.
-	local minimum = if amending and previous then #previous + 1 else limits.minItemsPerOffer
-	if #requests < minimum or #requests > limits.maxItemsPerOffer then
-		local what = if amending then "amendment" else "offer"
-		return reject(player, `{what} has {#requests} wrappers, needs {minimum}-{limits.maxItemsPerOffer}`)
-	end
-
-	-- Layers 2 and 4: existence against Config, then ownership.
-	local wrapped: { WrappedItem } = {}
-	local usedCopies: { [string]: boolean } = {}
-	local fakes = 0
-
-	for _, request in requests do
-		-- Model A consistency: a forgery consumes no copy, a genuine wrapper
-		-- always names one. A client that says otherwise is malformed.
-		if request.isFake ~= (request.copyId == nil) then
-			return reject(player, "isFake disagrees with copyId")
-		end
-
-		-- Existence: a claim always names a real catalogue item, forged or not.
-		-- Forging something that does not exist would have no imperfection
-		-- template to imitate and no value to price the Clips cost against.
-		if not Items.catalog[request.claim] then
-			return reject(player, `unknown claim "{request.claim}"`)
-		end
-
-		if request.isFake then
-			fakes += 1
-			if fakes > limits.fakesPerDuel then
-				return reject(player, `more than {limits.fakesPerDuel} fakes`)
-			end
-		else
-			local copyId = request.copyId :: string
-			if usedCopies[copyId] then
-				return reject(player, "same copy wrapped twice")
-			end
-
-			local copy = findCopy(side, copyId)
-			if not copy then
-				return reject(player, `does not own copy {copyId}`)
-			end
-			-- Model A: a genuine wrapper cannot lie about what it holds. Lying
-			-- is what forging is for.
-			if copy.itemId ~= request.claim then
-				return reject(player, `genuine wrapper claims {request.claim} but holds {copy.itemId}`)
-			end
-
-			usedCopies[copyId] = true
-		end
-
-		table.insert(wrapped, {
-			wrappedId = HttpService:GenerateGUID(false),
-			copyId = request.copyId,
-			isFake = request.isFake,
-			claim = request.claim,
-			appearance = rollAppearance(request.isFake),
-		})
-	end
-
-	-- Layer 4, the economic half: forging costs Clips, scaled to what is being
-	-- imitated (docs/gdd.md §19). This is card B2 and it is the brake the
-	-- balance was missing -- while forging was free, "forge everything" and
-	-- then "accuse always" both dominated.
-	--
-	-- Charged on the DELTA, never on the whole offer. An amendment adds
-	-- wrappers to one already paid for, and charging the total again would bill
-	-- twice for the same forgeries.
-	local alreadyPaid = if previous then EconomyService.offerCost(toRequests(previous)) else 0
-	local owed = EconomyService.offerCost(requests) - alreadyPaid
-
-	if owed > 0 then
-		local paid, refusal = EconomyService.charge(player, owed, "forgery")
-		if not paid then
-			-- Refused BEFORE anything is stored, so a rejected offer leaves the
-			-- duel exactly as it was.
-			return reject(player, `cannot pay {owed} Clips for the forgeries ({refusal})`)
-		end
-	end
-
-	-- ESCROW. The genuine copies leave the profile HERE, at the moment they go
-	-- on the table -- not when the duel resolves (docs/decisiones.md).
-	--
-	-- That is what makes a mid-duel disconnect safe: once a copy is out, ending
-	-- the duel writes nothing to the player who left, so there is no ordering
-	-- problem between the transfer and their profile being released. The race
-	-- stops existing instead of being sequenced.
-	--
-	-- Only the NEW wrappers are escrowed. An amendment adds to an offer whose
-	-- copies already left; taking them again would charge the stake twice.
-	local newlyStaked: { Types.ItemId } = {}
-	for index = alreadyWrapped + 1, #wrapped do
-		local item = wrapped[index]
-		if not item.isFake then
-			local claim = item.claim
-			if not InventoryService.takeCopy(player, claim, duel.id) then
-				-- Put back whatever was already taken in this call, so a
-				-- half-escrowed offer cannot exist.
-				for _, back in newlyStaked do
-					InventoryService.returnCopy(player, back, duel.id)
-				end
-				return reject(player, `no longer owns a copy of {claim}`)
-			end
-			table.insert(newlyStaked, claim)
-		end
+	local wrapped, refusal = DuelOffers.build(player, duel, side, amending, payload)
+	if not wrapped then
+		return reject(player, refusal or "offer refused")
 	end
 
 	side.offer = wrapped
