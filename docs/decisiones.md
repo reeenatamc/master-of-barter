@@ -405,3 +405,24 @@ Se parte primero, con el comportamiento intacto, y D1 entra después sobre algo 
 **Y quedó más protegido que antes.** `stateFor` era local dentro de un archivo de mil líneas: cualquier función de ese archivo podía llamarlo y mandar el resultado. Ahora ningún módulo puede siquiera **obtener** un `DuelState`; la única salida es `broadcast`, que censura al pasar.
 
 Partir bien no solo no debilitó la regla: la endureció, porque las fronteras de módulo son más difíciles de cruzar por descuido que las de una función local.
+
+---
+
+## 2026-08-04 · ⏸ PENDIENTE — caso (d): el remoto `DuelReveal` existe y nadie lo usa
+
+**Primero, la respuesta a "¿por dónde sale el `RevealResult`?": por el mismo embudo.** Viaja **dentro** del `DuelState`, con la compuerta `if duel.phase == "Reveal"` adentro de `stateFor`. El inventario de salidas sancionadas sigue siendo **UNA**, no dos.
+
+**Y ahí apareció el problema.** `Net.names.DuelReveal` está declarado y **nadie lo dispara**. `arquitectura.md` §6 lo lista como remoto servidor→cliente (`Duel/Revelacion`), pero la implementación mandó la revelación adentro del estado.
+
+**Qué dice el doc:** §6 enumera cuatro remotos servidor→cliente, entre ellos `Duel/Revelacion`.
+**Qué hace el código:** tres. La revelación va dentro de `Duel/Estado`.
+
+**Por qué esto es peor que una mina de Config.** La regla 6 dice que un valor sin consumidor es una decisión tomada por accidente. Un **remoto** sin consumidor es eso y además otra cosa: es **una segunda salida cargada y esperando**. El día que alguien implemente la animación de la revelación (A3 versión final, Etapa 4) va a encontrar `DuelReveal` ahí, con nombre perfecto, y va a mandar el `RevealResult` por él. Sin ningún error de juicio — usando lo que estaba.
+
+Y eso crearía exactamente lo que la auditoría de salidas existe para impedir: **un segundo camino que carga `isFake` fuera del servidor**, sin la compuerta de fase que tiene `stateFor`.
+
+**Mi recomendación: borrar el remoto y corregir §6.** El código eligió mejor que el doc. Una salida con compuerta es más auditable que dos, y "contá las salidas" solo funciona como auditoría si el número correcto es conocido y chico.
+
+**Alternativa, por completitud:** conservar `DuelReveal` y mover la revelación ahí. Se descarta porque duplica la superficie donde la regla de oro puede fallar, a cambio de nada — el estado ya llega en ese mismo instante.
+
+**No lo borro hasta tener respuesta.** Mientras tanto sigo con los cortes, que no dependen de esto.
