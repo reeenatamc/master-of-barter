@@ -456,3 +456,28 @@ Esa línea, **dentro de `stateFor` en `DuelView.luau`**, es el **único punto de
 | **Cero** remotos sin consumidor | — | Ninguna arma cargada esperando |
 
 Auditar esto es contar hasta seis. Ese es todo el punto de que el número sea conocido y chico.
+
+---
+
+## 2026-08-04 · Partición cerrada: `DuelOffers` y el corte que no era mecánico
+
+**1095 líneas quedaron en cinco módulos, el mayor de 712.** Los tres primeros cortes fueron movimiento puro. El cuarto no, y la diferencia importa:
+
+| Módulo | Qué contesta |
+|---|---|
+| `DuelTypes` | las formas |
+| `DuelView` | la única forma en que un estado llega a un cliente |
+| `DuelReveal` | la verdad completa, construida como valor |
+| `DuelOffers` | si una oferta es legal, y qué pone en la mesa |
+| `DuelService` | la **vida** del duelo: quién está en uno, qué fase, de quién es el turno, cuándo termina |
+
+**El corte de `DuelOffers` no fue "mover `submitOffer`".** Fue la línea entre las **reglas** de una oferta y el **flujo** del duelo alrededor. `submitOffer` hacía las dos cosas seguidas, y partirlo por la mitad era la decisión real:
+
+- **Adentro (`DuelOffers.build`):** parsea, valida las cuatro capas, tira apariencias, cobra las falsificaciones, deja las copias en escrow — y **devuelve** envoltorios o un motivo.
+- **Afuera (`DuelService.submitOffer`):** en qué fase estamos, guardar la oferta, pasar el turno, difundir.
+
+**Por qué ahí y no en otro lado: D1.** Un bot tiene que armar una oferta pasando por **la misma validación** que un humano (condición 1 del plan de D1). Con `build` como unidad invocable, eso es llamar a la misma función. Sin ella, el bot necesitaría un segundo camino que alguien tendría que mantener de acuerdo con el primero a mano — y el día que se desincronicen hay dos juegos corriendo en el mismo servidor.
+
+**Ediciones declaradas** (porque este no fue movimiento puro): `rollAppearance`, `toRequests`, `findCopy` y `parseRequests` se mudaron textuales; `reject` y `sideOf` se quedaron, porque `negotiate` y `emote` también los usan. Dentro de la región movida, cada `return reject(player, MSG)` pasó a `return nil, MSG` con el **mensaje intacto**, así los logs se leen igual — el que rechaza es quien llama. `Items`, `WrapAppearance` y `WrapRequest` salieron de `DuelService`: el corte los dejó huérfanos.
+
+**Deuda que queda anotada:** `DuelService` sigue en 712 líneas, más del doble del límite de 300. Lo que queda adentro es todo ciclo de vida (arranque, watchdog, fases terminales, negociación, emotes), que es una sola responsabilidad — pero es grande. **No se parte más ahora**: los cortes que faltan no tienen un consumidor que los pida, y partir sin consumidor es inventar fronteras. D1 va a decir dónde duele.
