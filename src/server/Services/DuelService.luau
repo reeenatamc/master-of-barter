@@ -349,6 +349,17 @@ end
 
 --- Starts a duel against a filler opponent (card D1). Same duel, same rules,
 --- same watchdog: the only difference is that one side is nobody.
+---
+--- THE DAILY BOT-EARNINGS CAP IS NOT CHECKED HERE, and that is a convention
+--- rather than a guarantee -- worth naming, because this project's own doctrine
+--- says a convention is a hole waiting for its second caller.
+---
+--- Mechanism lives here; policy lives in MatchmakingService, which asks
+--- `DuelStakes.mayEarnFromBots` before calling this. Today it is the only
+--- caller, so the cap holds. The moment a second one appears -- the Don Trueque
+--- tutorial (§34), a "play a bot" button, anything -- whoever adds it either
+--- checks the cap or has a stated reason not to. The tutorial probably IS
+--- exempt, which is exactly why the check is not unconditional in here.
 function DuelService.startAgainstBot(player: Player): string?
 	if DuelService.isInDuel(player) then
 		return nil

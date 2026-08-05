@@ -17,6 +17,7 @@
 	locking the door: you cannot call what does not exist.
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
@@ -167,6 +168,30 @@ function InventoryService.clearEscrow(player: Player, duelId: string)
 			table.remove(profile.escrow, index)
 		end
 	end
+end
+
+--- How many escrow entries any loaded profile still holds for this duel.
+---
+--- Zero is the invariant a finished duel must leave behind: either every stake
+--- came back (`returnCopy` removes its record) or it was handed over
+--- (`clearEscrow` forgets it). Anything else is a copy stuck in limbo, which is
+--- exactly the failure the escrow list exists to make detectable.
+---
+--- Asked across every loaded profile rather than one player's, because a duel
+--- has two sides and a leak on either is the same bug.
+function InventoryService.escrowCountFor(duelId: string): number
+	local total = 0
+	for _, player in Players:GetPlayers() do
+		local profile = DataService.get(player)
+		if profile then
+			for _, entry in profile.escrow do
+				if entry.duelId == duelId then
+					total += 1
+				end
+			end
+		end
+	end
+	return total
 end
 
 --- Reports and clears escrow entries left over from a session that ended

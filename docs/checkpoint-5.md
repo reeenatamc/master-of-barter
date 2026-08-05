@@ -4,7 +4,7 @@ sidebar_label: Checkpoint 5 · bots y partición
 
 # Checkpoint 5 — bots, matchmaking y la partición de DuelService
 
-**Tiempo: 15 minutos.** Cuatro pruebas, y **dos importan**: la 1 (que D1 funcione) y la 4 (200 duelos automáticos, que es la que más evidencia da por minuto tuyo). Las otras dos confirman cosas ya verificadas por tipos y por lectura.
+**Tiempo: 15 minutos.** Cuatro pruebas, y **dos importan**: la 1 (que D1 funcione) y la 4 (el auto-juego, que es el certificado retroactivo de la partición y lo que más evidencia da por minuto tuyo). Las otras dos confirman cosas ya verificadas por tipos y por lectura.
 
 **Este checkpoint no cambia tu orden de cola.** Sigue mandando el checkpoint 3 (persistencia) primero y solo, después la sesión de diversión 2. Este entra donde te quede cómodo — pero **leé la sección "Lo que necesita tu sí o tu no"**, porque ahí hay una corrección de seguridad esperándote.
 
@@ -84,43 +84,63 @@ Tiene que imprimir **RESULT: PASS** con los seis números en lo esperado. Es la 
 
 ---
 
-## Prueba 4 — 200 duelos en un minuto (opcional, pero es la que más paga)
+## Prueba 4 — el certificado de la partición 🔴
 
-**Bot contra bot, sin nadie mirando.** Ejercita la partición entera, la validación de ofertas, el escrow y la revelación en cientos de secuencias que ningún humano tipearía, y busca las dos cosas que un fallo silencioso deja: **fugas** y **fases colgadas**.
+**Esto es lo que pediste como certificado retroactivo de todo lo movido este mes.** Son **dos corridas**, y la segunda es la que certifica el escrow.
 
-1. `DuelRules.debugLogs = true`.
-2. **Play** con un jugador. Command Bar, contexto **Server**:
+`DuelRules.debugLogs = true`, **Play** con un jugador, Command Bar contexto **Server**.
+
+### 4a — bot contra bot, 200 duelos (≈1 minuto)
 
 ```lua
 require(game.ServerScriptService.Services.BotService).selfPlay(200)
 ```
 
-3. Esperá — tarda alrededor de un minuto (los bots piensan a 0,03s en este modo).
-
-**Qué tiene que salir:**
-
 ```
-[BotService] self-play: 200/200 duels in 58.3s
+[BotService] self-play bot vs bot: 200/200 duels in 58.3s
   accepted: 171
   fake called: 21
   declined: 8
-  duels that leaked a live object: 0   (expected 0)
+  duels that leaked a live object : 0   (expected 0)
+  copies stuck in escrow          : 0   (VACUOUS -- no profile in play)
   RESULT: PASS
 ```
 
-Los repartos varían; lo que **no** puede variar son tres cosas:
-
 | Línea | Qué significa si sale mal |
 |---|---|
-| `200/200` | Si es menos, un duelo **nunca terminó**: una fase colgada. Es el peor fallo de esta lista |
-| `TIMED OUT: n` | Un watchdog tuvo que rescatar un duelo. Los bots actúan en 0,03s: no debería hacer falta nunca |
+| `200/200` | Si es menos, un duelo **nunca terminó**: fase colgada. El peor de la lista |
+| `TIMED OUT: n` | Un watchdog tuvo que rescatar un duelo. Los bots actúan en 0,03s: no debería hacer falta |
 | `leaked: 0` | Cualquier otro número es una conexión o un temporizador que sobrevivió a su duelo |
 
-4. Volvé `debugLogs` a `false`.
+### 4b — contra tu propio perfil, 25 duelos
 
-**No toca ningún perfil:** los dos lados son bots, así que todas las escrituras son no-ops. Podés correrlo mil veces sin ensuciar datos.
+**Sin esto, la métrica de escrow que pediste no vale.** Y el motivo es la parte interesante:
 
-**Lo que esta prueba no puede contestar:** si algo de esto es divertido. Para eso siguen haciendo falta dos personas en una habitación.
+> En un duelo bot-contra-bot **ningún lado tiene perfil**, así que `DuelStakes.take` devuelve `true` sin escribir nada. El escrow termina en cero **porque nunca se escribió**, no porque se limpie bien. Es un verde vacío — exactamente la clase de falso positivo de la lección de C-2, con otro disfraz.
+
+Esta corrida juega **tu lado real**: tu perfil, tus copias, tus Clips, movidos por el mismo cerebro. Recién ahí el cobro, la apuesta, el pago y la cuenta del tope son de verdad, y recién ahí "escrow en 0" certifica algo.
+
+```lua
+local P = game.Players:GetPlayers()[1]
+require(game.ServerScriptService.Services.BotService).selfPlay(25, P)
+```
+
+```
+[BotService] self-play vs Player1 (real profile): 25/25 duels in 8.2s
+  ...
+  copies stuck in escrow          : 0   (expected 0)
+  RESULT: PASS
+```
+
+**Veinticinco y no doscientos** porque cada duelo mueve copias y Clips de verdad. Cuando se te acaben las dos cosas, tus ofertas empiezan a ser rechazadas y los duelos mueren por timeout — eso **no es un fallo**, va a aparecer como `TIMED OUT: n` y es información de economía, no de corrección. Si sale mucho antes de los 25, decímelo: significa que la economía drena más rápido de lo que pensábamos.
+
+**Toca tu perfil de Studio** (el simulado, con `useMockInStudio = true`), no datos reales. Reiniciá Play para volver al estado inicial.
+
+### Al terminar
+
+`debugLogs` a `false`.
+
+**Lo que ninguna de las dos contesta:** si algo de esto es divertido. Para eso siguen haciendo falta dos personas en una habitación.
 
 ---
 

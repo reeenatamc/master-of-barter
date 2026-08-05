@@ -32,6 +32,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelService = require(script.Parent.DuelService)
 local DuelTypes = require(script.Parent.DuelTypes)
+local InventoryService = require(script.Parent.InventoryService)
 
 type Side = DuelTypes.Side
 type Duel = DuelTypes.Duel
@@ -56,6 +57,15 @@ local watched: { [string]: boolean } = {}
 --- Set while a self-play run is going (see the bottom of this file). Without
 --- it, 200 duels at a human's pace is half an hour of waiting.
 local fastThinking = false
+
+--- While a puppet run is going, this player's side is played by the brain too.
+---
+--- Only reason it exists: in a pure bot-vs-bot duel NOTHING touches a profile,
+--- so "escrow ended at zero" is true because escrow was never written -- a
+--- vacuous green. Driving one side that HAS a profile makes the charge, the
+--- stake, the payout and the cap accounting real, and only then does the escrow
+--- assertion certify anything.
+local puppet: Player? = nil
 
 local function thinkTime(): number
 	if fastThinking then
@@ -186,7 +196,7 @@ local function onStateChanged(duel: Duel)
 	end
 
 	for _, side in duel.sides do
-		if not isBot(side) then
+		if not isBot(side) and side.player ~= puppet then
 			continue
 		end
 
@@ -245,9 +255,14 @@ end
 
 --- Runs `count` duels back to back and reports numbers rather than impressions.
 ---
---- DEBUG ONLY: leans on DuelService.startBotDuel, which refuses unless
---- DuelRules.debugLogs is on.
-function BotService.selfPlay(count: number)
+--- With `opponent`, one side is that player's REAL side -- their profile, their
+--- copies, their Clips -- played by this same brain. That is the only way the
+--- escrow assertion means anything: without a profile, escrow is never written,
+--- so "ended at zero" would be true of a system that had no escrow at all.
+---
+--- DEBUG ONLY: leans on DuelService.startBotDuel / startAgainstBot, and the
+--- first refuses unless DuelRules.debugLogs is on.
+function BotService.selfPlay(count: number, opponent: Player?)
 	if fastThinking then
 		warn("[BotService] a self-play run is already going")
 		return
@@ -255,10 +270,11 @@ function BotService.selfPlay(count: number)
 
 	local outcomes: { [string]: number } = {}
 	local leaks = 0
+	local stuckEscrow = 0
 	local done = 0
 
 	local connection
-	connection = DuelService.duelFinished:connect(function(_duelId: string, reason: string, live: number)
+	connection = DuelService.duelFinished:connect(function(duelId: string, reason: string, live: number)
 		-- Grouped by the shape of the reason, not the whole string: it carries a
 		-- slot number, so counting raw strings would produce one bucket each.
 		local kind = if string.find(reason, "accepted", 1, true)
@@ -272,14 +288,29 @@ function BotService.selfPlay(count: number)
 		if live ~= 0 then
 			leaks += 1
 		end
+
+		-- Asked AFTER finish has run, which is when the invariant is due: every
+		-- stake either came back or was handed over, and either way its record
+		-- is gone.
+		local left = InventoryService.escrowCountFor(duelId)
+		if left ~= 0 then
+			stuckEscrow += left
+			warn(`[BotService] duel {duelId} left {left} copies stuck in escrow`)
+		end
+
 		done += 1
 	end)
 
 	fastThinking = true
+	puppet = opponent
 	local startedAt = os.clock()
 
 	for index = 1, count do
-		if not DuelService.startBotDuel() then
+		local started = if opponent
+			then DuelService.startAgainstBot(opponent)
+			else DuelService.startBotDuel()
+
+		if not started then
 			warn(`[BotService] self-play stopped at duel {index}: could not start`)
 			break
 		end
@@ -299,18 +330,24 @@ function BotService.selfPlay(count: number)
 	end
 
 	fastThinking = false
+	puppet = nil
 	connection:disconnect()
 
-	print(`[BotService] self-play: {done}/{count} duels in {string.format("%.1f", os.clock() - startedAt)}s`)
+	local mode = if opponent then `vs {opponent.Name} (real profile)` else "bot vs bot"
+	print(`[BotService] self-play {mode}: {done}/{count} duels in {string.format("%.1f", os.clock() - startedAt)}s`)
 	for kind, n in outcomes do
 		print(`  {kind}: {n}`)
 	end
-	print(`  duels that leaked a live object: {leaks}   (expected 0)`)
-	if leaks == 0 and done == count then
-		print("  RESULT: PASS")
+	print(`  duels that leaked a live object : {leaks}   (expected 0)`)
+
+	if opponent then
+		print(`  copies stuck in escrow          : {stuckEscrow}   (expected 0)`)
 	else
-		print("  RESULT: FAIL")
+		print(`  copies stuck in escrow          : {stuckEscrow}   (VACUOUS -- no profile in play)`)
 	end
+
+	local ok = leaks == 0 and stuckEscrow == 0 and done == count
+	print(if ok then "  RESULT: PASS" else "  RESULT: FAIL")
 end
 
 --- Wires the service. Called by Main after DuelService, whose signal it needs.
