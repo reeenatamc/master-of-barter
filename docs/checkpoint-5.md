@@ -4,7 +4,7 @@ sidebar_label: Checkpoint 5 · bots y partición
 
 # Checkpoint 5 — bots, matchmaking y la partición de DuelService
 
-**Tiempo: 15 minutos.** Tres pruebas, y **una sola es imprescindible** (la 1). Las otras dos confirman cosas que ya están verificadas por tipos y por lectura.
+**Tiempo: 15 minutos.** Cuatro pruebas, y **dos importan**: la 1 (que D1 funcione) y la 4 (200 duelos automáticos, que es la que más evidencia da por minuto tuyo). Las otras dos confirman cosas ya verificadas por tipos y por lectura.
 
 **Este checkpoint no cambia tu orden de cola.** Sigue mandando el checkpoint 3 (persistencia) primero y solo, después la sesión de diversión 2. Este entra donde te quede cómodo — pero **leé la sección "Lo que necesita tu sí o tu no"**, porque ahí hay una corrección de seguridad esperándote.
 
@@ -136,9 +136,20 @@ Los repartos varían; lo que **no** puede variar son tres cosas:
 
 **La otra mitad:** una enmienda que **omite** una copia apostada cumple igual con el conteo, y esa copia queda abandonada en el escrow, donde nada la devuelve. Pérdida silenciosa, misma causa, signo contrario.
 
-**El arreglo:** una enmienda tiene que **empezar con la oferta que enmienda, sin cambios**. Reenviás lo que ya está en la mesa, después agregás. Eso hace que las dos cuentas sean exactas en vez de aproximadamente exactas.
+**El arreglo, en dos mitades — y tenías razón en pedir la segunda:**
 
-**Por qué lo arreglé en vez de preguntarte primero:** la intención ya estaba escrita en el comentario del código —*"solo los envoltorios NUEVOS van a escrow"*—; el código simplemente confiaba en el orden para cumplirla. Restaurar una intención escrita no es inventar diseño, y dejar una duplicación abierta mientras construía D1 encima era peor que decidir. **Pero es la superficie de validación, así que es tuyo el veredicto** — revertirlo es un bloque.
+| | Dónde | Qué garantiza |
+|---|---|---|
+| Una enmienda debe **empezar con la oferta que enmienda**, sin cambios | `DuelOffers` | El rechazo claro, y que la cuenta del costo siga exacta |
+| **`takeCopy` rechaza un `copyId` que ya está en escrow** | `InventoryService` | Que **ninguna ruta futura** pueda reabrirlo suponiendo un orden otra vez |
+
+La primera sola era **la versión débil**: cerraba el camino actual, no la clase. La segunda es la fuerte, y para tenerla el ledger de escrow ahora guarda **identidad** (`copyId`), no solo tipo — **la identidad no se puede reordenar**.
+
+Mismo movimiento que `WrappedItemView` sin campo donde poner `isFake` y que `InventoryService` sin función que reste de la colección: convertir la convención en imposibilidad.
+
+**El ataque quedó como caso de regresión permanente:** tecla **V** manda el payload exacto ([nuevo, anterior]), y `prueba-etapa1.md` bloque **C-DUPE** dice qué rechazo esperar y cómo confirmar que el perfil no se movió. Si algún día alguien borra la primera defensa, el ataque tiene que seguir fallando con un mensaje más feo — esa es la prueba de que es estructural.
+
+**Ya ratificaste el protocolo** (arreglar y reportar, en ese orden, ante un agujero activo), así que acá no queda nada esperando tu sí. Queda para que sepas qué cambió de forma.
 
 ### 2. `Economy.botEarningsCapPerDay = 900` `[propuesta]`
 
