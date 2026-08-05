@@ -1,0 +1,155 @@
+---
+sidebar_label: Checkpoint 5 · bots y partición
+---
+
+# Checkpoint 5 — bots, matchmaking y la partición de DuelService
+
+**Tiempo: 15 minutos.** Tres pruebas, y **una sola es imprescindible** (la 1). Las otras dos confirman cosas que ya están verificadas por tipos y por lectura.
+
+**Este checkpoint no cambia tu orden de cola.** Sigue mandando el checkpoint 3 (persistencia) primero y solo, después la sesión de diversión 2. Este entra donde te quede cómodo — pero **leé la sección "Lo que necesita tu sí o tu no"**, porque ahí hay una corrección de seguridad esperándote.
+
+---
+
+## Antes de empezar
+
+`rojo serve` corriendo, plugin conectado. Nada más.
+
+---
+
+## Prueba 1 — el arranque en frío murió
+
+**Esto es todo lo que D1 tenía que lograr.**
+
+1. **Play** con **un** jugador.
+2. **Esperá 15 segundos sin tocar nada.** No hay que apretar nada para entrar a la cola: el cliente entra solo al arrancar.
+
+**Qué tiene que pasar en el Output:**
+
+```
+[Matchmaking] Player1 joined the queue (1 waiting)
+[Matchmaking] Player1 waited 15s; filled with a bot
+[Duel] <id>
+  phase=BuildingOffers ... you=slot1
+  slot1: Player1 (you) -- 4 copies, 3 raises left
+  slot2: mica.exe -- 4 copies, 3 raises left
+```
+
+El nombre del slot 2 sale de una lista y cambia cada vez. **Fijate que no diga nada tipo "Bot" ni "CPU"** — si dijera, esa es exactamente la señal que §34 prohíbe.
+
+3. Apretá **Q** (ofertar 1 real + 1 FAKE). **Esperá unos segundos.**
+
+Entre 1,2 y 4,5 segundos después el bot oferta solo, y el duelo pasa a `Negotiating`. El retardo es al azar dentro de ese rango a propósito: un rival que contesta siempre en el mismo tiempo es una máquina en el segundo duelo.
+
+4. Apretá **Z** (pedir más). El bot te contesta con una oferta **más grande** — un envoltorio más que antes, y los anteriores intactos.
+5. Apretá **R** (aceptar). Revelación normal, con la verdad de los dos lados.
+
+**Recordatorio de teclas** (las de siempre, no cambiaron): **Q** ofertar 1 real + 1 fake · **E** ofertar 2 reales · **R** aceptar · **T** rechazar · **Z** pedir más · **X** enmendar · **C** ¡ES FAKE!
+
+**Si el bot nunca oferta:** eso es el fallo que importa. Mandame el Output.
+
+---
+
+## Prueba 2 — una persona le gana la carrera al bot (opcional)
+
+1. Test → **2** jugadores → **Start**. (Los dos entran a la cola solos.)
+2. **No toques nada durante 20 segundos.**
+
+**Qué tiene que pasar:** se emparejan entre ellos al instante, y **ningún bot aparece** — ni siquiera pasados los 15 segundos. Con alguien esperando, el emparejamiento resuelve antes de que se arme ningún temporizador.
+
+```
+[Matchmaking] Player1 joined the queue (1 waiting)
+[Matchmaking] Player2 joined the queue (2 waiting)
+[Matchmaking] duel started: Player1 vs Player2
+```
+
+**Lo que estaría mal:** que a los 15 segundos apareciera un bot para uno de los dos. Significaría que un bot le robó el lugar a una persona.
+
+---
+
+## Prueba 3 — nada se rompió con la partición (opcional)
+
+`DuelService` pasó de 1095 líneas a cinco módulos. **El comportamiento no cambió**, y esta prueba lo confirma con números.
+
+1. `DuelRules.debugLogs = true` en `src/shared/Config/DuelRules.luau`.
+2. Test → **2** jugadores. Duelo hasta llegar a `Negotiating`.
+3. Command Bar, contexto **Server**:
+
+```lua
+require(game.ServerScriptService.Services.DuelService).runFinishRaceCheck()
+```
+
+Tiene que imprimir **RESULT: PASS** con los seis números en lo esperado. Es la misma prueba de antes de partir.
+
+4. Volvé `debugLogs` a `false`.
+
+---
+
+## Lo que necesita tu sí o tu no
+
+### 1. 🔴 Caso (a) — arreglé un agujero de duplicación en el escrow
+
+**Es el punto importante de este checkpoint.** Lo encontré escribiendo la lógica de enmienda del bot.
+
+**El agujero:** cuando enmendás una oferta, el servidor solo cobra y solo pone en escrow **lo nuevo** — se saltea las primeras N entradas asumiendo que son la oferta anterior. Pero nada verificaba que lo fueran, y el cliente elige qué manda.
+
+**El exploit, concreto:** ofertás [real A]. Enmendás con [real B, real A]. El escrow se saltea la posición 1 y toma A **por segunda vez**, mientras **B queda en la mesa sin haber salido nunca de tu perfil**. Ganes o pierdas, el rival recibe B y vos seguís teniéndolo. **Eso es duplicación**, que por tu regla 5 es el fallo que se propaga.
+
+**La otra mitad:** una enmienda que **omite** una copia apostada cumple igual con el conteo, y esa copia queda abandonada en el escrow, donde nada la devuelve. Pérdida silenciosa, misma causa, signo contrario.
+
+**El arreglo:** una enmienda tiene que **empezar con la oferta que enmienda, sin cambios**. Reenviás lo que ya está en la mesa, después agregás. Eso hace que las dos cuentas sean exactas en vez de aproximadamente exactas.
+
+**Por qué lo arreglé en vez de preguntarte primero:** la intención ya estaba escrita en el comentario del código —*"solo los envoltorios NUEVOS van a escrow"*—; el código simplemente confiaba en el orden para cumplirla. Restaurar una intención escrita no es inventar diseño, y dejar una duplicación abierta mientras construía D1 encima era peor que decidir. **Pero es la superficie de validación, así que es tuyo el veredicto** — revertirlo es un bloque.
+
+### 2. `Economy.botEarningsCapPerDay = 900` `[propuesta]`
+
+Unos cuatro duelos generosos. Suficiente para que una sesión normal en servidor vacío nunca lo toque, poco para que farmear bots no sea un sueldo. Se calibra en alfa como todo lo demás.
+
+### 3. Los números de `Bots.luau` `[propuesta]`
+
+`fakeChance = 0.35`, `raiseChance = 0.3`, `fakeCallChance = 0.12`, `declineChance = 0.08`, y pensar entre 1,2 y 4,5 segundos.
+
+El único con criterio fuerte detrás es `fakeCallChance`: bajo a propósito, porque un bot que acusa seguido le enseña al jugador que acusar es barato — justo el hábito que la sesión de diversión 2 tiene que medir **en humanos**, sin contaminar.
+
+---
+
+## Lo que tenés que saber, aunque no requiera decisión
+
+### ⚠️ El bot casi nunca decide, y no es culpa del bot
+
+`beginNegotiating` le da el turno **siempre al slot 1**, y en un duelo contra bot vos sos el slot 1. El slot 2 solo recibe el turno cuando le debe una enmienda.
+
+| El bot hace | El bot no hace |
+|---|---|
+| Armar su oferta | Aceptar |
+| Enmendar cuando le pedís más | Rechazar · Pedir más · Acusar |
+
+**`raiseChance`, `fakeCallChance` y `declineChance` hoy solo corren en duelos bot-contra-bot.**
+
+**Esto no lo trajo D1.** Es el modelo de turnos actual, que `arquitectura.md` §5 ya marca como provisional (*"el slot 1 abre por ahora; alternar turnos es A2"*). En humano-contra-humano pasa igual: el slot 2 nunca abre.
+
+**No lo toqué** porque alternar turnos es una decisión de diseño de negociación —quién puede presionar a quién y cuándo— y pertenece a A2, no a una tarjeta de bots. Pero lo decís vos: **un rival que nunca te presiona es la mitad del juego**, y si querés que D1 sirva para probar el juego sola, esto es lo primero que te va a faltar.
+
+### La silla vacía
+
+En un duelo contra bot te sentás solo a la mesa: un bot no tiene personaje. §11 dice que ver al rival es mecánico, así que **una silla vacía es exactamente la señal obvia que §34 prohíbe**. Es trabajo de escena (E1/E2), no un bloqueo de D1, y queda escrito para que no se descubra después.
+
+### El remoto `DuelReveal` ya no existe
+
+Aprobaste borrarlo. Hecho, con §6 corregido a los tres remotos que el código realmente tiene, y con un comentario en `Net.luau` que explica por qué el hueco está ahí — un borrado sin motivo se deshace.
+
+Y quedó nombrada en `decisiones.md` la pieza que sostiene la regla: la compuerta `if duel.phase == "Reveal"` **dentro de `stateFor`** es el único punto del código donde la regla de oro se levanta, y se levanta **por fase, no por camino**. Cualquier refactor futuro hereda la obligación de conservarla.
+
+### La partición cerrada
+
+1095 líneas → cinco módulos, el mayor de 712.
+
+| Módulo | Contesta |
+|---|---|
+| `DuelTypes` | las formas |
+| `DuelView` | la única forma en que un estado llega a un cliente |
+| `DuelReveal` | la verdad completa, como valor |
+| `DuelOffers` | si una oferta es legal |
+| `DuelStakes` | qué escribe un duelo en un perfil (y que un bot no tiene) |
+| `DuelService` | la vida del duelo |
+
+**Auditoría de salidas, otra vez, con todo esto encima:** siete envíos al cliente — **seis triviales** (avisos y emotes) y **UNO** que es el embudo. `stateFor` y `viewOf` siguen siendo locales de `DuelView`: ningún otro módulo puede construir un `DuelState`. Cero remotos sin consumidor.

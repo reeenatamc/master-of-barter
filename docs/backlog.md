@@ -162,11 +162,21 @@ Criterios: costos de fakes, recompensas, precios y límites en un módulo; cambi
 
 ## ÉPICA D — Bots y matchmaking
 
-### D1 · Como jugador quiero encontrar rival rápido aunque el servidor esté vacío
+### D1 · Como jugador quiero encontrar rival rápido aunque el servidor esté vacío ✅
 
-**Prioridad:** P0 · M
+**Prioridad:** P0 · M — **entregada 2026-08-04**
 
 Objetivo: matar el arranque en frío. Criterios: cola en servidor; si no hay rival en N segundos entra un bot con nombre/avatar plausible; el jugador no recibe señales obvias de que es bot. Dependencias: A2, E1.
+
+**Entregado:** `MatchmakingService` (cola + temporizador por jugador, la persona siempre gana la carrera), `BotService` (juega solo por la superficie validada — `applyOffer`/`applyAction`, nunca tocando estado), `DuelStakes` (única capa que sabe que un bot no tiene perfil), tope diario de valor extraído de bots. Ver `checkpoint-5.md` y `decisiones.md`.
+
+**Deuda que D1 deja a la vista, no descubierta después:**
+
+| Qué | Dónde vive | Por qué no se arregló acá |
+|---|---|---|
+| El bot **nunca acepta, rechaza, pide más ni acusa** contra un humano: `beginNegotiating` da el turno siempre al slot 1. `Bots.raiseChance`/`fakeCallChance`/`declineChance` solo corren bot-vs-bot | **A2** (alternancia de turnos) | Alternar turnos es diseño de negociación —quién presiona a quién y cuándo—, no una tarjeta de bots |
+| **Silla vacía**: te sentás solo a la mesa, porque un bot no tiene personaje. §11 hace mecánico ver al rival, así que es la señal obvia que §34 prohíbe | **E1/E2** (escena) | Es trabajo de escena, no de matchmaking |
+| **Avatar**: `userId` salió del payload replicado porque un bot no tiene cuenta y cualquier valor ahí era el dato. Cuando E2 necesite miniaturas, vuelve **con una respuesta deliberada para bots** | **E2** | No había consumidor; un campo sin lector es una decisión tomada por accidente (regla 6) |
 
 ### D2 · Como jugadora quiero bots con personalidades que bluffean creíblemente
 
