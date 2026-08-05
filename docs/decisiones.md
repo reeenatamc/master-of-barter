@@ -568,3 +568,45 @@ Esa es la moraleja que se lleva D1 más allá de los bots: **un actor programado
 ### Protocolo aclarado para agujeros activos
 
 Renata lo fijó al ratificar el arreglo, y queda como regla: **en un agujero de seguridad activo, el orden correcto es arreglar y reportar.** Un dupe abierto esperando aprobación es peor que cualquier error de criterio en el arreglo. El caso (a) exige que el **veredicto ocurra**, no que el arreglo espere.
+
+---
+
+## 2026-08-05 · 🔒 CANON — dos lecciones de prueba, del mismo agujero
+
+Renata las subió al canon al ratificar el arreglo del escrow. Quedan acá porque las dos son operativas, no filosóficas.
+
+### 1. Las suposiciones no escritas viven en los límites de los bucles
+
+El código validaba cinco capas **por elemento**, con atención. Y confiaba en la **forma** por un `for index = alreadyWrapped + 1` que nadie decidió nunca.
+
+> **Las suposiciones peligrosas no están en las líneas que alguien escribió mal. Están en las que nadie escribió.**
+
+Y la mitad operativa —cómo se cazan—: leer `submitOffer` cien veces no la muestra, porque **el lector reconstruye la intención**. Escribir un cliente obliga a producir los bytes, y **los bytes no tienen intención**.
+
+**Corolario para el futuro:** cuando una superficie acumule suficiente valor, escribirle un adversario paga más que releerla. El bot fue el primer atacante honesto del sistema — no porque quisiera romper nada, sino porque no compartía ninguna de nuestras suposiciones: solo tenía la firma.
+
+### 2. Una prueba de rechazo verifica LA RAZÓN del rechazo
+
+El documento de pruebas contaba como **aprobados** rechazos que ocurrían por la razón equivocada: los payloads malformados chocaban contra el chequeo de fase antes de llegar a la validación que decían probar.
+
+> **Un rechazo correcto por la razón equivocada es un falso verde: el test pasa y la defensa que certifica no se ejercitó jamás.**
+
+Regla: una prueba de rechazo verifica **capa y mensaje**, no solo que algo se rechazó.
+
+**Y apareció una segunda vez el mismo día, con otro disfraz:** el auto-juego iba a reportar "escrow terminó en 0" en duelos bot-contra-bot, donde **ningún lado tiene perfil** y el escrow por lo tanto nunca se escribe. Cero porque no existe, no porque se limpie bien. Se arregló igual: haciendo que la aserción alcance la capa que dice probar (modo títere, un lado con perfil real), y **etiquetando el número como VACUOUS cuando no la alcanza** — un número que no puede fallar nunca debe parecerse a un número que pasó.
+
+### 2-bis. Los guiones de prueba se pudren igual que el código
+
+Media validación de A1.3 estuvo *"escrita y verificada"* sin correr **jamás**, porque `_G.dc` no llegaba al controlador. Verificar teclas y comandos contra el código antes de cada sentida es parte del estándar desde ahora.
+
+---
+
+## 2026-08-05 · El tope del bot es política de la cola, no garantía del mecanismo
+
+`DuelService.startAgainstBot` **no** consulta el tope diario. Lo consulta `MatchmakingService` antes de llamarlo.
+
+**Hoy se sostiene** porque hay exactamente un llamador. Pero por la doctrina de este proyecto eso es una **convención**, y una convención es un agujero esperando a su segundo llamador — el tutorial de Don Trueque (§34), un botón de "jugar contra un bot", cualquiera.
+
+**No se hizo incondicional a propósito:** el tutorial probablemente **debe** estar exento, así que meter el chequeo adentro del mecanismo decidiría por adelantado una pregunta de diseño que todavía no toca. Queda como frontera nombrada, con su disparador escrito en el código: quien agregue el segundo llamador o consulta el tope o deja escrito por qué no.
+
+**Alternativa descartada:** chequear adentro de `startAgainstBot` y agregar un parámetro `ignoreCap`. Se descartó porque un booleano de escape en la firma es la convención otra vez, con más pasos.
