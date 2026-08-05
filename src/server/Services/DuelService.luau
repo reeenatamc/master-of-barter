@@ -37,12 +37,12 @@ local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local DuelSceneService = require(script.Parent.DuelSceneService)
-local EconomyService = require(script.Parent.EconomyService)
 local DataService = require(script.Parent.DataService)
 local InventoryService = require(script.Parent.InventoryService)
 
 local DuelTypes = require(script.Parent.DuelTypes)
 local DuelOffers = require(script.Parent.DuelOffers)
+local DuelStakes = require(script.Parent.DuelStakes)
 local DuelReveal = require(script.Parent.DuelReveal)
 local DuelView = require(script.Parent.DuelView)
 
@@ -179,6 +179,22 @@ local function beginNegotiating(duel: Duel)
 	armPhaseWatchdog(duel)
 end
 
+--- One side belonging to a real person. The bot equivalent is in
+--- MatchmakingService, and both go through this shape so a field added to
+--- `Side` cannot be filled in for humans and forgotten for bots.
+local function sideOfPlayer(slot: Slot, player: Player, raises: number, tokens: number): Side
+	return {
+		slot = slot,
+		player = player,
+		displayName = player.DisplayName,
+		hand = buildHand(player),
+		offer = nil,
+		amendRequested = false,
+		raisesLeft = raises,
+		fakeCallsLeft = tokens,
+	}
+end
+
 -- ─────────────────────────────────────────────────────────────────────────────
 
 function DuelService.isInDuel(player: Player): boolean
@@ -223,8 +239,8 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		turn = 1,
 		deadline = 0,
 		sides = {
-			{ slot = 1, player = playerA, hand = buildHand(playerA), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
-			{ slot = 2, player = playerB, hand = buildHand(playerB), offer = nil, amendRequested = false, raisesLeft = raises, fakeCallsLeft = tokens },
+			sideOfPlayer(1, playerA, raises, tokens),
+			sideOfPlayer(2, playerB, raises, tokens),
 		},
 		trove = Trove.new(),
 		resolving = false,
@@ -240,10 +256,14 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 	-- the same statement that creates it, like every other resource a duel
 	-- owns: the scene disappears by every route the duel can end, disconnects
 	-- included (card E2, docs/gdd.md §11).
-	duel.trove:Add(DuelSceneService.open(duel.id, {
-		{ player = playerA, slot = 1 },
-		{ player = playerB, slot = 2 },
-	}))
+	local seated: { { player: Player, slot: Slot } } = {}
+	for _, side in duel.sides do
+		local person = side.player
+		if person then
+			table.insert(seated, { player = person, slot = side.slot })
+		end
+	end
+	duel.trove:Add(DuelSceneService.open(duel.id, seated))
 
 	armPhaseWatchdog(duel)
 	broadcast(duel)
@@ -293,7 +313,10 @@ function DuelService.finish(duelId: string, reason: string)
 	-- that calls back in here takes the no-op path above.
 	duels[duelId] = nil
 	for _, side in duel.sides do
-		duelIdOf[side.player] = nil
+		local player = side.player
+		if player then
+			duelIdOf[player] = nil
+		end
 	end
 
 	-- Paying happens HERE, inside the idempotency guard, and that is the whole
@@ -316,14 +339,14 @@ function DuelService.finish(duelId: string, reason: string)
 			if won then
 				for _, wrapped in won.received do
 					if not wrapped.isFake then
-						InventoryService.giveCopy(side.player, wrapped.claim)
+						DuelStakes.grant(side, wrapped.claim)
 					end
 				end
 			end
 			-- Whatever was owed has just been handed over, so the escrow record
 			-- has done its job. Cleared rather than returned: returning here
 			-- would double what resolution already gave back.
-			InventoryService.clearEscrow(side.player, duelId)
+			DuelStakes.clearEscrow(side, duelId)
 		end
 	end
 
@@ -338,7 +361,7 @@ function DuelService.finish(duelId: string, reason: string)
 				if not wrapped.isFake then
 					-- returnCopy rather than giveCopy: this is a stake coming
 					-- back, so its escrow record goes with it.
-					InventoryService.returnCopy(side.player, wrapped.claim, duelId)
+					DuelStakes.giveBack(side, wrapped.claim, duelId)
 				end
 			end
 		end
@@ -354,7 +377,7 @@ function DuelService.finish(duelId: string, reason: string)
 					elseif reveal.winner == side.slot then "win"
 					else "loss"
 
-				EconomyService.payDuel(side.player, {
+					DuelStakes.pay(side, {
 					result = result,
 					fakesSlipped = mine.fakesPassed,
 					fakesCaught = if reveal.fakeCall ~= nil
@@ -439,7 +462,7 @@ function DuelService.submitOffer(player: Player, payload: unknown)
 		return reject(player, `wrong phase ({duel.phase})`)
 	end
 
-	local wrapped, refusal = DuelOffers.build(player, duel, side, amending, payload)
+	local wrapped, refusal = DuelOffers.build(duel, side, amending, payload)
 	if not wrapped then
 		return reject(player, refusal or "offer refused")
 	end
@@ -592,7 +615,13 @@ function DuelService.runFinishRaceCheck(): boolean
 	local before = table.clone(counters)
 	local trove = duel.trove
 	local duelId = duel.id
+	-- The check drives a real remote handler, which needs a real player. A duel
+	-- whose turn belongs to a bot has nobody to speak for it.
 	local actor = duel.sides[duel.turn].player
+	if not actor then
+		warn("[DuelService] race check: it is a bot's turn; needs a human-vs-human duel")
+		return false
+	end
 
 	DuelService.negotiate(actor, "Accept")
 	DuelService.expirePhase(duelId)
@@ -672,7 +701,11 @@ function DuelService.emote(player: Player, emoteId: unknown)
 
 	local remote = Net.get(Net.names.DuelEmote)
 	for _, target in duel.sides do
-		remote:FireClient(target.player, side.slot, emoteId)
+		-- A bot has no client to react in front of.
+		local watcher = target.player
+		if watcher then
+			remote:FireClient(watcher, side.slot, emoteId)
+		end
 	end
 end
 

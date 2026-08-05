@@ -255,9 +255,22 @@ export type RevealResult = {
 
 export type DuelPlayerView = {
 	slot: Slot,
-	userId: number,
+	--- What this side is CALLED. A human's account name; for a bot, the
+	--- plausible name it was given (docs/gdd.md §34).
+	---
+	--- THERE IS NO `isBot` FIELD, AND THERE IS NO `userId`, ON PURPOSE. §34
+	--- says a player gets no obvious signal that their rival is a bot, and a
+	--- replicated boolean named `isBot` is the most obvious signal there is --
+	--- one line of client inspection. `userId` is the same leak wearing a
+	--- disguise: a bot has no account, so whatever went in that field (0, -1, a
+	--- borrowed id) would be the tell.
+	---
+	--- Both existed here, `isBot` hardcoded to false and `userId` read by
+	--- nobody, waiting for D1 to fill them in. Filling them in is the natural
+	--- move and it is the wrong one. If the tutorial needs to announce Don
+	--- Trueque, that is a fact about the TUTORIAL and travels with it -- not a
+	--- general "your rival is fake" flag on every duel.
 	displayName: string,
-	isBot: boolean,
 	--- Only how many copies the rival holds, never which ones. Knowing their
 	--- hand would give away what they can honestly claim.
 	handCount: number,

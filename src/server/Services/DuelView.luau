@@ -62,9 +62,7 @@ local function stateFor(duel: Duel, slot: Slot): DuelState
 
 		views[side.slot] = {
 			slot = side.slot,
-			userId = side.player.UserId,
-			displayName = side.player.DisplayName,
-			isBot = false,
+			displayName = side.displayName,
 			handCount = #side.hand,
 			raisesLeft = side.raisesLeft,
 			mustAmend = side.amendRequested,
@@ -96,7 +94,12 @@ end
 function DuelView.broadcast(duel: Duel)
 	local remote = Net.get(Net.names.DuelState)
 	for _, side in duel.sides do
-		remote:FireClient(side.player, stateFor(duel, side.slot))
+		-- A bot has no client. Skipped here rather than at the call site, so
+		-- nothing above this module has to know a side might not be a person.
+		local player = side.player
+		if player then
+			remote:FireClient(player, stateFor(duel, side.slot))
+		end
 	end
 end
 

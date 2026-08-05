@@ -34,8 +34,8 @@ local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local EconomyService = require(script.Parent.EconomyService)
-local InventoryService = require(script.Parent.InventoryService)
 
+local DuelStakes = require(script.Parent.DuelStakes)
 local DuelTypes = require(script.Parent.DuelTypes)
 
 type DuelCopy = Types.DuelCopy
@@ -126,8 +126,11 @@ end
 ---
 --- `amending` comes from the caller because it is a fact about the PHASE, and
 --- phases are not this module's business.
+---
+--- Takes a `Side`, never a `Player`. That is what lets a bot build an offer
+--- through this exact function: everything that needs a profile goes through
+--- DuelStakes, which no-ops for a side that is nobody (card D1).
 function DuelOffers.build(
-	player: Player,
 	duel: Duel,
 	side: Side,
 	amending: boolean,
@@ -220,7 +223,7 @@ function DuelOffers.build(
 	local owed = EconomyService.offerCost(requests) - alreadyPaid
 
 	if owed > 0 then
-		local paid, refusal = EconomyService.charge(player, owed, "forgery")
+		local paid, refusal = DuelStakes.charge(side, owed, "forgery")
 		if not paid then
 			-- Refused BEFORE anything is stored, so a rejected offer leaves the
 			-- duel exactly as it was.
@@ -243,11 +246,11 @@ function DuelOffers.build(
 		local item = wrapped[index]
 		if not item.isFake then
 			local claim = item.claim
-			if not InventoryService.takeCopy(player, claim, duel.id) then
+			if not DuelStakes.take(side, claim, duel.id) then
 				-- Put back whatever was already taken in this call, so a
 				-- half-escrowed offer cannot exist.
 				for _, back in newlyStaked do
-					InventoryService.returnCopy(player, back, duel.id)
+					DuelStakes.giveBack(side, back, duel.id)
 				end
 				return nil, `no longer owns a copy of {claim}`
 			end

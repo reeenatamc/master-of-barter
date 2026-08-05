@@ -22,7 +22,19 @@ local DuelTypes = {}
 --- One side of a duel, as the server knows it. Never replicated as-is.
 export type Side = {
 	slot: Types.Slot,
-	player: Player,
+	--- **nil when this side is a bot** (card D1). A bot has no account, no
+	--- profile, no Clips and no client to send anything to.
+	---
+	--- Optional rather than a separate BotSide type on purpose: the RULES of a
+	--- duel -- turn, phase, limits, fake cap, model A consistency -- are
+	--- identical for both, and two types would let those rules drift apart.
+	--- Everything that genuinely differs is persistence, and it is all behind
+	--- DuelStakes.
+	player: Player?,
+	--- What this side is CALLED. Mirrors the account for a human; for a bot it
+	--- is a borrowed plausible name, which is the whole of §34's "no obvious
+	--- signals" as far as the payload is concerned.
+	displayName: string,
 	hand: { Types.DuelCopy },
 	--- nil until this side has offered. Holds the truth, including isFake.
 	offer: { Types.WrappedItem }?,
@@ -56,6 +68,16 @@ export type Duel = {
 --- 1 <-> 2. Duels are always two-sided (docs/gdd.md §32).
 function DuelTypes.otherSlot(slot: Types.Slot): Types.Slot
 	return 3 - slot
+end
+
+--- Derived, never stored. A second `isBot` field alongside `player` would be
+--- two sources of one truth, and the day they disagree the wrong one is the one
+--- being read.
+---
+--- SERVER SIDE ONLY. This answer never leaves the server: see the note on
+--- Types.DuelPlayerView about why there is no `isBot` in the replicated view.
+function DuelTypes.isBot(side: Side): boolean
+	return side.player == nil
 end
 
 return DuelTypes
