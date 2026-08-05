@@ -30,9 +30,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Bots = require(ReplicatedStorage.Shared.Config.Bots)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
+local Signal = require(ReplicatedStorage.Shared.Util.Signal)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
@@ -60,12 +62,24 @@ type Side = DuelTypes.Side
 type Duel = DuelTypes.Duel
 
 local otherSlot = DuelTypes.otherSlot
-local broadcast = DuelView.broadcast
 local buildReveal = DuelReveal.build
 local swapAll = DuelReveal.swapAll
 local settleFakeCall = DuelReveal.settleFakeCall
 
 local DuelService = {}
+
+--- Fired after every state change, with the duel. This is how a bot learns it
+--- is its turn (card D1) without polling.
+---
+--- Wrapped around DuelView.broadcast rather than fired at each call site: there
+--- are six of those and forgetting one would leave a bot sitting still, which
+--- looks exactly like a hung duel.
+DuelService.stateChanged = Signal.new()
+
+local function broadcast(duel: Duel)
+	DuelView.broadcast(duel)
+	DuelService.stateChanged:fire(duel)
+end
 
 local duels: { [string]: Duel } = {}
 --- Reverse index so a disconnect can find the duel without scanning.
@@ -95,6 +109,19 @@ local counters = {
 --- point at, so the counts are expanded into copies with ids that live only for
 --- this duel. Those ids are never saved: what persists is how many you have,
 --- and which particular one crossed the table is not a fact worth keeping.
+local botRng = Random.new()
+
+--- Read fresh each time a side is built, never cached in an upvalue: these are
+--- balance knobs, and a cached one would keep an old value alive for the life
+--- of the server after a Config change.
+local function raises(): number
+	return DuelRules.limits.raiseOffersPerSide
+end
+
+local function tokens(): number
+	return DuelRules.limits.fakeCallsPerDuel
+end
+
 local function buildHand(player: Player): { DuelCopy }
 	local hand: { DuelCopy } = {}
 	for _, itemId in InventoryService.stakeableList(player) do
@@ -179,6 +206,39 @@ local function beginNegotiating(duel: Duel)
 	armPhaseWatchdog(duel)
 end
 
+--- A bot's hand, minted rather than drawn from a profile.
+---
+--- This is the source docs/gdd.md §19 does not list, and it is the reason the
+--- daily bot-earnings cap exists: everything genuine in here can end up in a
+--- human's collection having come from nowhere. Kept to the cheap end of the
+--- catalogue (Bots.handPool) so the leak is small before the cap even applies.
+local function buildBotHand(): { DuelCopy }
+	local hand: { DuelCopy } = {}
+	for _ = 1, Bots.handSize do
+		local itemId = Bots.handPool[botRng:NextInteger(1, #Bots.handPool)]
+		table.insert(hand, {
+			copyId = HttpService:GenerateGUID(false),
+			itemId = itemId,
+		})
+	end
+	return hand
+end
+
+--- One side belonging to nobody. Same shape as a person's, which is the whole
+--- of card D1's condition 1: every rule above this point treats them alike.
+local function sideOfBot(slot: Slot, raises: number, tokens: number): Side
+	return {
+		slot = slot,
+		player = nil,
+		displayName = Bots.names[botRng:NextInteger(1, #Bots.names)],
+		hand = buildBotHand(),
+		offer = nil,
+		amendRequested = false,
+		raisesLeft = raises,
+		fakeCallsLeft = tokens,
+	}
+end
+
 --- One side belonging to a real person. The bot equivalent is in
 --- MatchmakingService, and both go through this shape so a field added to
 --- `Side` cannot be filled in for humans and forgotten for bots.
@@ -199,6 +259,49 @@ end
 
 function DuelService.isInDuel(player: Player): boolean
 	return duelIdOf[player] ~= nil
+end
+
+--- The shared tail of both starts: registry, scene, watchdog, first broadcast.
+--- One body, so a duel against a bot can never drift from a duel against a
+--- person in anything except who is sitting there.
+local function openDuel(sideA: Side, sideB: Side): string?
+	local duel: Duel = {
+		id = HttpService:GenerateGUID(false),
+		phase = "BuildingOffers",
+		round = 1,
+		turn = 1,
+		deadline = 0,
+		sides = { sideA, sideB },
+		trove = Trove.new(),
+		resolving = false,
+		watchdogGeneration = 0,
+		reveal = nil,
+	}
+
+	duels[duel.id] = duel
+	for _, side in duel.sides do
+		local person = side.player
+		if person then
+			duelIdOf[person] = duel.id
+		end
+	end
+
+	-- The table, and both players standing at it. Registered in the trove in
+	-- the same statement that creates it, like every other resource a duel
+	-- owns: the scene disappears by every route the duel can end, disconnects
+	-- included (card E2, docs/gdd.md §11).
+	local seated: { { player: Player, slot: Slot } } = {}
+	for _, side in duel.sides do
+		local person = side.player
+		if person then
+			table.insert(seated, { player = person, slot = side.slot })
+		end
+	end
+	duel.trove:Add(DuelSceneService.open(duel.id, seated))
+
+	armPhaseWatchdog(duel)
+	broadcast(duel)
+	return duel.id
 end
 
 --- Starts a duel between two players. Returns the duel id, or nil if either
@@ -229,45 +332,31 @@ function DuelService.start(playerA: Player, playerB: Player): string?
 		return nil
 	end
 
-	local raises = DuelRules.limits.raiseOffersPerSide
-	local tokens = DuelRules.limits.fakeCallsPerDuel
+	return openDuel(
+		sideOfPlayer(1, playerA, raises(), tokens()),
+		sideOfPlayer(2, playerB, raises(), tokens())
+	)
+end
 
-	local duel: Duel = {
-		id = HttpService:GenerateGUID(false),
-		phase = "BuildingOffers",
-		round = 1,
-		turn = 1,
-		deadline = 0,
-		sides = {
-			sideOfPlayer(1, playerA, raises, tokens),
-			sideOfPlayer(2, playerB, raises, tokens),
-		},
-		trove = Trove.new(),
-		resolving = false,
-		watchdogGeneration = 0,
-		reveal = nil,
-	}
-
-	duels[duel.id] = duel
-	duelIdOf[playerA] = duel.id
-	duelIdOf[playerB] = duel.id
-
-	-- The table, and both players standing at it. Registered in the trove in
-	-- the same statement that creates it, like every other resource a duel
-	-- owns: the scene disappears by every route the duel can end, disconnects
-	-- included (card E2, docs/gdd.md §11).
-	local seated: { { player: Player, slot: Slot } } = {}
-	for _, side in duel.sides do
-		local person = side.player
-		if person then
-			table.insert(seated, { player = person, slot = side.slot })
-		end
+--- Starts a duel against a filler opponent (card D1). Same duel, same rules,
+--- same watchdog: the only difference is that one side is nobody.
+function DuelService.startAgainstBot(player: Player): string?
+	if DuelService.isInDuel(player) then
+		return nil
 	end
-	duel.trove:Add(DuelSceneService.open(duel.id, seated))
+	if DataService.isSpectator(player) then
+		warn(`[DuelService] refused a bot duel: {player.Name} has no profile to stake from`)
+		Net.get(Net.names.Notice):FireClient(player, Strings.notices.spectatorNoDuel)
+		return nil
+	end
 
-	armPhaseWatchdog(duel)
-	broadcast(duel)
-	return duel.id
+	-- The human always gets slot 1, so the bot is never the side that acts
+	-- first in BuildingOffers. Not a rule, a courtesy: a rival whose offer is
+	-- already on the table before yours reads as suspiciously quick.
+	return openDuel(
+		sideOfPlayer(1, player, raises(), tokens()),
+		sideOfBot(2, raises(), tokens())
+	)
 end
 
 --- Phase watchdog: no phase may hang forever (docs/arquitectura.md §5).
