@@ -198,6 +198,79 @@ function DuelController.offerHonest()
 	})
 end
 
+--- The malformed-offer battery, as one keystroke.
+---
+--- These used to live in prueba-etapa1.md as `_G.dc.offer({...})` lines for the
+--- Command Bar, where they never ran: Studio's bar has its own module cache and
+--- its own globals, so `require` there returns a second, empty copy of this
+--- module. Half of A1.3's validation was written and never exercised.
+---
+--- Run it in BuildingOffers, BEFORE offering. That matters: from Negotiating
+--- every one of these stops at the phase check and proves nothing about the
+--- layer it was written for. The old doc had them all returning "no raise is
+--- pending on you" and called that a pass.
+function DuelController.invalidBattery()
+	local state = current
+	if not state then
+		warn("[Duel] no state yet -- is there a duel running?")
+		return
+	end
+	if state.yourOffer then
+		warn("[Duel] you already offered; restart and run this BEFORE offering")
+		return
+	end
+
+	local first = state.yourHand[1]
+	if not first then
+		warn("[Duel] your hand is empty")
+		return
+	end
+
+	-- Something in the catalogue that is NOT what the copy holds, so the
+	-- "genuine wrapper lying" case is really a lie. Falls back to the first
+	-- entry only if the hand somehow holds the last catalogue item.
+	local other = Items.order[#Items.order]
+	if other == first.itemId then
+		other = Items.order[1]
+	end
+
+	local cases: { { why: string, payload: { Types.WrapRequest } } } = {
+		{ why = "unknown claim", payload = { { isFake = true, claim = "no_existe" } } },
+		{
+			why = "genuine wrapper lying about what it holds",
+			payload = { { copyId = first.copyId, isFake = false, claim = other } },
+		},
+		{
+			why = "isFake disagrees with copyId",
+			payload = { { copyId = first.copyId, isFake = true, claim = first.itemId } },
+		},
+		{
+			why = "three forgeries, limit is two",
+			payload = {
+				{ isFake = true, claim = Items.order[1] },
+				{ isFake = true, claim = Items.order[2] },
+				{ isFake = true, claim = Items.order[3] },
+			},
+		},
+		{ why = "empty offer", payload = {} },
+		{
+			why = "same copy wrapped twice",
+			payload = {
+				{ copyId = first.copyId, isFake = false, claim = first.itemId },
+				{ copyId = first.copyId, isFake = false, claim = first.itemId },
+			},
+		},
+	}
+
+	print(`[Duel] firing {#cases} malformed offers -- every one must be refused`)
+	for index, case in cases do
+		print(`  {index}. {case.why}`)
+		DuelController.offer(case.payload)
+	end
+	print("[Duel] battery sent. The server should have logged one refusal per case,")
+	print("       and your hand should be untouched -- press nothing and look.")
+end
+
 --- ATTACK, on purpose: the duplication exploit, as a permanent regression case.
 ---
 --- Amends with the NEW wrapper first and the previous offer after it. The server
@@ -294,6 +367,7 @@ local function bindDebugKeys()
 		[Enum.KeyCode.X] = { label = "amend", run = DuelController.amendDemo },
 		[Enum.KeyCode.C] = { label = "ES FAKE", run = DuelController.fakeCall },
 		[Enum.KeyCode.V] = { label = "DUPE ATTACK (must be refused)", run = DuelController.dupeAttempt },
+		[Enum.KeyCode.B] = { label = "malformed-offer battery (all must be refused)", run = DuelController.invalidBattery },
 	}
 
 	UserInputService.InputBegan:Connect(function(input: InputObject, processed: boolean)
