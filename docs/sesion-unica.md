@@ -64,29 +64,36 @@ No hay UI de duelo con mouse todavía; todo va por teclas. **Esta es la única l
 
 ## 1.1 — El perfil carga
 
-**Play**, un jugador. Command Bar, contexto **Server**:
+**Play**, un jugador. **Mirá el HUD**, arriba a la izquierda. Nada más.
 
-```lua
-print(require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[1]))
-```
+✅ Dos papelitos: **`250`** con **`Clips`** al lado, y **`0 / 12`** debajo.
+Eso prueba dos cosas de una: el perfil cargó **y** el servidor se lo mandó al cliente.
 
-✅ Imprime una tabla.
-❌ Imprime `nil` → **parás acá**. El perfil no cargó y nada de lo que sigue significa algo. Mandame el Output.
+❌ No aparecen los papelitos → **parás acá**. Mandame el Output.
+
+> **Vas a ver esto en el Output y NO es un error:**
+> ```
+> DataStoreService: StudioAccessToApisNotAllowed: Cannot write to DataStore from studio...
+> [ProfileStore]: Roblox API services unavailable - data will not be saved
+> ```
+> Es ProfileStore tanteando la API real al arrancar. La tantea **siempre**, aunque después use el simulador — y en 1.1 a 1.3 usa el simulador, que es lo que queremos. **Si el HUD muestra tus Clips, el perfil cargó.**
 
 ## 1.2 — Cierre abrupto sin pérdida
 
-1. Con el Play todavía corriendo, en la Command Bar (**Server**):
+**La que más importa.** Prueba que lo que ganaste sigue ahí después de un cierre feo.
 
-```lua
-require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[1]).clips = 9999
-```
+1. Esperá los 15 segundos → entra el bot.
+2. **Q** para ofertar. Esperá unos segundos: el bot oferta solo.
+3. **R** para aceptar. Mirá la revelación.
+4. **Anotá los Clips del HUD.** Cambiaron: pagaste la falsificación y cobraste el duelo.
+5. **Stop** con el cuadrado rojo. Sin avisar, sin esperar.
+6. **Play** de nuevo. Mirá el HUD.
 
-2. **Mirá el HUD**: arriba a la izquierda tiene que decir **9999**. *(Eso también prueba que el empuje de datos al cliente funciona — dos pruebas por el precio de una.)*
-3. **Stop** con el cuadrado rojo. Sin avisar, sin esperar.
-4. **Play** de nuevo. Mirá el HUD.
+✅ Los Clips son **los que anotaste**.
+❌ Volvieron a **250** → el guardado no ocurrió. **Parás.** Es exactamente el fallo silencioso que este bloque existe para atrapar.
 
-✅ Dice **9999**.
-❌ Dice **250** → el guardado no ocurrió. **Parás.** Es exactamente el fallo silencioso que este bloque existe para atrapar.
+> **Sin consola, a propósito.** La versión anterior escribía `clips = 9999` desde la Command Bar, y eso obliga a cambiarle el contexto a *Server*: en *Client* el `ServerScriptService` está **vacío** —los scripts de servidor no se replican, que es justamente lo que queremos— y el comando falla con `Services is not a valid member`.
+> Jugar un duelo prueba lo mismo, se parece más a lo que hace un jugador de verdad, y no requiere tocar nada.
 
 ## 1.3 — Dos sesiones peleando por un perfil
 
@@ -109,7 +116,7 @@ Las tres anteriores usan el simulador. **Un simulador que se porta bien no prueb
 
 ### La prueba
 
-Repetí **1.2** entera: escribís `clips = 9999`, Stop de golpe, Play, mirás el HUD.
+Repetí **1.2** entera: jugás un duelo, anotás los Clips, Stop de golpe, Play, mirás el HUD.
 
 ✅ Sigue diciendo 9999 → **la persistencia está probada de verdad.**
 
@@ -226,7 +233,12 @@ Falsificar **ya no es gratis**: cuesta Clips en proporción a lo que imitás.
 3. **Mirá el HUD otra vez.** ✅ Bajó. Cuánto depende de qué imitó.
 4. Terminá el duelo con **R**. ✅ Los dos cobran, y el que ganó cobra más.
 
-**La prueba que importa** — Command Bar, **Server**:
+**La prueba que importa.** Es el único paso de toda la sesión que necesita la Command Bar, y hay que ponerla en el contexto correcto.
+
+> **Cómo:** con el Play corriendo, buscá arriba a la izquierda —al lado del botón de Play— un desplegable que dice **`Server &…`**. Ahí se elige si lo que escribís corre en el cliente o en el servidor. Tiene que quedar en **Server**.
+> Si no lo cambiás, el comando falla con `Services is not a valid member of ServerScriptService`. No es un bug: en el cliente ese contenedor está vacío porque los scripts de servidor **no se replican**.
+
+Con eso listo:
 
 ```lua
 require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[1]).clips = 5
