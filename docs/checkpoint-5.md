@@ -4,7 +4,9 @@ sidebar_label: Checkpoint 5 · bots y partición
 
 # Checkpoint 5 — bots, matchmaking y la partición de DuelService
 
-**Tiempo: 15 minutos.** Cuatro pruebas, y **dos importan**: la 1 (que D1 funcione) y la 4 (el auto-juego, que es el certificado retroactivo de la partición y lo que más evidencia da por minuto tuyo). Las otras dos confirman cosas ya verificadas por tipos y por lectura.
+**Tiempo: 8 minutos.** Tres pruebas, y **una sola importa**: la 1, que D1 funcione. Las otras dos confirman cosas ya verificadas por tipos y por lectura.
+
+La que era la prueba 4 —el auto-juego— **ya está corrida y salió de tu lista**: ahora corre sin Studio con un comando. Los números están abajo.
 
 **Este checkpoint no cambia tu orden de cola.** Sigue mandando el checkpoint 3 (persistencia) primero y solo, después la sesión de diversión 2. Este entra donde te quede cómodo — pero **leé la sección "Lo que necesita tu sí o tu no"**, porque ahí hay una corrección de seguridad esperándote.
 
@@ -84,63 +86,38 @@ Tiene que imprimir **RESULT: PASS** con los seis números en lo esperado. Es la 
 
 ---
 
-## Prueba 4 — el certificado de la partición 🔴
+## Prueba 4 — ~~el certificado de la partición~~ ya está corrida ✅
 
-**Esto es lo que pediste como certificado retroactivo de todo lo movido este mes.** Son **dos corridas**, y la segunda es la que certifica el escrow.
-
-`DuelRules.debugLogs = true`, **Play** con un jugador, Command Bar contexto **Server**.
-
-### 4a — bot contra bot, 200 duelos (≈1 minuto)
-
-```lua
-require(game.ServerScriptService.Services.BotService).selfPlay(200)
-```
+**Esta salió de tu lista.** El auto-juego ya no necesita Studio: corre de manera headless con los módulos reales de `src/` y la superficie de Roblox falseada.
 
 ```
-[BotService] self-play bot vs bot: 200/200 duels in 58.3s
-  accepted: 171
-  fake called: 21
-  declined: 8
-  duels that leaked a live object : 0   (expected 0)
-  copies stuck in escrow          : 0   (VACUOUS -- no profile in play)
-  RESULT: PASS
+./selfplay.sh            200 duelos bot contra bot
+./selfplay.sh 60 puppet  60 duelos contra un perfil en memoria
 ```
 
-| Línea | Qué significa si sale mal |
-|---|---|
-| `200/200` | Si es menos, un duelo **nunca terminó**: fase colgada. El peor de la lista |
-| `TIMED OUT: n` | Un watchdog tuvo que rescatar un duelo. Los bots actúan en 0,03s: no debería hacer falta |
-| `leaked: 0` | Cualquier otro número es una conexión o un temporizador que sobrevivió a su duelo |
-
-### 4b — contra tu propio perfil, 25 duelos
-
-**Sin esto, la métrica de escrow que pediste no vale.** Y el motivo es la parte interesante:
-
-> En un duelo bot-contra-bot **ningún lado tiene perfil**, así que `DuelStakes.take` devuelve `true` sin escribir nada. El escrow termina en cero **porque nunca se escribió**, no porque se limpie bien. Es un verde vacío — exactamente la clase de falso positivo de la lección de C-2, con otro disfraz.
-
-Esta corrida juega **tu lado real**: tu perfil, tus copias, tus Clips, movidos por el mismo cerebro. Recién ahí el cobro, la apuesta, el pago y la cuenta del tope son de verdad, y recién ahí "escrow en 0" certifica algo.
-
-```lua
-local P = game.Players:GetPlayers()[1]
-require(game.ServerScriptService.Services.BotService).selfPlay(25, P)
-```
+**Resultado, repetido en tres corridas de 200 más una de 60 contra perfil:**
 
 ```
-[BotService] self-play vs Player1 (real profile): 25/25 duels in 8.2s
-  ...
-  copies stuck in escrow          : 0   (expected 0)
-  RESULT: PASS
+200/200 duelos          0 warnings   0 fugas   0 timeouts   0 fallbacks
+ 60/60  contra perfil   0 warnings   0 fugas   0 escrow colgado
+                        colección: 0 movimientos
 ```
 
-**Veinticinco y no doscientos** porque cada duelo mueve copias y Clips de verdad. Cuando se te acaben las dos cosas, tus ofertas empiezan a ser rechazadas y los duelos mueren por timeout — eso **no es un fallo**, va a aparecer como `TIMED OUT: n` y es información de economía, no de corrección. Si sale mucho antes de los 25, decímelo: significa que la economía drena más rápido de lo que pensábamos.
+**Por qué nadie lo había corrido nunca:** el `luau` que instala `rokit` es **arm64** y tu Mac es **Intel**. Fallaba con `Bad CPU type in executable`, que se lee como "esto no se puede". `brew install luau` trae el x86_64 — ya está instalado.
 
-**Toca tu perfil de Studio** (el simulado, con `useMockInStudio = true`), no datos reales. Reiniciá Play para volver al estado inicial.
+### Encontró dos bugs que ninguna lectura había encontrado
 
-### Al terminar
+Los dos de la misma clase: **una acción se rechaza, el actor conserva el turno y no hace nada** → el duelo queda inmóvil hasta que el watchdog lo mata. El jugador ve un rival congelado y un duelo que muere sin motivo.
 
-`debugLogs` a `false`.
+**1. Del servidor, y es el instructivo — no era un error, era una contradicción de reglas.** Una enmienda necesita al menos un envoltorio **más** que la oferta anterior; ninguna oferta pasa de 4. Contra una oferta que ya tiene 4, las dos reglas chocan: `needs 5-4`. **Toda respuesta posible era ilegal.** Uno de cada cincuenta duelos.
 
-**Lo que ninguna de las dos contesta:** si algo de esto es divertido. Para eso siguen haciendo falta dos personas en una habitación.
+**2. Del bot:** enmendaba agregando una tercera falsificación a una oferta que ya tenía dos.
+
+Arreglado el primero **en el pedido** —se rechaza el "Pedir más" contra una oferta llena, porque no se le pide a nadie lo que no puede dar— y el segundo en la raíz. Más una red: el cerebro ya no termina un turno sin haber actuado.
+
+### Lo que sigue siendo tuyo
+
+**El checkpoint 3 (persistencia) es insustituible.** El arnés **no** cubre ProfileStore —guardado, session locking, migraciones—, ni la escena, ni el cliente. Está escrito en el propio script para que un verde de acá no se lea como un verde de todo.
 
 ---
 
