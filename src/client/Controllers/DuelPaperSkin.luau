@@ -94,28 +94,6 @@ local function text(content: string, size: UDim2, color: Color3, font: Enum.Font
 	return element
 end
 
---- Faint squared ruling, drawn once.
-local function drawGrid(page: Frame)
-	for index = 1, 23 do
-		local line = Instance.new("Frame")
-		line.Size = UDim2.fromScale(1, 0.0012)
-		line.Position = UDim2.fromScale(0, index / 24)
-		line.BackgroundColor3 = Theme.palette.grid
-		line.BorderSizePixel = 0
-		line.ZIndex = 0
-		line.Parent = page
-	end
-	for index = 1, 31 do
-		local line = Instance.new("Frame")
-		line.Size = UDim2.fromScale(0.0009, 1)
-		line.Position = UDim2.fromScale(index / 32, 0)
-		line.BackgroundColor3 = Theme.palette.grid
-		line.BorderSizePixel = 0
-		line.ZIndex = 0
-		line.Parent = page
-	end
-end
-
 --- Mounts onto the board. `flip` turns the whole page around for the player on
 --- the far side, so each reads their own half as the near one.
 function DuelPaperSkin.mount(
@@ -147,15 +125,15 @@ function DuelPaperSkin.mount(
 	page.BorderSizePixel = 0
 	page.Rotation = if flip then 180 else 0
 	page.Parent = surface
-	drawGrid(page)
 
-	-- The drawn border of the pad, a hand's width in from the edge.
-	local border = Instance.new("Frame")
-	border.Size = UDim2.fromScale(0.96, 0.94)
-	border.Position = UDim2.fromScale(0.02, 0.03)
-	border.BackgroundTransparency = 1
-	border.Parent = page
-	stroke(border, 3)
+	-- BARE ON PURPOSE (2026-08-05). The grid, the drawn border and the net came
+	-- out, leaving a plain pad with the buttons on it -- Renata's reference, and
+	-- an explicit "for now": the board is being redesigned and decoration added
+	-- before the design exists is decoration thrown away twice.
+	--
+	-- The ruling helper went with them. This project deletes what has no
+	-- consumer rather than keeping it warm -- git remembers, and a function
+	-- nobody calls is a decision nobody made.
 
 	local function zone(y: number, height: number): Frame
 		local frame = Instance.new("Frame")
@@ -171,14 +149,6 @@ function DuelPaperSkin.mount(
 	local nearSlots = zone(0.5, 0.22)
 	local nearActions = zone(0.79, 0.13)
 	local emoteStrip = zone(0.94, 0.05)
-
-	-- The net: from here across, it is theirs.
-	local net = Instance.new("Frame")
-	net.Size = UDim2.fromScale(0.86, 0.004)
-	net.Position = UDim2.fromScale(0.07, 0.45)
-	net.BackgroundColor3 = Theme.palette.ink
-	net.BorderSizePixel = 0
-	net.Parent = page
 
 	local banner = text("", UDim2.fromScale(0.5, 0.05), Theme.palette.ink, Theme.fonts.marker)
 	banner.Position = UDim2.fromScale(0.25, 0.4)
