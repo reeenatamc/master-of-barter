@@ -223,7 +223,16 @@ local tableSpec = {
 	--- The board itself: a thick pad of graph paper, lying FLAT. Wider than it
 	--- is deep, like the references, so the two strips of slots and the two
 	--- button rows all fit without crowding.
-	boardSize = Vector3.new(13, 0.35, 9.5),
+	--- LOCAL to the board, not world. With `boardYaw` at 90 the part is turned a
+	--- quarter turn, so local X ends up running near-far and local Z left-right:
+	--- the board a player sees is still 13 wide by 9.5 deep.
+	---
+	--- The numbers are swapped from the obvious ones on purpose, and that is the
+	--- half of the fix that is easy to miss. Turning the part alone put the rows
+	--- the right way round but left the canvas PORTRAIT -- a layout of wide
+	--- button rows squeezed into a tall page. The canvas takes its shape from the
+	--- face, so the face has to be landscape in the same axes the layout is.
+	boardSize = Vector3.new(9.5, 0.35, 13),
 	--- How far back each player stands from the near edge.
 	standDistance = 6,
 	--- Resolution of the surface drawn on the board. The knob for §38's low-end
@@ -237,10 +246,16 @@ local tableSpec = {
 	--- and right edges, written sideways, which is unreadable and was invisible
 	--- until somebody looked.
 	---
-	--- So it is a number rather than a fact: the layout wants its near row NEAR
-	--- the player, and this is what makes that true. If it ever comes out
-	--- sideways again, try 0, 90, 180, 270 -- one of them is right, and looking
-	--- costs ten seconds against an afternoon of deriving it.
+	--- MEASURED, not derived. The first build put the three buttons along the
+	--- left and right edges written sideways, which is unreadable -- and that
+	--- screenshot is the evidence that the page's vertical axis lands on the
+	--- part's X. Players stand apart along Z (see `standDistance`), so the part
+	--- gets a quarter turn to bring those two into line.
+	---
+	--- It stays a number rather than becoming a constant because the thing it
+	--- encodes is a fact about the engine that a document cannot settle. If it
+	--- ever comes out sideways again, try 0, 180, 270 -- looking costs ten
+	--- seconds against an afternoon of deriving it wrong.
 	boardYaw = 90,
 }
 
