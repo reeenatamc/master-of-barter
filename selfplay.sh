@@ -2,7 +2,7 @@
 # Runs the duel core headlessly: hundreds of bot-vs-bot duels, no Studio.
 #
 # Every module under test is the real file from src/. Only the Roblox surface
-# around it is faked (see test/bundle.py), so a green run means the duel state
+# around it is faked (see test/bundle.sh), so a green run means the duel state
 # machine, the offer validation, the escrow ledger and the reveal all behaved.
 #
 #   ./selfplay.sh            200 bot-vs-bot duels
@@ -40,5 +40,5 @@ fi
 
 OUT=".tools/harness.luau"
 mkdir -p .tools
-python3 test/bundle.py "$MODE" "$COUNT" "$OUT" >/dev/null
+test/bundle.sh "$MODE" "$COUNT" "$OUT" >/dev/null
 exec luau "$OUT"
