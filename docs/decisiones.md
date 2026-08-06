@@ -866,3 +866,44 @@ Las dos frases eran razonables, estaban escritas por gente que había leído el 
 **Y el quinto falso verde fue el más recursivo de todos:** el test de mutación —el que existe para darle rojo al verde— reportó **su propio verde falso**. "El spec no caza la mutación" cuando la mutación nunca se aplicó: un `replace` que no matcheó y no dijo nada.
 
 **Requisito del arnés, ya implementado:** un test de mutación afirma **primero** que el objetivo existe y que el reemplazo ocurrió —el marcador contado en el bundle— y **recién después** opina sobre si el spec lo cazó.
+
+---
+
+## 2026-08-05 · 🔒 CANON — el control positivo: la fila roja es la que firma las verdes
+
+**La matriz de C-DUPE es el estándar de acá en adelante para toda regla inviolable:**
+
+| Mutación | Resultado | Qué prueba |
+|---|---|---|
+| Defensa A borrada | Rechazado | B sola alcanza |
+| Defensa B borrada | Rechazado | A sola alcanza |
+| **A y B borradas** | **FALLA** | **El ataque es real, y lo detiene el código** |
+
+**Esa última fila tiene nombre en el oficio: es el CONTROL POSITIVO.** Un test de defensa sin la fila donde el ataque **funciona** no prueba que la defensa lo detiene — prueba que *algo* lo detiene. Quizá el fixture. Quizá la luna.
+
+**Y es exactamente lo que enseñó el sexto falso verde:** el test pasaba con **las dos** defensas borradas, por una razón ajena a toda defensa — la mano inicial tenía **una copia de cada objeto** y el ataque necesita dos. El rechazo certificaba la forma del inventario, no el código.
+
+**Regla, hermana de la del mutador:** un test de ataque verifica **primero** que el atacante tiene los medios en ese entorno —la segunda copia, el estado necesario, el mutante efectivamente aplicado— y **su control positivo es la prueba de que los tiene**.
+
+**Seis falsos verdes, seis mecanismos distintos, una moraleja repetida:** el verde hay que ganárselo, y **la fila roja es la que lo firma**.
+
+| # | Dónde | Por qué era falso |
+|---|---|---|
+| 1 | Batería de validación | Rechazos por la razón equivocada (fase, no capa) |
+| 2 | Escrow en auto-juego | Cero porque nunca se escribió |
+| 3 | El arnés | PASS al lado de `TIMED OUT: 2` |
+| 4 | `customFields` de Roblox | Claves ignoradas en silencio (atajado antes de nacer) |
+| 5 | El mutador | Reemplazo que no matcheó y no dijo nada |
+| 6 | El test del dupe | El atacante no tenía los medios |
+
+---
+
+## 2026-08-05 · 🔒 CANON — las deudas condicionales se cablean, no se anotan
+
+> **La nota que alguien tenía que recordar es ahora una alarma que suena sola.**
+
+`runFinishRaceCheck` no prueba el claim de `resolving`, y solo lo probaría si algo cediera entre reclamar el duelo y difundir. La respuesta anterior era una nota en el backlog: *"cuando A3/B3 metan un yield ahí, hay que re-correr el check"*. Una convención, y las convenciones dependen de que alguien se acuerde tres meses después.
+
+**Ahora la precondición se vigila sola:** el spec corre el camino terminal en una corrutina y verifica que vuelva `dead`. El día que aparezca un `await`, la aserción se pone en rojo con `A YIELD APPEARED: re-run the race check with it present`.
+
+**Toda deuda futura de la forma "cuando pase X habrá que hacer Y" hereda este tratamiento: si X es detectable, X se detecta.** Anotarlo es la opción de último recurso, para cuando X genuinamente no se puede observar desde el código.
