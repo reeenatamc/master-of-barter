@@ -296,11 +296,21 @@ Criterios: duelo guiado, primer objeto regalado, un fake obvio didáctico; compl
 
 Criterios: 3 diarias desde Config, progreso persistente, reseteo diario correcto en zonas horarias distintas.
 
-### F3 · Analítica de decisiones
+### F3 · Analítica de decisiones ✅ (parcial)
 
-**Prioridad:** P0 · M
+**Prioridad:** P0 · M — **el núcleo entregado 2026-08-05**
 
 Objetivo: el balance del bluff se decide con datos. Criterios: funnel de onboarding paso a paso; evento por duelo con duración, resultado, nº Pedir más, fakes ofertados, acusaciones y acierto; evento por compra. Dependencias: A2–A4. Riesgo: instrumentar tarde = alfa a ciegas — va junto al núcleo, no después.
+
+**Entregado:** `AnalyticsService` (una sola puerta, buffer en anillo, sinks que se desactivan solos ante error) + `Config/Analytics.luau` con los nombres de evento. Cinco eventos vivos: `duel_started`, `duel_finished`, `escrow_orphaned`, `request_rejected`, `bot_fallback`, `shop_purchase`. Cerró los cuatro `TODO(F3)` que el mes venía acumulando.
+
+**Lo que falta, y por qué no está:**
+
+| Pendiente | Bloqueado por |
+|---|---|
+| **Verificar `LogCustomEvent`** contra create.roblox.com/docs y prender `Analytics.sendToRoblox` | Nada — son cinco minutos de alguien con la doc abierta. La firma está escrita **de memoria** y por eso el flag sale apagado (regla 5). Todo lo demás ya funciona sin él |
+| **Funnel de onboarding** paso a paso | **F1** (tutorial con Don Trueque). Un funnel sin los pasos que mide no es un funnel |
+| **Compra Robux** | **B5**, que es caso (b) y espera |
 
 ---
 

@@ -682,3 +682,17 @@ De ahí las dos formas que ahora tiene el arnés: los timeouts y las activacione
 **Por qué nadie lo había hecho antes:** el `luau` que instala `rokit` es **arm64** y la máquina es **Intel**. Fallaba con `Bad CPU type in executable`, que se lee como "esto no se puede" en vez de "falta el binario correcto". `brew install luau` trae el x86_64. Un misterio que ni sabíamos que teníamos.
 
 **Lo que la puerta NO reemplaza, y está escrito en el propio script:** ProfileStore (guardado, session locking, migraciones) es el checkpoint 3 y necesita Studio; la escena y el cliente entero tampoco están cubiertos. Un verde acá no es un verde de todo — y esa lista explícita es lo que hace confiable al resto del reporte.
+
+---
+
+## 2026-08-05 · F3: el sink de Roblox sale APAGADO, y eso es la decisión
+
+**Decidido:** `AnalyticsService` entrega los cinco eventos del MVP, pero `Analytics.sendToRoblox = false`. Los eventos van a consola y a un buffer en anillo; a Roblox Analytics, todavía no.
+
+**Por qué:** la firma `LogCustomEvent(player, eventName, value, customFields)` la escribí **de memoria**. La regla 5 de este proyecto dice que una API inventada cuesta horas, y ya nos pasó con las fuentes (`Caveat`, `Amatic` y otras dos que no existen en el engine y que habría escrito con la misma confianza).
+
+**La forma del compromiso importa más que la decisión:** en vez de no escribir el binding, o de escribirlo y confiar, quedó **aislado en una función que nada usa**. Todo lo que va después ya funciona —los eventos se cuentan, se imprimen, se testean—, así que nadie está esperando. Verificar la firma es abrir la doc cinco minutos y prender un flag; si está mal, esa función es lo único que cambia.
+
+**Alternativa descartada:** dejar `AnalyticsService` como stub hasta poder verificar. Se descartó porque los `TODO(F3)` ya eran cuatro y crecían: cada uno era un lugar donde el código sabía algo que nadie iba a contar. Que el destino final esté pendiente no es razón para no tener la puerta.
+
+**Y una cosa que el diseño hace a propósito:** el evento se llama `duel_finished` y lleva `accusedBy` y `accusationCorrect` como campos, en vez de haber un evento `fake_called` aparte. Una acusación es un **hecho sobre un duelo**, no una cosa distinta que pasó cerca. Un duelo, una fila — que es lo que hace que la pregunta de §8 ("¿la ficha se queda?") se conteste con una consulta y no con un join.
