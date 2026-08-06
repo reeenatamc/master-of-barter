@@ -909,3 +909,97 @@ Las dos frases eran razonables, estaban escritas por gente que había leído el 
 **Ahora la precondición se vigila sola:** el spec corre el camino terminal en una corrutina y verifica que vuelva `dead`. El día que aparezca un `await`, la aserción se pone en rojo con `A YIELD APPEARED: re-run the race check with it present`.
 
 **Toda deuda futura de la forma "cuando pase X habrá que hacer Y" hereda este tratamiento: si X es detectable, X se detecta.** Anotarlo es la opción de último recurso, para cuando X genuinamente no se puede observar desde el código.
+
+---
+
+## 2026-08-05 · 🔒 INVENTARIO DE SALIDAS — ahora son DOS vistas, no una
+
+**El inventario certificado del 2026-08-04 decía UNA salida de estado. Quedó viejo el día que `PlayerDataService` entró, y un inventario viejo es peor que ninguno: la próxima auditoría contaría dos y no sabría si el segundo es legítimo o una fuga.**
+
+### El número oficial: **9 envíos, 2 vistas sancionadas**
+
+| Vista | Remoto | Quién la construye | Propiedades que la hacen segura |
+|---|---|---|---|
+| **DuelState** | `DuelState` | `DuelView.stateFor` (local del módulo) | Una recipiente por lado; **censura por defecto** (`viewOf` campo por campo, sin lugar donde poner `isFake`); la verdad solo en fase `Reveal` |
+| **PlayerDataView** | `PlayerData` | `PlayerDataService.viewOf` (local del módulo) | **Un solo destinatario: su dueño**; lista blanca de tres campos; coalescida |
+
+**Los otros 7 envíos son triviales y no cargan objetos de duelo:** 5 avisos (`Notice` con strings de `Config/Strings`) y 1 emote (`slot` + `emoteId`), más el push de `PlayerData`… que ya está contado arriba. **Desglose exacto: 5 `Notice` + 1 `DuelEmote` + 1 `DuelState` + 1 `PlayerData` = 8 sitios de `FireClient`, en 2 vistas y 6 triviales.**
+
+### Lo que una auditoría tiene que encontrar
+
+1. **Exactamente dos funciones que construyan una vista**, las dos locales de su módulo: `DuelView.viewOf`/`stateFor` y `PlayerDataService.viewOf`. Ningún otro módulo puede fabricar una.
+2. **Cero remotos sin consumidor.** Los nueve nombres de `Net` se disparan y se escuchan.
+3. **Ninguna vista construida por clonación.** Ver el canon de la lista blanca.
+
+**Y por qué esta entrada existe:** *"contar las salidas solo sirve como auditoría si el número correcto es conocido y chico"*. Dos es chico. Tres sería una alarma. Cero sería un bug.
+
+---
+
+## 2026-08-05 · 🔒 CANON — las vistas se construyen, nunca se clonan
+
+**Ley general, no ya doctrina de `DuelView`.** Toda vista que va al cliente se arma **campo por campo** —lista blanca— y jamás clonando-y-podando —lista negra.
+
+**La diferencia es la dirección en que fallan:**
+
+| | Cuando te equivocás |
+|---|---|
+| **Lista blanca** | Falta un campo → **se nota** (la UI no lo dibuja) y se agrega |
+| **Lista negra** | Sobra un campo → **se filtra en silencio** |
+
+**Medido, no argumentado:** clonando el perfil en `PlayerDataService`, el payload fugó **doce campos de una sola vez** —`botEarnings`, `cosmetics`, `dataVersion`, `escrow`, `level`, `quests`, `receipts`, `stats`, `xp`— y cuatro aserciones se pusieron en rojo nombrándolos. Con lista blanca, agregar un campo al perfil no puede alcanzar al cliente: hay que escribirlo dos veces, y la segunda es visible en un diff.
+
+---
+
+## 2026-08-05 · 🔒 CANON — el canal lateral: lo que se MUEVE con la verdad
+
+> **Un número que solo se mueve contra bots es tan obvio como una etiqueta.**
+
+**Un dato que CORRELACIONA con un secreto ES el secreto con otro nombre.** Borrar `isBot` del payload no sirve de nada si un contador delator viaja al lado: `botEarnings` sube solo en duelos contra bots, así que un cliente que lo lee sabe cuáles eran, y cuánto valían.
+
+**La pregunta de cierre para toda vista futura no es una, son dos:**
+
+1. ¿Qué campo **carga** la verdad?
+2. ¿Qué campo **se mueve** con la verdad?
+
+La primera la contesta el sistema de tipos. La segunda no la contesta nadie más que quien esté mirando.
+
+---
+
+## 2026-08-05 · 🔒 CANON — tres estados, no dos: "correcto y sin evidencia"
+
+Toda pieza de seguridad se etiqueta en uno de tres estados, y **el mapa honesto es el que distingue los dos primeros en vez de fundirlos**:
+
+| Estado | Qué significa |
+|---|---|
+| **Probado** | Hay una aserción, y la mutación que la rompe la pone en rojo |
+| **Correcto y sin evidencia** | Se leyó, se razonó, y **nada lo ejercita** |
+| **Sospechoso** | Hay motivo para creer que está mal |
+
+**Habitante único hoy: el claim de `resolving`.** Con su alarma `A YIELD APPEARED` vigilando la precondición que lo mudaría a "probado" el día que alguien meta un yield.
+
+**Fundir los dos primeros es lo que produjo el mapa equivocado de la compuerta de fase:** se creyó "probado" lo que era "correcto y sin evidencia", y se razonó sobre seguridad con eso durante semanas.
+
+---
+
+## 2026-08-05 · El primer falso verde preempatado
+
+**Detalle chico, hito real.** Al escribir la aserción de coalescing de `PlayerDataService` noté que el stub de `task.defer` del arnés corría el callback **inline**. Con eso, "tres cambios producen un push" habría pasado **sin que existiera coalescing alguno**: el test habría medido el stub, no el código.
+
+Se arregló **antes** de escribir la aserción.
+
+**Seis falsos verdes se cazaron después de nacer. El séptimo no llegó a nacer** — porque revisar el entorno del test antes de confiar en su verde ya es reflejo. El canon dejó de solo detectar y empezó a prevenir.
+
+---
+
+## 2026-08-05 · El discriminador de la regla 6: peligroso vs. prometido
+
+**Dos casos, la misma pregunta, respuestas opuestas — y el criterio distinguió solo.**
+
+| | `Net.names.DuelReveal` | `Net.names.PlayerData` + `balanceChanged` |
+|---|---|---|
+| ¿Alguien lo lee? | No | No |
+| ¿Alguna tarjeta lo va a leer? | **No** — el estado ya llevaba la revelación | **Sí** — E3, y llegamos a E3 |
+| Qué era | Una **capacidad peligrosa** huérfana: segunda salida para la verdad | Una **capacidad requerida** huérfana: función faltante con el nombre reservado |
+| Qué se hizo | **Borrar** | **Completar** |
+
+**"Nadie lo lee" no es la pregunta completa.** La pregunta es *"nadie lo lee **y** ninguna tarjeta lo va a leer"* — y si la segunda mitad da que sí, la deuda no es un arma cargada, es una promesa sin cumplir. Borrar lo huérfano-peligroso, completar lo huérfano-prometido.
