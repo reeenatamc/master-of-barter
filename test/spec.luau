@@ -12,6 +12,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 local Items = require(Config.Items)
+local InventoryService = require(Services.InventoryService)
 local BotService = require(Services.BotService)
 
 local passed, failed = 0, 0
@@ -316,6 +317,141 @@ do
 	DuelService.applyOffer(duel, sideA, { { copyId = sideA.hand[1].copyId, isFake = false, claim = sideA.hand[1].itemId } })
 	DuelService.applyOffer(duel, sideB, { { copyId = sideB.hand[1].copyId, isFake = false, claim = sideB.hand[1].itemId } })
 	check("runFinishRaceCheck reports PASS", DuelService.runFinishRaceCheck())
+end
+
+-- ── 7. The malformed-offer battery, through the REMOTE half ─────────────────
+--
+-- These went through `submitOffer`, not `applyOffer`, on purpose: that is the
+-- function a client's payload actually reaches, identity check and all. The
+-- observable is that the offer was NOT committed -- a refusal logs and returns
+-- nothing, so "did it get stored" is the honest thing to assert.
+--
+-- Was block C-2 of prueba-etapa1.md, a keystroke in Studio.
+
+print("\n[spec] malformed offers, through the remote")
+do
+	local a, b = freshPlayers()
+	local duelId = DuelService.start(a, b)
+	local duel = DuelService.debugDuel(duelId :: string)
+	local sideA = sideOf(duel, a)
+	local first = sideA.hand[1]
+	local other = if Items.order[#Items.order] ~= first.itemId then Items.order[#Items.order] else Items.order[1]
+
+	local cases = {
+		{ why = "unknown claim", payload = { { isFake = true, claim = "no_existe" } } },
+		{ why = "a genuine wrapper lying", payload = { { copyId = first.copyId, isFake = false, claim = other } } },
+		{ why = "isFake disagrees with copyId", payload = { { copyId = first.copyId, isFake = true, claim = first.itemId } } },
+		{
+			why = "three forgeries",
+			payload = {
+				{ isFake = true, claim = Items.order[1] },
+				{ isFake = true, claim = Items.order[2] },
+				{ isFake = true, claim = Items.order[3] },
+			},
+		},
+		{ why = "an empty offer", payload = {} },
+		{
+			why = "the same copy twice",
+			payload = {
+				{ copyId = first.copyId, isFake = false, claim = first.itemId },
+				{ copyId = first.copyId, isFake = false, claim = first.itemId },
+			},
+		},
+		{ why = "a payload that is not a table", payload = 42 },
+	}
+
+	local committed = 0
+	for _, case in cases do
+		DuelService.submitOffer(a, case.payload)
+		if sideA.offer ~= nil then
+			committed += 1
+			check(`refused: {case.why}`, false, "it was COMMITTED")
+			sideA.offer = nil
+		end
+	end
+	check(`all {#cases} malformed offers refused`, committed == 0, `{committed} got through`)
+
+	local copies = 0
+	for _, n in profiles[a].duelCopies do
+		copies += n
+	end
+	-- Six refusals must not have moved a single copy. A rejected offer that
+	-- leaves half its escrow behind is worse than one that succeeds.
+	check("no copy left the profile", copies == 4 and #profiles[a].escrow == 0, `{copies} copies, {#profiles[a].escrow} escrow`)
+
+	DuelService.finish(duelId :: string, "spec cleanup")
+end
+
+-- ── 8. THE DUPLICATION ATTACK ───────────────────────────────────────────────
+--
+-- Offer [A], then amend with [B, A]. The escrow used to skip index 1 and take A
+-- a second time while B went on the table without ever leaving the profile:
+-- win or lose, the rival received a copy the sender still had.
+--
+-- Was block C-DUPE, the one manual case marked "never skip this".
+
+print("\n[spec] the duplication attack")
+do
+	local a, b = freshPlayers()
+	-- A second copy of one item, so the attack is actually POSSIBLE and the
+	-- refusal below means a defence worked rather than an inventory ran out.
+	InventoryService.giveCopy(b, Items.order[1])
+	local duelId = DuelService.start(a, b)
+	local duel = DuelService.debugDuel(duelId :: string)
+	local sideA, sideB = sideOf(duel, a), sideOf(duel, b)
+
+	-- The attacker has to be the side that OWES an amendment, and negotiation
+	-- always opens on slot 1 -- so slot 2 is the attacker and slot 1 raises.
+	--
+	-- AND IT NEEDS TWO COPIES OF THE SAME ITEM, which is the whole reason this
+	-- setup exists. The starter hand holds one of each, and with one of each the
+	-- attack fails on its own: re-taking the staked copy finds nothing left in
+	-- the profile. An earlier version of this test asserted the refusal with a
+	-- starter hand and passed with BOTH defences deleted -- a green that proved
+	-- nothing but the shape of the starting inventory.
+	local duplicated = Items.order[1]
+	local staked, spare = nil, nil
+	for _, copy in sideB.hand do
+		if copy.itemId == duplicated and staked == nil then
+			staked = copy
+		elseif copy.itemId ~= duplicated and spare == nil then
+			spare = copy
+		end
+	end
+	check("the attacker holds a second copy of the staked item", InventoryService.copiesOf(b, duplicated) >= 1)
+	DuelService.submitOffer(a, { { copyId = sideA.hand[1].copyId, isFake = false, claim = sideA.hand[1].itemId } })
+	DuelService.submitOffer(b, { { copyId = staked.copyId, isFake = false, claim = staked.itemId } })
+	DuelService.negotiate(a, "RaiseOffer")
+	check("a raise is pending on the attacker", sideB.amendRequested)
+
+	local before = #profiles[b].escrow
+	-- The attack: the NEW wrapper first, the previous offer after it.
+	DuelService.submitOffer(b, {
+		{ copyId = spare.copyId, isFake = false, claim = spare.itemId },
+		{ copyId = staked.copyId, isFake = false, claim = staked.itemId },
+	})
+
+	check("the reordered amendment was refused", #sideB.offer == 1, `offer is now {#sideB.offer} wrappers`)
+	check("no second copy went into escrow", #profiles[b].escrow == before, `{#profiles[b].escrow} vs {before}`)
+
+	-- The structural half: even reaching past the prefix check, a copy already
+	-- staked cannot be staked again.
+	check(
+		"takeCopy refuses a copy that is already staked",
+		InventoryService.takeCopy(b, staked.itemId, duel.id, staked.copyId) == false
+	)
+
+	DuelService.finish(duelId :: string, "spec cleanup")
+end
+
+-- ── 9. BuildingOffers also times out ────────────────────────────────────────
+
+print("\n[spec] the offer phase times out too")
+do
+	local a, b = freshPlayers()
+	local duelId = DuelService.start(a, b)
+	advance(DuelRules.phaseSeconds.BuildingOffers + 1)
+	check("nobody offered, so the duel is gone", DuelService.debugDuel(duelId :: string) == nil)
 end
 
 print(`\n[spec] {passed} passed, {failed} failed`)
