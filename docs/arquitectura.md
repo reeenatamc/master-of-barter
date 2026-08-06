@@ -124,11 +124,30 @@ sequenceDiagram
     S-->>B: Estado(fase=Revelacion + verdad completa)
 ```
 
-**Catálogo de remotos del MVP (todos con rate limit y validación de fase):**
-- `Duel/Ofertar`, `Duel/Accion` (Aceptar|Rechazar|PedirMas|AcusarFake), `Duel/EmoteUsado`
-- `Matchmaking/EntrarCola`, `Matchmaking/SalirCola`
-- `Shop/Comprar` (con Clips) — las compras Robux van por MarketplaceService, no por remotos propios
-- Servidor→cliente: `Duel/Estado`, `Player/DatosActualizados`, `Notificacion` — **tres, y no hay un cuarto.**
+**Catálogo de remotos del MVP.** Diez, y el spec los cuenta: `./selfplay.sh spec` compara los nombres declarados en `Net` contra esta lista y se pone en rojo nombrando al que sobre o falte. Un catálogo que solo es cierto mientras alguien se acuerde de él ya nos falló una vez.
+
+**Cliente→servidor (siete).** Cada uno es una petición no confiable:
+
+| Remoto | Qué pide |
+|---|---|
+| `DuelOffer` | Comprometer una oferta |
+| `DuelNegotiate` | Aceptar / Rechazar / PedirMás / ¡ES FAKE! |
+| `DuelEmote` | Una reacción |
+| `QueueJoin`, `QueueLeave` | Entrar y salir de la cola |
+| `ShopBuy` | Comprar una copia con Clips |
+| `ShowcaseSet` | Nombre de vitrina (**el único texto escrito por un jugador**) y objetos en exhibición |
+
+Las compras con Robux van por `MarketplaceService`, no por remotos propios.
+
+**Servidor→cliente (tres), de los cuales DOS son vistas:**
+
+| Remoto | Qué lleva | ¿Vista? |
+|---|---|---|
+| `DuelState` | El duelo como lo ve un lado; censura por defecto, verdad solo en `Reveal` | **Sí** |
+| `PlayerData` | Tu propio perfil; solo a su dueño, lista blanca de campos | **Sí** |
+| `Notice` | Un string de `Config/Strings` | No |
+
+*(El emote viaja de vuelta por `DuelEmote`, el mismo remoto en las dos direcciones.)*
 
 Sin RemoteFunctions en MVP: todo es evento + respuesta por evento (evita clientes que cuelgan al servidor).
 

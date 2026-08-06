@@ -1111,3 +1111,38 @@ Ahora tiene cara: el encabezado lo dice —*"Lo mismo para todos, en todos los s
 **2. El reloj era el de la máquina.** `os.time()` es lo que el dispositivo cree; `workspace:GetServerTimeNow()` está sincronizado. Un jugador con el reloj corrido una hora habría visto **un kiosco distinto del que el servidor le iba a vender**: objetos en gris sin motivo visible, y un rechazo como primera explicación.
 
 **Y un valor de Config que estuve a punto de sobrecargar:** usé `Theme.touchPadding` para dar aire al botón, pero ese número es un **multiplicador** para objetivos en el mundo, donde el dibujo y el área tocable son objetos distintos. En UI plana son el mismo objeto. Se agregó `Theme.minTouchPixels = 44` —un **piso**, no un multiplicador— en vez de darle a un valor existente un segundo significado.
+
+---
+
+## 2026-08-05 · 🔒 CANON — el reloj del cliente es una segunda fuente de verdad
+
+**Los dos hallazgos del kiosco eran la misma enfermedad con disfraces distintos.**
+
+| Disfraz | Qué era |
+|---|---|
+| El stock derivado dos veces | Dos implementaciones de *"qué está a la venta"*, que divergen tarde o temprano |
+| `os.time()` | **El tiempo mismo** como segunda fuente de verdad: `os.time()` es lo que **el dispositivo cree** |
+
+**La cura, la misma en los dos casos: UNA.** Una función compartida que ambos lados llaman, con el servidor re-llamándola antes de cobrar —la derivación del cliente es **vista previa**, la del servidor **decide**— y **un** reloj, `workspace:GetServerTimeNow()`.
+
+> **Todo lo que dependa de tiempo compartido usa el reloj del servidor.** Un jugador con el reloj corrido una hora habría visto un kiosco distinto del que el servidor le iba a vender, con el rechazo como primera explicación.
+
+---
+
+## 2026-08-05 · 🔒 CANON — un valor significa una sola cosa
+
+> **Darle dos significados a un valor es cómo el primero deja de ser cierto.**
+
+`Theme.touchPadding` es un **multiplicador** para objetivos en el mundo, donde el dibujo y el área tocable son objetos distintos. Usarlo como píxeles de UI plana —donde son el mismo objeto— le habría inventado un segundo significado, y el día que alguien ajustara el multiplicador habría movido el padding de una pantalla que no tiene nada que ver.
+
+Nació `Theme.minTouchPixels = 44`: un **piso**, no un multiplicador, **con consumidor desde el primer commit** (regla 6 cumplida de nacimiento).
+
+---
+
+## 2026-08-05 · Requisito de frontera para todo lo que viva en `Shared`
+
+**Antes de vivir en `Shared`, una pieza contesta de qué lado de la frontera carga información.**
+
+`Shared/Util/Kiosk.luau` pasa: deriva stock **público** desde reloj + catálogo, sin nada de verdad adentro. Y lo dice **en su encabezado**, para que el próximo que le quiera agregar un parámetro herede la pregunta: *¿la entrada nueva carga algo que un lado sabe y el otro no debería?* Si sí, no va en ese archivo.
+
+Es la misma vigilancia que la lista blanca de las vistas, un nivel más arriba: allá se pregunta qué campo sale; acá, qué módulo puede siquiera ser leído por el cliente.

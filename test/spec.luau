@@ -17,6 +17,7 @@ local EconomyService = require(Services.EconomyService)
 local BotService = require(Services.BotService)
 local ShowcaseService = require(Services.ShowcaseService)
 local Showcase = require(Config.Showcase)
+local Net = require(Util.Net)
 
 local passed, failed = 0, 0
 
@@ -565,6 +566,43 @@ do
 	)
 	check("the run actually sent something (so the check can fail)", next(seen) ~= nil)
 	check("exactly two of them are VIEWS", seen.DuelState ~= nil and seen.PlayerData ~= nil)
+
+	-- The set the OTHER way too. The check above only sees remotes the server
+	-- USED, so a client-to-server remote could be added and documented nowhere
+	-- -- which is exactly what happened to ShowcaseSet. This compares every
+	-- declared name against arquitectura.md §6.
+	local CATALOGUE = {
+		DuelOffer = true,
+		DuelNegotiate = true,
+		DuelEmote = true,
+		QueueJoin = true,
+		QueueLeave = true,
+		ShopBuy = true,
+		ShowcaseSet = true,
+		DuelState = true,
+		PlayerData = true,
+		Notice = true,
+	}
+
+	local undeclared, missing = {}, {}
+	for name in Net.names do
+		if not CATALOGUE[name] then
+			table.insert(undeclared, name)
+		end
+	end
+	for name in CATALOGUE do
+		if not (Net.names :: { [string]: string })[name] then
+			table.insert(missing, name)
+		end
+	end
+	table.sort(undeclared)
+	table.sort(missing)
+
+	check(
+		`the remote catalogue matches arquitectura §6 ({#undeclared} extra, {#missing} gone)`,
+		#undeclared == 0 and #missing == 0,
+		`EXTRA: {table.concat(undeclared, ", ")} | GONE: {table.concat(missing, ", ")} -- update §6`
+	)
 end
 
 -- ── 12. THE SHOWCASE: the only user-written text in the game ────────────────

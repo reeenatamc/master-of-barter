@@ -18,6 +18,13 @@
 	(docs/arquitectura.md §4). Them agreeing is not the check -- it is the point
 	of sharing the function.
 
+	WHAT SIDE OF THE BORDER THIS CARRIES: none. It derives PUBLIC stock from a
+	clock and a catalogue, and there is no truth inside it -- no profile, no
+	`isFake`, nothing a rival should not know. That is why it may live in Shared
+	at all, and the next person who wants to add a parameter here inherits the
+	question: does the new input carry anything one side knows and the other
+	should not? If yes, it does not belong in this file.
+
 	THE CLOCK IS THE SERVER'S, NOT THE MACHINE'S. `workspace:GetServerTimeNow()`
 	is synchronised; `os.time()` is whatever the device believes. A player whose
 	clock is an hour off would have seen a different kiosk than the one the
