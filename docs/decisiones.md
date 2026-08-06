@@ -610,3 +610,75 @@ Media validación de A1.3 estuvo *"escrita y verificada"* sin correr **jamás**,
 **No se hizo incondicional a propósito:** el tutorial probablemente **debe** estar exento, así que meter el chequeo adentro del mecanismo decidiría por adelantado una pregunta de diseño que todavía no toca. Queda como frontera nombrada, con su disparador escrito en el código: quien agregue el segundo llamador o consulta el tope o deja escrito por qué no.
 
 **Alternativa descartada:** chequear adentro de `startAgainstBot` y agregar un parámetro `ignoreCap`. Se descartó porque un booleano de escape en la firma es la convención otra vez, con más pasos.
+
+---
+
+## 2026-08-05 · 🔒 CANON — una acción rechazada no puede dejar al actor sin jugada
+
+**De los dos bugs que encontró el auto-juego. Los dos eran la misma cosa con dos caras.**
+
+Un actor con el turno pide algo, el servidor lo rechaza correctamente, y el actor **se queda quieto**. Nadie más puede jugar —no es su turno— así que el duelo queda inmóvil hasta que el watchdog de fase lo mata. Lo que ve el jugador: **un rival que se congela y un duelo que muere sin motivo visible.**
+
+### El del servidor es el más instructivo: no era un error, era una contradicción de reglas
+
+Dos reglas individualmente correctas:
+
+| Regla | Valor |
+|---|---|
+| Una enmienda tiene al menos un envoltorio **más** que la oferta que enmienda | `#previous + 1` |
+| Ninguna oferta pasa de `maxItemsPerOffer` | `4` |
+
+Chocan **exactamente** cuando la oferta ya tiene 4: la enmienda necesitaba 5 con techo de 4. `needs 5-4`. **Toda respuesta posible era ilegal**, así que quien debía la enmienda no podía actuar.
+
+> **Reglas individualmente correctas pueden componer una trampa sin salida, y esas trampas viven en los bordes de los rangos.**
+
+Es pariente directa de *"las suposiciones no escritas viven en los límites de los bucles"*: las dos dicen que el peligro está donde nadie miró porque cada pieza, por separado, estaba bien.
+
+### Dónde se arregla: en el PEDIDO, no en la respuesta
+
+Se rechaza el "Pedir más" cuando el rival ya puso el máximo. **No se le pide a nadie lo que no puede dar.** Arreglarlo del lado de la respuesta —aflojar el mínimo de la enmienda, o subir el techo— sería cambiar el balance para tapar una contradicción lógica.
+
+**Consecuencia atada a E2:** eso ahora es una regla que el jugador **siente**, así que el botón se deshabilita con motivo visible. Un botón que existe, se toca y no hace nada se lee como un bug del juego, no como una regla.
+
+### La red, y por qué se cuenta
+
+El cerebro del bot ya no termina un turno sin haber actuado: cualquier rechazo cae a `Accept`, que siempre es legal para quien tiene el turno. **Aceptar un mal trueque es peor jugada que subir; congelarse no es jugada.**
+
+Pero eso es una red de **liveness**, no una estrategia, así que está **instrumentada**:
+
+| Lectura | Qué significa |
+|---|---|
+| En auto-juego | Debe ser **0**. Si dispara, el cerebro tiene un hueco nuevo — y la corrida **falla** por eso |
+| Contra personas | TODO(F3) → analítica. Quien descubra cómo **acorralar** al bot hacia rechazos consigue un **Accept forzado** cada vez, que es una forma de ordeñarle buenos trueques a un rival sin jugadas legales |
+
+La red evita el congelamiento; **el contador nos dice si alguien la está ordeñando.**
+
+---
+
+## 2026-08-05 · 🔒 CANON — el verde de una prueba se gana
+
+**Tercera aparición del falso verde en dos días, y con esta la regla queda general.**
+
+| # | Dónde | El verde mentiroso |
+|---|---|---|
+| 1 | Batería de ofertas inválidas | Rechazos correctos **por la razón equivocada**: chocaban contra el chequeo de fase antes de llegar a la capa que decían probar |
+| 2 | Escrow en auto-juego | "Terminó en 0" en duelos donde **ningún lado tiene perfil** y el escrow nunca se escribe |
+| 3 | El propio arnés | `RESULT: PASS` impreso al lado de `TIMED OUT: 2` |
+
+> **El verde de una prueba se GANA con la propiedad que dice certificar. Y toda métrica que la corrida reporta o cuenta para el veredicto, o explica por qué no.**
+
+De ahí las dos formas que ahora tiene el arnés: los timeouts y las activaciones de la red **fallan** la corrida; el escrow en modo bot-vs-bot se imprime como **`VACUOUS`** en vez de un `0` pelado — **un número que no puede fallar nunca debe parecerse a un número que pasó.**
+
+**El razonamiento modelo, que es la parte reusable:** *"con bots actuando en centésimas de segundo, un watchdog no debería rescatar nada nunca"*. Se supo **qué significaría un timeout antes** de decidir si tolerarlo. Decidir después es como se racionaliza un rojo hasta volverlo verde.
+
+---
+
+## 2026-08-05 · 🚪 El auto-juego es una PUERTA, no una herramienta opcional
+
+**Regla vigente desde hoy:** ninguna tarjeta que toque el duelo se cierra sin su corrida de `./selfplay.sh` limpia. Entra a la *definition of done* junto a `--!strict` y la validación en cuatro capas.
+
+**Por qué cambia la economía del proyecto:** hasta hoy, verificar **ejecución** costaba una sentada de Renata. Desde hoy cuesta un comando. Los módulos bajo prueba son los archivos reales de `src/` —solo se falsea la superficie de Roblox—, así que cada regla nueva puede pagarse su regresión en segundos, para siempre.
+
+**Por qué nadie lo había hecho antes:** el `luau` que instala `rokit` es **arm64** y la máquina es **Intel**. Fallaba con `Bad CPU type in executable`, que se lee como "esto no se puede" en vez de "falta el binario correcto". `brew install luau` trae el x86_64. Un misterio que ni sabíamos que teníamos.
+
+**Lo que la puerta NO reemplaza, y está escrito en el propio script:** ProfileStore (guardado, session locking, migraciones) es el checkpoint 3 y necesita Studio; la escena y el cliente entero tampoco están cubiertos. Un verde acá no es un verde de todo — y esa lista explícita es lo que hace confiable al resto del reporte.

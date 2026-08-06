@@ -69,6 +69,34 @@ local fastThinking = false
 --- assertion certify anything.
 local puppet: Player? = nil
 
+--- How many times the liveness net had to catch a move the brain did not expect
+--- to be refused.
+---
+--- INSTRUMENTED BECAUSE IT IS A NET, NOT A STRATEGY. The fallback exists so a
+--- refused action can never leave a bot holding the turn with nothing to do --
+--- but every activation is the brain meeting a state it did not predict, and
+--- that is information, not a shrug.
+---
+--- Two readings, both wanted:
+---   in self-play  it must sit at 0. Anything else is a new hole in the brain,
+---                 and the run fails on it.
+---   against people TODO(F3): this goes to analytics. A player who works out how
+---                 to corner a bot into refusals gets a FORCED ACCEPT every
+---                 time, which is a way to farm good trades out of a rival that
+---                 has run out of legal moves. The net stops the freeze; this
+---                 counter is what would tell us somebody is milking it.
+---
+--- The deliberate decline in `makeAmendment` -- "I cannot meet your demand, so I
+--- walk away" -- is NOT counted. That is a legal move the brain chose on
+--- purpose, and folding it in here would bury the signal under normal play.
+local fallbacks = 0
+
+--- Reads the counter. TODO(F3): AnalyticsService reports this per server rather
+--- than leaving it for whoever thinks to look.
+function BotService.fallbackCount(): number
+	return fallbacks
+end
+
 local function thinkTime(): number
 	if fastThinking then
 		return 0.03
@@ -187,6 +215,7 @@ local function makeAmendment(duel: Duel, side: Side)
 	end
 
 	if #extra == 0 then
+		-- Expected and legal: not a fallback activation.
 		return giveUp("no copy left to wrap and no forgery left to make")
 	end
 
@@ -199,6 +228,7 @@ local function makeAmendment(duel: Duel, side: Side)
 		-- Declining on ANY refusal, not just the ones predicted above. A bot that
 		-- owes an amendment and does nothing is a frozen duel, and the reason it
 		-- froze does not change what the player sees.
+		fallbacks += 1
 		return giveUp(refusal)
 	end
 end
@@ -241,6 +271,7 @@ local function decide(duel: Duel, side: Side)
 		return
 	end
 
+	fallbacks += 1
 	warn(`[BotService] {side.displayName} could not {action}: {refusal}; accepting instead`)
 	local fallback = DuelService.applyAction(duel, side, "Accept")
 	if fallback then
@@ -379,6 +410,7 @@ function BotService.selfPlay(count: number, opponent: Player?)
 
 	fastThinking = true
 	puppet = opponent
+	local fallbacksBefore = fallbacks
 	local startedAt = os.clock()
 
 	for index = 1, count do
@@ -431,10 +463,15 @@ function BotService.selfPlay(count: number, opponent: Player?)
 	-- every timeout means a side could not act. Reporting PASS beside a
 	-- "TIMED OUT: 2" line is exactly the false green this project keeps finding.
 	local timeouts = outcomes["TIMED OUT"] or 0
-	local ok = leaks == 0 and stuckEscrow == 0 and done == count and timeouts == 0
+	-- The liveness net firing at all means the brain met a refusal it did not
+	-- predict. It is a net, not a strategy, so a run where it was needed is a run
+	-- that found something.
+	local netFired = fallbacks - fallbacksBefore
+	local ok = leaks == 0 and stuckEscrow == 0 and done == count and timeouts == 0 and netFired == 0
 	if timeouts > 0 then
 		print(`  duels a watchdog had to rescue  : {timeouts}   (expected 0 -- a side could not act)`)
 	end
+	print(`  liveness fallbacks fired        : {netFired}   (expected 0 -- a hole in the brain)`)
 	print(if ok then "  RESULT: PASS" else "  RESULT: FAIL")
 end
 
