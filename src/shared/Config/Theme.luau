@@ -248,7 +248,12 @@ local tableSpec = {
 	--- face, so the face has to be landscape in the same axes the layout is.
 	boardSize = Vector3.new(9.5, 0.35, 13),
 	--- How far back each player stands from the near edge.
-	standDistance = 6,
+	--- Measured against the board, not guessed. With `boardSize` turned by
+	--- `boardYaw` the pad reaches 4.75 studs each way, and a standing character
+	--- is about two deep -- so at 6 both avatars had their chest INSIDE the
+	--- table. 8 leaves a bit over three studs of clearance: close enough to
+	--- read as sitting at it, far enough not to be growing out of it.
+	standDistance = 8,
 	--- Resolution of the surface drawn on the board. The knob for §38's low-end
 	--- budget: higher is sharper and costs more.
 	pixelsPerStud = 110,

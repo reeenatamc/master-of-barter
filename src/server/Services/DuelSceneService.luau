@@ -105,26 +105,34 @@ local function buildBotBody(displayName: string, seed: number): Model?
 	local ok: boolean, model: any = pcall(function()
 		local description = Instance.new("HumanoidDescription")
 
-		-- Varied so two bots at neighbouring tables are not twins. Drawn from
-		-- the seed rather than at random so one bot keeps one look.
-		local shirts = {
-			Color3.fromRGB(64, 108, 176),
-			Color3.fromRGB(196, 86, 96),
-			Color3.fromRGB(88, 152, 108),
-			Color3.fromRGB(148, 104, 176),
-		}
+		-- EMO, by request. Pale skin, black everything else.
+		--
+		-- Done with colours alone because hair, fringe and clothing are catalogue
+		-- ASSET IDS, and ids written from memory are the mistake that already
+		-- cost this project four invented font names. The silhouette reads; the
+		-- fringe needs ids somebody looked up.
+		--
+		-- Varied only slightly, and from the seed rather than at random, so two
+		-- bots at neighbouring tables are not identical and one bot keeps one
+		-- look for its whole duel.
 		local skins = {
-			Color3.fromRGB(234, 194, 160),
-			Color3.fromRGB(198, 148, 110),
-			Color3.fromRGB(142, 100, 72),
-			Color3.fromRGB(246, 216, 190),
+			Color3.fromRGB(238, 226, 224),
+			Color3.fromRGB(228, 212, 212),
+			Color3.fromRGB(216, 200, 204),
+			Color3.fromRGB(244, 234, 232),
 		}
-		description.TorsoColor = shirts[(seed % #shirts) + 1]
-		description.LeftArmColor = skins[(seed % #skins) + 1]
-		description.RightArmColor = description.LeftArmColor
-		description.HeadColor = description.LeftArmColor
-		description.LeftLegColor = Color3.fromRGB(58, 62, 76)
-		description.RightLegColor = description.LeftLegColor
+		local blacks = {
+			Color3.fromRGB(24, 22, 28),
+			Color3.fromRGB(32, 28, 36),
+			Color3.fromRGB(18, 18, 22),
+			Color3.fromRGB(38, 30, 40),
+		}
+		description.HeadColor = skins[(seed % #skins) + 1]
+		description.LeftArmColor = description.HeadColor
+		description.RightArmColor = description.HeadColor
+		description.TorsoColor = blacks[(seed % #blacks) + 1]
+		description.LeftLegColor = description.TorsoColor
+		description.RightLegColor = description.TorsoColor
 
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
 	end)

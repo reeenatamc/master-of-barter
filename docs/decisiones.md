@@ -1168,3 +1168,19 @@ Al verificar `FilterStringAsync` saqué un tercer argumento, `Enum.TextFilterCon
 **Y por qué la distinción importa lo suficiente como para corregir el registro:** es la misma familia que *"probado"* vs *"correcto y sin evidencia"*. Un mapa que funde **"quitado por innecesario"** con **"quitado por falso"** le miente al próximo que quiera volver a usar ese enum — que es una cosa perfectamente razonable de querer hacer el día que la vitrina necesite un contexto distinto de `PublicChat`.
 
 **El estado real:** el enum existe, no está en el código porque no hace falta, y si alguna vez hace falta hay que verificar la firma de tres parámetros antes de usarlo.
+
+---
+
+## 2026-08-05 · Los avatares de los bots: la regla la cambió ella, y yo me había pasado
+
+**Primero la corrección que me toca.** Al construirle cuerpo al bot dije que cargar el avatar de un usuario real *"sería llevar puesta la cara de alguien"*, y lo presenté como si fuera un impedimento.
+
+**No lo es.** `Players:CreateHumanoidModelFromUserId` es una API oficial, los avatares de Roblox son públicos, y usarla es perfectamente legal — hay juegos que lo hacen todo el tiempo. Lo mío era **un juicio de diseño**, y presentarlo como una restricción es la misma falta que confundir *"quitado por innecesario"* con *"quitado por falso"*: le pone al otro un muro donde había una opción.
+
+**El juicio, dicho como lo que es:** ponerle a un bot **que miente y falsifica** la cara de una persona que no se enteró puede caer mal. No es ilegal ni te bajan el juego.
+
+**Decisión de Renata:** personalizar sí, y el bot va **emo**.
+
+**Cómo quedó, y qué falta:** el look se arma con **colores solamente** —piel pálida, todo lo demás negro— sobre el `HumanoidDescription` que ya existía. Pelo, flequillo y ropa son **ids de catálogo**, y los ids escritos de memoria son exactamente el error que costó cuatro nombres de fuente inventados esta semana. La silueta se lee; el flequillo necesita que alguien busque los ids.
+
+**Queda abierto:** si aparecen los ids —de una cuenta hecha para los bots, o del catálogo— se los agrego y el look mejora sin tocar código, solo Config.
