@@ -282,7 +282,9 @@ Criterios: Clips y colección siempre coherentes con servidor; vitrina filtra te
 
 **Entregado (cliente, 2026-08-05):** `HudScreen` — dos papelitos con Clips y colección, montados una sola vez y para siempre (es cromo: sobrevive a todos los duelos, por eso no está en el trove del duelo). `ScreenGui` y no sobre el tablero, que es la respuesta **opuesta** a la de los botones de negociación y por el **mismo** criterio de §11 — ver `decisiones.md`.
 
-**Falta:** el kiosco (P0) y la vitrina (P2, con `TextService`). Las dos son superficie visual y esperan al checkpoint 2, donde el HUD ya está sumado al paquete.
+**Entregado (kiosco, 2026-08-05):** `ShopScreen` — cuatro papelitos con nombre, precio y COMPRAR; deshabilitado **con motivo** (*"te faltan 40"*) en vez de botón muerto; contador de rotación y el cartel de que el stock es el mismo para todos. La derivación del stock se movió a `Shared/Util/Kiosk.luau` para que cliente y servidor usen **la misma función**, y pasó a reloj sincronizado.
+
+**Falta:** la vitrina (P2, con `TextService`). El HUD y el kiosco ya están sumados al paquete visual del checkpoint 2.
 
 ### E4 · Sonido base del tema papel
 

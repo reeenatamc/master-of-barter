@@ -261,6 +261,17 @@ local camera = {
 --- and misses is worse than one that looks slightly wrong.
 local touchPadding = 1.5
 
+--- Smallest a SCREEN-SPACE button may ever get, in pixels.
+---
+--- A different thing from `touchPadding`, and deliberately not the same number:
+--- that one is a MULTIPLIER for world-space targets, where the drawing and the
+--- target are separate objects. This is a FLOOR for flat UI, where they are the
+--- same object and scale-based sizing shrinks with the screen -- a slip that
+--- reads fine on a tablet becoming a smudge on a small phone.
+---
+--- 44 is the figure both platform guidelines land on for a fingertip.
+local minTouchPixels = 44
+
 --- How much a taped cut-out is rotated, in degrees. Nothing is ever perfectly
 --- straight: §28 says the imperfection is the aesthetic, not a defect, and a
 --- perfectly aligned grid of paper cards stops reading as paper immediately.
@@ -277,6 +288,7 @@ return {
 	motion = motion,
 	tiltDegrees = tiltDegrees,
 	touchPadding = touchPadding,
+	minTouchPixels = minTouchPixels,
 	table = tableSpec,
 	camera = camera,
 	--- Which duel screen is used. "table" is the card E2 scene: a paper sheet

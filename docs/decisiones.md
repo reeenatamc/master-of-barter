@@ -1078,3 +1078,36 @@ Los tres rellenos de color son **capital de diseño**: le dicen al jugador dónd
 El HUD **no** está en el trove del duelo, y la razón exacta importa: el cromo pertenece a la **sesión**, no a la partida. Meterlo ahí te borraba los Clips al terminar cada mano.
 
 **Pregunta de cierre para todo montaje futuro: ¿quién es el dueño de la vida de esto?** No "¿dónde es cómodo registrarlo?".
+
+---
+
+## 2026-08-05 · El kiosco, contestando la tabla de las cuatro preguntas
+
+**Se le pasó el test de ubicación antes de escribir una línea, que es para lo que existe la tabla.**
+
+| # | Pregunta | Respuesta |
+|---|---|---|
+| 1 | ¿Juego o cromo? | **Cromo.** Comprar no es el juego; el duelo lo es |
+| 2 | ¿Existe fuera del duelo? | **Sí, y solo ahí.** Vive en el lobby, donde no hay tablero |
+| 3 | ¿Tapa al rival? | **No.** Mientras comprás no hay rival |
+| 4 | ¿Se toca? | **Sí** — y esta es la que lo volvió una decisión en vez de una consulta |
+
+**Resultado: `ScreenGui`, como el HUD. Pero a diferencia del HUD, se toca**, así que hereda el problema de precisión táctil que mandó los botones de negociación al espacio-mundo. **No los sigue hasta allá** —el lobby no tiene tablero— así que paga la deuda de otra forma: objetivos grandes con piso en píxeles.
+
+### El monopolio de color, respetado con jerarquía
+
+**COMPRAR no es verde.** Se gana su lugar con **jerarquía** —lo más grande de su papelito, tipografía de marcador, línea de birome más gruesa— y el kiosco entero queda en papel y tinta. Los tres rellenos siguen siendo capital exclusivo de los botones de negociación.
+
+### El anti-tragamonedas, por fin visible
+
+B4 hizo que la rotación se sembrara del reloj, así que **todos los jugadores de todos los servidores ven los mismos cuatro objetos**. Eso era cierto e **invisible**.
+
+Ahora tiene cara: el encabezado lo dice —*"Lo mismo para todos, en todos los servidores"*— y un contador muestra cuándo cambia. **Una propiedad de justicia que nadie puede percibir no hace el trabajo para el que se construyó.**
+
+### Dos hallazgos al construirlo
+
+**1. El stock se derivaba dos veces.** El servidor lo calculaba en `ShopService`; el cliente iba a necesitar el mismo resultado para dibujar. Dos implementaciones de *"qué está a la venta"* es cómo un botón gris termina con un motivo que nadie puede explicar. Se movió a `Shared/Util/Kiosk.luau`: **una función, los dos lados la llaman**, y el servidor la vuelve a llamar antes de cobrar. Que coincidan no es el chequeo — es el punto de compartirla.
+
+**2. El reloj era el de la máquina.** `os.time()` es lo que el dispositivo cree; `workspace:GetServerTimeNow()` está sincronizado. Un jugador con el reloj corrido una hora habría visto **un kiosco distinto del que el servidor le iba a vender**: objetos en gris sin motivo visible, y un rechazo como primera explicación.
+
+**Y un valor de Config que estuve a punto de sobrecargar:** usé `Theme.touchPadding` para dar aire al botón, pero ese número es un **multiplicador** para objetivos en el mundo, donde el dibujo y el área tocable son objetos distintos. En UI plana son el mismo objeto. Se agregó `Theme.minTouchPixels = 44` —un **piso**, no un multiplicador— en vez de darle a un valor existente un segundo significado.

@@ -151,6 +151,26 @@ local notices = {
 	botCapReached = "Por hoy ya no hay rivales de relleno. Seguís en la cola esperando a alguien de verdad.",
 }
 
+--[=[
+	@prop kiosk { [string]: string }
+	@within Strings
+
+	El kiosco de Don Trueque. `{n}` y `{t}` se reemplazan en la UI.
+]=]
+local kiosk = {
+	title = "EL KIOSCO",
+	--- El anti-tragamonedas, dicho en voz alta. §34 pide que la rotación NO se
+	--- lea como azar, y para eso no alcanza con que sea determinista: el jugador
+	--- tiene que poder verlo.
+	sameForEveryone = "Lo mismo para todos, en todos los servidores",
+	rotatesIn = "cambia en {t}",
+	buy = "COMPRAR",
+	--- Cuánto te falta, no "no podés". Un botón gris sin motivo se lee como que
+	--- el juego está roto.
+	shortBy = "te faltan {n}",
+	owned = "tenés {n}",
+}
+
 local currencyName = "Clips"
 
 return {
@@ -159,6 +179,7 @@ return {
 	rarityNames = rarityNames,
 	duelButtons = duelButtons,
 	duelScreen = duelScreen,
+	kiosk = kiosk,
 	notices = notices,
 	emoteSymbols = emoteSymbols,
 	currencyName = currencyName,

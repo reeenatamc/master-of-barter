@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 
 local DuelController = require(script.Parent.Controllers.DuelController)
+local ShopController = require(script.Parent.Controllers.ShopController)
 local UIController = require(script.Parent.Controllers.UIController)
 
 print("[MasterOfBarter] client ready")
@@ -19,4 +20,5 @@ print("[MasterOfBarter] client ready")
 -- asks to be queued. Starting them the other way round risks the first state
 -- landing before anything is listening for it.
 UIController.start()
+ShopController.start()
 DuelController.start()
