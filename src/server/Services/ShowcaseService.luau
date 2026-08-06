@@ -31,15 +31,24 @@
 	cap drops breakdowns) because the cost of stopping is worse than the cost of
 	continuing. Here the cost of continuing is unfiltered text on a public wall.
 
-	── ⚠️ API TO VERIFY ────────────────────────────────────────────────────────
+	── API, VERIFIED 2026-08-05 ────────────────────────────────────────────────
 
-	`TextService:FilterStringAsync(text, fromUserId, context)` and
-	`TextFilterResult:GetNonChatStringForBroadcastAsync()` are written from
-	memory. Rule 5 of this project says an invented API costs hours, and the
-	honest move is to isolate the guess rather than assert it -- so both calls
-	live in ONE function, wrapped, and a failure there is indistinguishable from
-	the filter refusing: nothing is stored. Verifying them is minutes with the
-	docs open; being wrong costs a refused rename, never a leak.
+	`TextService:FilterStringAsync(text, fromUserId)` returns a TextFilterResult,
+	and `GetNonChatStringForBroadcastAsync()` is the method for showing it on a
+	public wall. Both confirmed against the docs.
+
+	ONE THING CHANGED, and it is the interesting part: the first draft also
+	passed a third argument, `Enum.TextFilterContext.PublicChat`. The
+	verification covered two parameters, not three. So it was REMOVED rather
+	than kept -- the default is already the context this needs, so passing it
+	bought nothing and cost an unconfirmed surface.
+
+	The rule that produced that: do not pass an argument you cannot confirm when
+	the default gives you what you want. Quarantine is for guesses that earn
+	their keep; a guess that changes nothing is just a guess.
+
+	Both calls still live in ONE wrapped function, because that is what makes a
+	wrong answer here cost a refused rename instead of a leak.
 ]]
 
 local Players = game:GetService("Players")
@@ -70,7 +79,7 @@ local lastSetAt: { [Player]: number } = {}
 --- or drawn -- not by discipline, but because nothing else is ever handed it.
 local function filtered(text: string, author: Player): string?
 	local ok, result = pcall(function()
-		local filter = TextService:FilterStringAsync(text, author.UserId, Enum.TextFilterContext.PublicChat)
+		local filter = TextService:FilterStringAsync(text, author.UserId)
 		return filter:GetNonChatStringForBroadcastAsync()
 	end)
 
