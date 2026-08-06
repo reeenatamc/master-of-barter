@@ -801,3 +801,68 @@ Por eso el presupuesto es **parte del contrato de la proyección**, no un coment
 **3. La aserción que no podía fallar.** La de la compuerta de fase pasaba con la compuerta borrada. Ver la corrección de arriba.
 
 **Regla:** toda aserción que cubra una regla inviolable se acompaña de la mutación que la rompe, y se verifica que **con la mutación falla**. Un verde que nunca vio rojo no es evidencia de nada.
+
+---
+
+## 2026-08-05 · `runFinishRaceCheck`: qué afirma cubrir y qué cubre
+
+**Mismo tratamiento que la compuerta, y el mismo resultado: la razón que le atribuíamos no era la que actuaba.**
+
+| | |
+|---|---|
+| **Qué parece cubrir** | Que dos caminos terminales sobre el mismo duelo no se pisan — y que el **claim de `resolving`** es lo que frena al segundo |
+| **Qué cubre de verdad** | Solo lo primero. Al segundo camino lo frena el **registro**: `duels[id]` ya está en `nil` cuando llega |
+| **La mutación que lo demuestra** | Borrando el bloque `if duel.resolving then ... end` **entero**, `runFinishRaceCheck` **sigue reportando PASS**, incluido `second path turned away: 1` |
+
+**Son dos garantías distintas y hoy solo se ejercita una.** Un PASS significa *"los dos caminos no se pisaron"*, **no** *"el claim está probado"*.
+
+### Por qué el claim no llega a actuar
+
+Protege el tramo entre reclamar el duelo y emitir el broadcast. Ese tramo solo importa si algo **cede** ahí adentro, y hoy nada cede: la revelación se construye de forma síncrona y viaja dentro del `DuelState` final; la pausa dramática la maneja el cliente.
+
+### Qué haría falta para cerrar la diferencia
+
+**Un yield en `resolve()`, entre marcar `resolving` y llamar a `broadcast`.** No se puede fabricar en una prueba sin meterlo en producción, así que la deuda no se salda escribiendo un test — se salda el día que B3 o A3-final metan un `await` real ahí (guardado de perfil, transferencias persistentes).
+
+**Lo que sí se hizo:** en vez de anotar *"acordate de re-correr el check cuando aparezca un yield"* —que es una convención, y las convenciones se olvidan—, el spec **prueba la precondición**. Corre el camino terminal dentro de una corrutina, la reanuda una sola vez, y verifica que quedó `dead`:
+
+```
+PASS  the Reveal path does not yield (so `resolving` is still decorative)
+```
+
+El día que alguien meta un `await` ahí, esa aserción se pone en rojo con el mensaje *"A YIELD APPEARED: re-run the race check with it present"*. **La nota que alguien tenía que recordar se convirtió en una alarma que suena sola.**
+
+---
+
+## 2026-08-05 · 🔒 CANON — las frases sobre seguridad también se testean por mutación
+
+> **Razonar sobre seguridad con un mapa equivocado es peor que no tener mapa, porque se confía.**
+
+**Corolario operativo:** toda afirmación de la forma *"esta línea es lo que nos protege"* se verifica igual que el código — **borrando la línea y viendo qué se rompe**. Si no se rompe nada, la afirmación es falsa y hay que encontrar qué protege de verdad.
+
+Dos veces en un día, las dos con el mismo resultado:
+
+| Afirmación | Qué protegía de verdad |
+|---|---|
+| "la compuerta de fase es load-bearing" | La **asignación** de `duel.reveal` solo en la transición terminal |
+| "el claim de `resolving` frena el segundo camino" | El **registro**: `duels[id]` ya en `nil` |
+
+Las dos frases eran razonables, estaban escritas por gente que había leído el código, y las dos eran falsas. **La diferencia entre una y otra explicación no es académica: determina qué línea alguien puede borrar sin miedo el año que viene.**
+
+---
+
+## 2026-08-05 · 🔒 CANON — la escalera epistémica del spec
+
+**Tres afirmaciones que suenan igual y no valen lo mismo:**
+
+| Nivel | Afirmación | Qué es |
+|---|---|---|
+| 1 | "`WrappedItemView` no tiene campo para `isFake`" | Sobre **tipos**. Verdad de compilación |
+| 2 | "ningún cliente recibió uno en 40 duelos" | Sobre **ejecución**. Verdad observada |
+| 3 | "con el mutante aplicado, saltaron 180 fugas" | Que **la alarma suena** |
+
+**Solo la segunda es prueba, y sin la tercera no se sabe si la segunda vale.** Un verde de nivel 2 con una aserción rota es indistinguible de un verde de nivel 2 con el sistema sano.
+
+**Y el quinto falso verde fue el más recursivo de todos:** el test de mutación —el que existe para darle rojo al verde— reportó **su propio verde falso**. "El spec no caza la mutación" cuando la mutación nunca se aplicó: un `replace` que no matcheó y no dijo nada.
+
+**Requisito del arnés, ya implementado:** un test de mutación afirma **primero** que el objetivo existe y que el reemplazo ocurrió —el marcador contado en el bundle— y **recién después** opina sobre si el spec lo cazó.

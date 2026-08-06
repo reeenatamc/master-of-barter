@@ -646,6 +646,61 @@ do
 	check("a second accusation is refused", DuelService.applyAction(duel, sideA, "FakeCall") ~= nil)
 end
 
+-- ── 6. The finish race, and what it does NOT prove ───────────────────────────
+--
+-- `runFinishRaceCheck` fires two real terminal paths at one duel and asserts
+-- that the second does nothing. It passes. It also covers less than it looks
+-- like it covers, and that gap is worth a test of its own.
+--
+-- What stops the second path today is the REGISTRY -- `duels[id]` is already
+-- nil when it arrives -- not the `resolving` claim. Two different guarantees,
+-- and only one is exercised. Proved by mutation: delete the resolving guard
+-- entirely and this still passes.
+--
+-- The claim protects the stretch between claiming the duel and emitting the
+-- broadcast, and it only matters if something YIELDS in there. Nothing does
+-- today, which is why it never acts. So instead of pretending to test it, the
+-- assertion below tests its PRECONDITION: that the terminal path is yield-free.
+-- The day somebody adds an await between `phase = "Reveal"` and the broadcast,
+-- that assertion goes red -- which is the alarm the backlog note asks somebody
+-- to remember, turned into something that fires by itself.
+
+print("\n[spec] the finish race, and its precondition")
+do
+	local a, b = freshPlayers()
+	local duelId = DuelService.start(a, b)
+	local duel = DuelService.debugDuel(duelId :: string)
+	local sideA, sideB = sideOf(duel, a), sideOf(duel, b)
+
+	DuelService.applyOffer(duel, sideA, { { copyId = sideA.hand[1].copyId, isFake = false, claim = sideA.hand[1].itemId } })
+	DuelService.applyOffer(duel, sideB, { { copyId = sideB.hand[1].copyId, isFake = false, claim = sideB.hand[1].itemId } })
+
+	-- The terminal path, run inside a coroutine that is resumed exactly once. If
+	-- it is still alive afterwards it yielded, and the window the `resolving`
+	-- claim exists to protect has opened for the first time.
+	local co = coroutine.create(function()
+		DuelService.applyAction(duel, sideA, "Accept")
+	end)
+	local ok, err = coroutine.resume(co)
+	check("the terminal path ran without error", ok, tostring(err))
+	check(
+		"the Reveal path does not yield (so `resolving` is still decorative)",
+		coroutine.status(co) == "dead",
+		`status {coroutine.status(co)} -- A YIELD APPEARED: re-run the race check with it present`
+	)
+	check("the duel is gone from the registry", DuelService.debugDuel(duelId :: string) == nil)
+end
+
+do
+	local a, b = freshPlayers()
+	local duelId = DuelService.start(a, b)
+	local duel = DuelService.debugDuel(duelId :: string)
+	local sideA, sideB = sideOf(duel, a), sideOf(duel, b)
+	DuelService.applyOffer(duel, sideA, { { copyId = sideA.hand[1].copyId, isFake = false, claim = sideA.hand[1].itemId } })
+	DuelService.applyOffer(duel, sideB, { { copyId = sideB.hand[1].copyId, isFake = false, claim = sideB.hand[1].itemId } })
+	check("runFinishRaceCheck reports PASS", DuelService.runFinishRaceCheck())
+end
+
 print(`\n[spec] {passed} passed, {failed} failed`)
 print(if failed == 0 then "RESULT: PASS" else "RESULT: FAIL")
 """
