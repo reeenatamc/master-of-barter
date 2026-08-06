@@ -20,11 +20,33 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local DuelController = {}
 
 local current: Types.DuelState? = nil
+--- The last profile the server pushed. Nil until it arrives, which is a normal
+--- state: a client that draws zeroes before the first push is a client that has
+--- to correct itself a moment later.
+local playerData: Types.PlayerDataView? = nil
 local listeners: { (Types.DuelState) -> () } = {}
 local emoteListeners: { (Types.Slot, string) -> () } = {}
+local dataListeners: { (Types.PlayerDataView) -> () } = {}
 
 function DuelController.getState(): Types.DuelState?
 	return current
+end
+
+--- Your own Clips and inventory, as the server last said them. Nil until the
+--- first push.
+function DuelController.getPlayerData(): Types.PlayerDataView?
+	return playerData
+end
+
+--- Subscribes to your own profile changing. Fires immediately if it has already
+--- arrived, so a subscriber that starts late is not left blank until the next
+--- duel pays out.
+function DuelController.onPlayerData(listener: (Types.PlayerDataView) -> ())
+	table.insert(dataListeners, listener)
+	local data = playerData
+	if data then
+		listener(data)
+	end
 end
 
 --- Subscribes to server state. Kept as a plain list rather than a Signal
@@ -404,6 +426,13 @@ function DuelController.start()
 	if DuelRules.debugLogs then
 		bindDebugKeys()
 	end
+
+	Net.get(Net.names.PlayerData).OnClientEvent:Connect(function(data: Types.PlayerDataView)
+		playerData = data
+		for _, listener in dataListeners do
+			listener(data)
+		end
+	end)
 
 	Net.get(Net.names.DuelEmote).OnClientEvent:Connect(function(slot: Types.Slot, emoteId: string)
 		for _, listener in emoteListeners do

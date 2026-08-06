@@ -34,6 +34,7 @@ local DuelPaperSkin = require(script.Parent.DuelPaperSkin)
 local DuelScreen = require(script.Parent.DuelScreen)
 local DuelSkin = require(script.Parent.DuelSkin)
 local DuelViewModel = require(script.Parent.DuelViewModel)
+local HudScreen = require(script.Parent.HudScreen)
 
 local UIController = {}
 
@@ -206,6 +207,13 @@ local function onDuelState(state: Types.DuelState)
 end
 
 function UIController.start()
+	-- The HUD is mounted ONCE and never taken down: it is chrome, so it outlives
+	-- every duel. That is why it is not in the per-duel trove -- putting it there
+	-- would erase your Clips the moment a duel ended.
+	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local hud = HudScreen.mount(playerGui)
+	DuelController.onPlayerData(hud.render)
+
 	DuelController.onStateChanged(onDuelState)
 
 	DuelController.onEmote(function(slot: Types.Slot, emoteId: string)

@@ -1021,3 +1021,26 @@ Se arregló **antes** de escribir la aserción.
 | Qué se hizo | **Borrar** | **Completar** |
 
 **"Nadie lo lee" no es la pregunta completa.** La pregunta es *"nadie lo lee **y** ninguna tarjeta lo va a leer"* — y si la segunda mitad da que sí, la deuda no es un arma cargada, es una promesa sin cumplir. Borrar lo huérfano-peligroso, completar lo huérfano-prometido.
+
+---
+
+## 2026-08-05 · El HUD es un `ScreenGui`, y es la respuesta OPUESTA a la de los botones
+
+**Decidido:** el HUD (Clips y colección) vive en un `ScreenGui` en una esquina, no sobre la hoja de papel.
+
+**Y eso contradice en apariencia la decisión del 2026-08-04** —*"los botones van SOBRE la hoja, no en una pantalla aparte"*—, así que vale explicar por qué no es una contradicción sino el mismo criterio dando otro resultado:
+
+| | Botones de negociación | HUD |
+|---|---|---|
+| ¿Es juego o es cromo? | **Juego.** Es la mecánica | **Cromo.** Acompaña, no decide |
+| ¿Existe fuera del duelo? | No | **Sí** — en el lobby no hay tablero donde dibujarlo |
+| ¿Tapa al rival? | Una capa a pantalla completa, **sí** | Un papelito en una esquina, **no** |
+| ¿Se toca? | Todo el tiempo | **Nunca** — así que el problema de precisión táctil que motivó la decisión original no aplica |
+
+**El criterio de §11 no era "todo va en el mundo".** Era *"ver al rival es mecánico, así que nada puede taparlo"*. Un papelito arriba a la izquierda no tapa a nadie, y ponerlo sobre el tablero lo haría ilegible desde la cámara sobre el hombro.
+
+**Lo que sí se respeta sin excepción es §28:** una sola birome. Cada línea del HUD pasa por `stroke`, el papel es `Theme.palette.paper`, y **no hay un solo relleno de color** — los tres botones de negociación son los únicos del juego, y un HUD que compitiera con ellos por la atención se estaría quedando con la excepción ajena.
+
+**Alternativa descartada:** dibujar los Clips sobre la propia hoja del duelo. Se descartó porque desaparecería en el lobby y en el kiosco, que es donde más falta hace saber cuánto tenés.
+
+**Lo que el arnés NO puede verificar:** nada de esto. El auto-juego no tiene clientes, así que el HUD entero —que se vea, que sea legible en un teléfono chico, que el número no tape nada— es de los ojos de Renata. Va al paquete visual del checkpoint 2.
