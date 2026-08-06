@@ -257,6 +257,9 @@ Criterios: cada objeto se ve como una cosa y no como una fila de texto — **pla
 
 Criterios: caminar, unirse a cola desde una mesa, volver del duelo al mismo punto.
 
+> **⚠️ E1 REEMPLAZA Y ELIMINA las teclas K y L.** Hoy el kiosco y la vitrina se montan ocultos y **nada los abre**: E1 es la tarjeta que construye el puesto de Don Trueque y el muro de estantes, que son lo que los va a revelar. Mientras tanto hay dos teclas de depuración en `ShopController` marcadas TEMP.
+> **Borrarlas es parte del criterio de cierre de E1, no una limpieza posterior.** Un TEMP sin fecha de muerte es un permanente con otro nombre — y este en particular es una superficie que abre pantallas desde el teclado, que no es algo que deba quedar en un juego publicado.
+
 ### E2 · UI de duelo estilo papel usable en móvil
 
 **Prioridad:** P0 · L
@@ -264,6 +267,9 @@ Criterios: caminar, unirse a cola desde una mesa, volver del duelo al mismo punt
 Criterios: 3 botones grandes, oferta legible, inspección cómoda con dedo; aprobada en emulador (teléfono chico y tablet) antes de cerrarse. Dependencias: C2. Riesgo: es la superficie de mayor esfuerzo del MVP — dividir en sub-tarjetas por pantalla.
 > **Criterio añadido — escena canónica (`gdd.md` §11).** El duelo se ve con los dos avatares **frente a frente** y la tabla de papel **en medio**, cámara lateral/cenital sobre la mesa. No es decoración: es el encuadre que hace reconocible una miniatura o un clip, y ver al rival (avatar + emotes) es parte de la información con la que se lo lee. Una UI que ocupe la pantalla entera y esconda al rival **no cumple E2**, por bonita que sea.
 > E0 no se toca: sigue siendo la pantalla fea que ya está, y se descarta cuando esta entre.
+>
+> **⚠️ E2 REEMPLAZA Y ELIMINA las teclas de duelo** (Q, E, R, T, Z, X, C) y el volcado a Output de `DuelController`. Existen porque no hay UI con mouse; cuando la haya, no tienen razón de ser. Mismo criterio que E1 con K/L: borrarlas es parte del cierre.
+> **Las teclas B y V se quedan** — no son UI provisoria: son la batería de ofertas malformadas y el ataque de duplicación por el camino real del remoto, que es el único que el arnés headless no puede ejercitar.
 >
 > **Criterio añadido — "Pedir más" se deshabilita contra una oferta llena, con motivo visible.** El servidor rechaza el pedido cuando el rival ya puso el máximo de envoltorios (`maxItemsPerOffer`), porque no se le puede pedir más a quien no puede dar más. Eso dejó de ser una regla interna: es una regla que el jugador **siente**.
 > Un botón que existe, se toca y **no hace nada** se lee como un bug del juego, no como una regla. Así que en la UI real el botón va gris **con el motivo a la vista** ("ya ofreció el máximo"), y lo mismo vale para las otras dos veces que un botón puede ser ilegal: sin pedidos restantes (`raisesLeft = 0`) y sin ficha (`fakeCallsLeft = 0`). Los tres estados ya viajan en el `DuelState`; falta que la piel los dibuje.

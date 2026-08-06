@@ -1146,3 +1146,25 @@ Nació `Theme.minTouchPixels = 44`: un **piso**, no un multiplicador, **con cons
 `Shared/Util/Kiosk.luau` pasa: deriva stock **público** desde reloj + catálogo, sin nada de verdad adentro. Y lo dice **en su encabezado**, para que el próximo que le quiera agregar un parámetro herede la pregunta: *¿la entrada nueva carga algo que un lado sabe y el otro no debería?* Si sí, no va en ese archivo.
 
 Es la misma vigilancia que la lista blanca de las vistas, un nivel más arriba: allá se pregunta qué campo sale; acá, qué módulo puede siquiera ser leído por el cliente.
+
+---
+
+## 2026-08-05 · 🔒 CANON — economía de confirmación, y la corrección que la precisa
+
+**Renata corrigió el mapa, y la corrección es la parte que vale.**
+
+Al verificar `FilterStringAsync` saqué un tercer argumento, `Enum.TextFilterContext.PublicChat`, y lo reporté como si hubiera sido una conjetura fallida. **No lo era: ese enum existe.** La verificación anterior no lo **desmentía** — simplemente no lo **cubría**.
+
+**La quita sigue siendo correcta, pero por otra razón:**
+
+| Lo que dije | Lo que era |
+|---|---|
+| "el argumento era inventado" | **"el argumento estaba inconfirmado, y el default daba lo necesario"** |
+
+> **La regla es de economía de confirmación, no de verdad o mentira: pasar un argumento que no compra comportamiento cuesta superficie de verificación gratis.**
+
+*Una conjetura que no cambia nada es solo una conjetura.*
+
+**Y por qué la distinción importa lo suficiente como para corregir el registro:** es la misma familia que *"probado"* vs *"correcto y sin evidencia"*. Un mapa que funde **"quitado por innecesario"** con **"quitado por falso"** le miente al próximo que quiera volver a usar ese enum — que es una cosa perfectamente razonable de querer hacer el día que la vitrina necesite un contexto distinto de `PublicChat`.
+
+**El estado real:** el enum existe, no está en el código porque no hace falta, y si alguna vez hace falta hay que verificar la firma de tres parámetros antes de usarlo.

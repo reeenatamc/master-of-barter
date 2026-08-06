@@ -37,15 +37,17 @@
 	and `GetNonChatStringForBroadcastAsync()` is the method for showing it on a
 	public wall. Both confirmed against the docs.
 
-	ONE THING CHANGED, and it is the interesting part: the first draft also
-	passed a third argument, `Enum.TextFilterContext.PublicChat`. The
-	verification covered two parameters, not three. So it was REMOVED rather
-	than kept -- the default is already the context this needs, so passing it
-	bought nothing and cost an unconfirmed surface.
+	ONE THING CHANGED, and the reason matters more than the change: the first
+	draft also passed a third argument, `Enum.TextFilterContext.PublicChat`.
+	THAT ENUM IS REAL -- it was not invented, and the verification did not
+	contradict it. It simply did not COVER it, and the default is already the
+	context this needs.
 
-	The rule that produced that: do not pass an argument you cannot confirm when
-	the default gives you what you want. Quarantine is for guesses that earn
-	their keep; a guess that changes nothing is just a guess.
+	So it was removed for economy of confirmation, not for being wrong: passing
+	an argument that buys no behaviour costs verification surface for free. Do
+	not pass what you cannot confirm when the default gives you what you want.
+	Quarantine is for guesses that earn their keep; a guess that changes nothing
+	is just a guess.
 
 	Both calls still live in ONE wrapped function, because that is what makes a
 	wrong answer here cost a refused rename instead of a leak.

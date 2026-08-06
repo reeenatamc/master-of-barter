@@ -46,8 +46,9 @@ No hay UI de duelo con mouse todavía; todo va por teclas. **Esta es la única l
 | **C** | ¡ES FAKE! |
 | **K** | Abrir/cerrar el **kiosco** |
 | **L** | Abrir/cerrar la **vitrina** |
-| **B** | Batería de ofertas inválidas (todas deben rechazarse) |
-| **V** | Ataque de duplicación (debe rechazarse) |
+
+*(Existen también **B** y **V** —batería de ofertas inválidas y ataque de duplicación—, pero **esta sesión no las usa**: eso ya lo corre `./selfplay.sh spec` en cada cambio. Quedan por si algún día querés verlas pasar por el camino real del remoto.)*
+
 
 **Cómo saber quién sos:** cada cliente imprime `you=slot1` o `you=slot2`. El slot 1 abre la negociación.
 
