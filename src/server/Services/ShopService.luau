@@ -18,12 +18,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local Economy = require(ReplicatedStorage.Shared.Config.Economy)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Net = require(ReplicatedStorage.Shared.Util.Net)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 local EconomyService = require(script.Parent.EconomyService)
 local InventoryService = require(script.Parent.InventoryService)
@@ -127,6 +129,14 @@ function ShopService.buy(player: Player, itemId: unknown)
 	-- nobody paid for -- and that failure inflates the economy, which is the
 	-- kind that spreads.
 	InventoryService.giveCopy(player, itemId)
+
+	-- Recorded after the grant, so what is counted is what actually happened
+	-- rather than what was attempted.
+	AnalyticsService.record(Analytics.events.shopPurchase, {
+		itemId = itemId,
+		price = price,
+		balanceAfter = EconomyService.balanceOf(player),
+	}, player)
 end
 
 function ShopService.init()

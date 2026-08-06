@@ -26,11 +26,13 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local Bots = require(ReplicatedStorage.Shared.Config.Bots)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DuelService = require(script.Parent.DuelService)
 local DuelTypes = require(script.Parent.DuelTypes)
 local InventoryService = require(script.Parent.InventoryService)
@@ -80,19 +82,19 @@ local puppet: Player? = nil
 --- Two readings, both wanted:
 ---   in self-play  it must sit at 0. Anything else is a new hole in the brain,
 ---                 and the run fails on it.
----   against people TODO(F3): this goes to analytics. A player who works out how
----                 to corner a bot into refusals gets a FORCED ACCEPT every
----                 time, which is a way to farm good trades out of a rival that
----                 has run out of legal moves. The net stops the freeze; this
----                 counter is what would tell us somebody is milking it.
+---   against people it is an analytics event. A player who works out how to
+---                 corner a bot into refusals gets a FORCED ACCEPT every time,
+---                 which is a way to farm good trades out of a rival that has
+---                 run out of legal moves. The net stops the freeze; the event
+---                 is what tells us somebody is milking it.
 ---
 --- The deliberate decline in `makeAmendment` -- "I cannot meet your demand, so I
 --- walk away" -- is NOT counted. That is a legal move the brain chose on
 --- purpose, and folding it in here would bury the signal under normal play.
 local fallbacks = 0
 
---- Reads the counter. TODO(F3): AnalyticsService reports this per server rather
---- than leaving it for whoever thinks to look.
+--- Reads the counter, for the self-play verdict. Per-activation detail goes to
+--- analytics as it happens.
 function BotService.fallbackCount(): number
 	return fallbacks
 end
@@ -229,6 +231,11 @@ local function makeAmendment(duel: Duel, side: Side)
 		-- owes an amendment and does nothing is a frozen duel, and the reason it
 		-- froze does not change what the player sees.
 		fallbacks += 1
+		AnalyticsService.record(Analytics.events.botFallback, {
+			duelId = duel.id,
+			wanted = "Amend",
+			refusal = refusal,
+		}, duel.sides[otherSlot(side.slot)].player)
 		return giveUp(refusal)
 	end
 end
@@ -273,6 +280,13 @@ local function decide(duel: Duel, side: Side)
 
 	fallbacks += 1
 	warn(`[BotService] {side.displayName} could not {action}: {refusal}; accepting instead`)
+	AnalyticsService.record(Analytics.events.botFallback, {
+		duelId = duel.id,
+		wanted = action,
+		refusal = refusal,
+		-- The rival is the one who benefits from a forced Accept, so THEY are
+		-- who the event is about -- not the bot it happened to.
+	}, duel.sides[otherSlot(side.slot)].player)
 	local fallback = DuelService.applyAction(duel, side, "Accept")
 	if fallback then
 		-- Nothing legal left at all. Loud, because it means this bot is about to

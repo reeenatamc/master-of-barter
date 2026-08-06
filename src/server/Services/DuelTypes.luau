@@ -47,6 +47,10 @@ export type Side = {
 
 export type Duel = {
 	id: string,
+	--- When it opened, so the analytics event can report how long it lasted.
+	--- A duel that ends in eight seconds and one that runs the clock out are
+	--- different games, and the difference is invisible without this.
+	startedAt: number,
 	phase: Types.DuelPhase,
 	round: number,
 	turn: Types.Slot,

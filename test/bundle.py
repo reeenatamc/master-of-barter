@@ -26,6 +26,7 @@ CONFIG = {
     "DuelRules": "src/shared/Config/DuelRules.luau",
     "Strings": "src/shared/Config/Strings.luau",
     "Bots": "src/shared/Config/Bots.luau",
+    "Analytics": "src/shared/Config/Analytics.luau",
 }
 UTIL = {
     "Signal": "src/shared/Util/Signal.luau",
@@ -33,6 +34,7 @@ UTIL = {
     "Net": "src/shared/Util/Net.luau",
 }
 SERVICES = {
+    "AnalyticsService": "src/server/Services/AnalyticsService.luau",
     "DuelTypes": "src/server/Services/DuelTypes.luau",
     "DuelView": "src/server/Services/DuelView.luau",
     "DuelReveal": "src/server/Services/DuelReveal.luau",

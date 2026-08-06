@@ -21,9 +21,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 
 local InventoryService = {}
@@ -212,13 +214,19 @@ local function reportOrphanedEscrow(player: Player, profile: Types.Profile)
 	end
 
 	for _, entry in profile.escrow do
-		-- TODO(F3): this belongs in AnalyticsService, which does not exist yet.
-		-- Until then it is at least visible rather than silent.
 		warn(
 			`[Inventory] {player.Name} lost a staked copy to an unfinished duel:`
 				.. ` {entry.itemId} (duel {entry.duelId}).`
 				.. ` Not returned on purpose -- returning could duplicate.`
 		)
+		-- Recorded as well as warned. This loss is rare and invisible to
+		-- everyone but the person it happened to, so without a counted event
+		-- there is no way to know it is happening at all -- let alone to
+		-- compensate anybody by hand.
+		AnalyticsService.record(Analytics.events.escrowOrphaned, {
+			itemId = entry.itemId,
+			duelId = entry.duelId,
+		}, player)
 	end
 
 	table.clear(profile.escrow)

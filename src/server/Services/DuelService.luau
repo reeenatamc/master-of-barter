@@ -30,6 +30,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
+local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local Bots = require(ReplicatedStorage.Shared.Config.Bots)
 local Strings = require(ReplicatedStorage.Shared.Config.Strings)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
@@ -38,6 +39,7 @@ local Signal = require(ReplicatedStorage.Shared.Util.Signal)
 local Trove = require(ReplicatedStorage.Shared.Util.Trove)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local AnalyticsService = require(script.Parent.AnalyticsService)
 local DuelSceneService = require(script.Parent.DuelSceneService)
 local EconomyService = require(script.Parent.EconomyService)
 local DataService = require(script.Parent.DataService)
@@ -276,6 +278,7 @@ end
 local function openDuel(sideA: Side, sideB: Side): string?
 	local duel: Duel = {
 		id = HttpService:GenerateGUID(false),
+		startedAt = workspace:GetServerTimeNow(),
 		phase = "BuildingOffers",
 		round = 1,
 		turn = 1,
@@ -310,6 +313,12 @@ local function openDuel(sideA: Side, sideB: Side): string?
 
 	armPhaseWatchdog(duel)
 	broadcast(duel)
+
+	AnalyticsService.record(Analytics.events.duelStarted, {
+		duelId = duel.id,
+		againstBot = DuelStakes.isBot(sideA) or DuelStakes.isBot(sideB),
+	}, sideA.player or sideB.player)
+
 	return duel.id
 end
 
@@ -515,6 +524,28 @@ function DuelService.finish(duelId: string, reason: string)
 		end
 	end
 
+	-- Counted BEFORE the trove is cleaned and while the sides are still intact.
+	-- Derived from state rather than tallied as the duel went: a counter
+	-- incremented in five places is five places to forget.
+	local raisesUsed = 0
+	local fakesOffered = 0
+	local anyBot = false
+	local firstHuman: Player? = nil
+	for _, side in duel.sides do
+		raisesUsed += DuelRules.limits.raiseOffersPerSide - side.raisesLeft
+		local offered: { WrappedItem } = side.offer or {}
+		for _, wrapped in offered do
+			if wrapped.isFake then
+				fakesOffered += 1
+			end
+		end
+		if DuelStakes.isBot(side) then
+			anyBot = true
+		elseif firstHuman == nil then
+			firstHuman = side.player
+		end
+	end
+
 	duel.trove:Clean()
 
 	local live = duel.trove:Live()
@@ -525,6 +556,28 @@ function DuelService.finish(duelId: string, reason: string)
 	elseif DuelRules.debugLogs then
 		print(`[DuelService] duel {duelId} ended ({reason}): expected 0 live objects, got 0`)
 	end
+
+	-- Recorded LAST, after the duel is fully released, so an event that somehow
+	-- failed could never keep a duel from ending. Analytics is the least
+	-- important thing in any path it sits in.
+	--
+	-- This is the event docs/gdd.md §8 needs to keep or cut the accusation
+	-- token: how many raises were spent, how many forgeries went on the table,
+	-- who accused and whether they were right. None of it is a truth the players
+	-- do not already have -- the duel is over.
+	local accuser = if reveal and reveal.fakeCall then reveal.fakeCall.by else nil
+	AnalyticsService.record(Analytics.events.duelFinished, {
+		duelId = duelId,
+		reason = reason,
+		seconds = math.floor(workspace:GetServerTimeNow() - duel.startedAt),
+		reachedReveal = reveal ~= nil,
+		winner = if reveal then reveal.winner else nil,
+		raisesUsed = raisesUsed,
+		fakesOffered = fakesOffered,
+		accusedBy = accuser,
+		accusationCorrect = if reveal and reveal.fakeCall then reveal.fakeCall.correct else nil,
+		againstBot = anyBot,
+	}, firstHuman)
 
 	DuelService.duelFinished:fire(duelId, reason, live)
 end
@@ -551,10 +604,14 @@ end
 
 --- A rejected remote is either a bug in our own client or somebody probing.
 --- Either way it has to be visible and cheap (docs/arquitectura.md §8).
---- Feeding these to analytics, so spam patterns become exploit candidates, is
---- card F3.
+---
+--- Counted as well as warned, because the SHAPE of the refusals is the signal:
+--- one player producing the same rejection hundreds of times is not a bug in
+--- our client, it is somebody working out where the walls are. A warning tells
+--- you it happened; the event is what makes a pattern visible.
 local function reject(player: Player, why: string)
 	warn(`[DuelService] request from {player.Name} rejected: {why}`)
+	AnalyticsService.record(Analytics.events.requestRejected, { reason = why }, player)
 end
 
 local function sideOf(duel: Duel, player: Player): Side?

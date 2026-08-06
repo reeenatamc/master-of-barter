@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 local Net = require(ReplicatedStorage.Shared.Util.Net)
 
+local AnalyticsService = require(script.Parent.Services.AnalyticsService)
 local BotService = require(script.Parent.Services.BotService)
 local DataService = require(script.Parent.Services.DataService)
 local DuelService = require(script.Parent.Services.DuelService)
@@ -35,8 +36,10 @@ BotService.init()
 MatchmakingService.init()
 ShopService.init()
 
--- EconomyService has nothing to wire: it is a gate, not a listener. Required
--- here anyway so a missing module fails at boot rather than mid-duel.
-local _ = EconomyService
+-- Neither of these wires anything: EconomyService is a gate and
+-- AnalyticsService is a door. Required here anyway so a missing module fails at
+-- boot rather than mid-duel.
+local _economy = EconomyService
+local _analytics = AnalyticsService
 
 print("[MasterOfBarter] server ready")
