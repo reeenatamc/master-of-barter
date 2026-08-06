@@ -736,3 +736,31 @@ Varios motivos de rechazo llevan **GUIDs** (`does not own copy {copyId}`). Manda
 En la práctica: el sink va en `pcall`, y uno que falla **se desactiva** en vez de reintentar —un aviso por duelo es cómo un fallo chico se convierte en la razón por la que nadie lee el output—; los eventos se registran **al final** de `finish`, con el duelo ya liberado; y el cortacircuitos de cardinalidad degrada a "sin breakdowns" en vez de a "sin eventos".
 
 Es la misma familia que *"cobrar antes de otorgar"* y que *"el escrow sale al ofertar"*: **elegir de antemano cuál mitad se sacrifica cuando algo falla**, en vez de descubrirlo el día que falla.
+
+---
+
+## 2026-08-05 · 🔒 CANON — el valor del aislamiento es genérico
+
+> **La cuarentena valió por una razón distinta de la que la motivó, que es más o menos la definición de que valía la pena.**
+
+El binding de Roblox se aisló por miedo a que la **firma** estuviera inventada. La firma estaba bien. Lo que el aislamiento atajó fue otra cosa entera: que `customFields` ignora en silencio toda clave que no sea `CustomField01/02/03`.
+
+**Uno aísla contra el riesgo que imagina, y el aislamiento ataja el que no imaginó.** Por eso la pregunta al escribir una frontera no es "¿qué tan probable es este riesgo?" sino "¿cuánto cuesta la frontera?". Si es barata, se pone — el riesgo que la justifique aparece después y no va a ser el que uno tenía en la cabeza.
+
+Familia: `WrappedItemView` sin campo para `isFake`, `InventoryService` sin función que reste, `DuelStakes` como única capa que sabe de perfiles.
+
+---
+
+## 2026-08-05 · 🔒 Toda proyección trae su aritmética de cardinalidad
+
+**Regla, no costumbre.** Una cuota externa compartida y permanente —las 8.000 combinaciones de Roblox Analytics— no es un bug que se arregla: es un recurso que **se gasta**, y gastarlo es un self-DoS irreversible contra la propia analítica.
+
+Por eso el presupuesto es **parte del contrato de la proyección**, no un comentario en otro archivo: la aritmética va escrita al lado de cada una (`5 x 3 x 7 = 105`). Quien agregue una dimensión hace la cuenta ahí mismo o la está gastando por accidente.
+
+**Tres criterios que se aplicaron y quedan:**
+
+1. **Las normalizaciones que no requieren memoria le ganan a las que sí.** Despojar una plantilla es mecánico; una tabla de motivos conocidos hay que mantenerla, y deja de matchear en silencio el día que alguien edita un mensaje.
+2. **Se cuenta donde se produce, no donde se envía.** La cuota se gasta con lo que uno *mandaría*, así que el número tiene que ser conocible con el destino apagado — que es lo que lo vuelve **medible** en vez de creíble.
+3. **La degradación se elige de antemano.** Pasado el presupuesto: eventos sin breakdowns, nunca sin eventos. De los dos fallos posibles, el que no se propaga.
+
+**Y la cuota se trata como permanente aunque la doc no lo jure.** Es la lectura segura en los dos mundos: si Roblox la resetea, sobró prudencia; si no, se salvaron los breakdowns de la cuenta.
