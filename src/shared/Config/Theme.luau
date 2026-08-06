@@ -53,14 +53,24 @@ local palette = {
 
 	--- The three negotiation buttons. In the references they are pale FILLED
 	--- panels with a sketchy outline, not outlined cut-outs, and their colours
-	--- carry the meaning before the icon does: red refuses, green agrees, blue
+	--- carry the meaning before the icon does: red refuses, green agrees, amber
 	--- asks for more.
-	accept = Color3.fromRGB(58, 132, 62),
-	acceptFill = Color3.fromRGB(202, 216, 154),
-	decline = Color3.fromRGB(196, 60, 52),
-	declineFill = Color3.fromRGB(234, 180, 170),
-	raise = Color3.fromRGB(46, 96, 176),
-	raiseFill = Color3.fromRGB(178, 202, 230),
+	---
+	--- SATURATED, since 2026-08-05. The first pass used muted, chalky versions
+	--- to sit politely on paper, and on a real board seen in perspective they
+	--- read as grey. These are the loudest thing in the game on purpose: they
+	--- are its visual signature (§25), and a signature that has to be looked for
+	--- is not one.
+	---
+	--- "Pedir más" moved from blue to AMBER, which is what both reference
+	--- images show. Amber also reads as the middle answer between yes and no,
+	--- which blue never did.
+	accept = Color3.fromRGB(38, 176, 76),
+	acceptFill = Color3.fromRGB(178, 232, 176),
+	decline = Color3.fromRGB(228, 46, 44),
+	declineFill = Color3.fromRGB(248, 176, 168),
+	raise = Color3.fromRGB(246, 168, 20),
+	raiseFill = Color3.fromRGB(252, 224, 150),
 
 	--- The accusation. Deliberately NOT the same red as Rechazar: they are
 	--- opposite moves and sharing a colour would make the loudest button in the
