@@ -47,7 +47,8 @@ DuelStakes:src/server/Services/DuelStakes.luau
 DuelService:src/server/Services/DuelService.luau
 BotService:src/server/Services/BotService.luau
 EconomyService:src/server/Services/EconomyService.luau
-InventoryService:src/server/Services/InventoryService.luau"
+InventoryService:src/server/Services/InventoryService.luau
+PlayerDataService:src/server/Services/PlayerDataService.luau"
 
 mkdir -p "$(dirname "$OUT")"
 cat test/prelude.luau > "$OUT"

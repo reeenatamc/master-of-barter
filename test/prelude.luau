@@ -31,8 +31,16 @@ task = {
 	spawn = function(fn, ...)
 		fn(...)
 	end,
+	-- Genuinely deferred, not immediate: coalescing is a real behaviour (see
+	-- PlayerDataService) and a stub that runs the callback inline would make a
+	-- coalescing test pass for the wrong reason. Flushed by `advance(0)`.
 	defer = function(fn, ...)
-		fn(...)
+		local args = { ... }
+		local co = coroutine.create(function()
+			fn(table.unpack(args))
+		end)
+		table.insert(pending, { at = vnow, co = co, cancelled = false, done = false })
+		return co
 	end,
 	cancel = function(co)
 		local entry = byThread[co]

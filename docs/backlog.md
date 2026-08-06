@@ -268,11 +268,19 @@ Criterios: 3 botones grandes, oferta legible, inspección cómoda con dedo; apro
 > **Criterio añadido — "Pedir más" se deshabilita contra una oferta llena, con motivo visible.** El servidor rechaza el pedido cuando el rival ya puso el máximo de envoltorios (`maxItemsPerOffer`), porque no se le puede pedir más a quien no puede dar más. Eso dejó de ser una regla interna: es una regla que el jugador **siente**.
 > Un botón que existe, se toca y **no hace nada** se lee como un bug del juego, no como una regla. Así que en la UI real el botón va gris **con el motivo a la vista** ("ya ofreció el máximo"), y lo mismo vale para las otras dos veces que un botón puede ser ilegal: sin pedidos restantes (`raisesLeft = 0`) y sin ficha (`fakeCallsLeft = 0`). Los tres estados ya viajan en el `DuelState`; falta que la piel los dibuje.
 
-### E3 · HUD, kiosco y vitrina
+### E3 · HUD, kiosco y vitrina — **mitad servidor ✅ 2026-08-05**
 
 **Prioridad:** P0 (HUD, kiosco) / P2 (vitrina) · M
 
 Criterios: Clips y colección siempre coherentes con servidor; vitrina filtra textos con TextService.
+
+**Entregado (servidor):** `PlayerDataService` empuja `PlayerDataView` —Clips, colección, copias— a **su propio dueño y a nadie más**, coalescido: los tres cambios que produce un pago de duelo salen en un solo envío.
+
+**Por qué entró ahora y no con la UI:** `Net.names.PlayerData` estaba declarado y **nunca disparado**, y `EconomyService.balanceChanged` no tenía **un solo suscriptor**. Dos cosas sin consumidor, que por la regla 6 son dos decisiones que nadie tomó. A diferencia del remoto `DuelReveal`, acá la respuesta no era borrar —no son una segunda salida de nada, son una función faltante con el nombre ya reservado— sino darles su consumidor. Sin esto el HUD **no podía existir**: el cliente no tenía forma de saber sus Clips.
+
+**Y `botEarnings` NO se replica**, por la misma razón que se borró `isBot`: un cliente que lee su total diario contra bots deduce que los bots existen y cuánto valen. §34 prohíbe las señales obvias, y un número que solo se mueve contra bots es tan obvio como una etiqueta. Verificado por mutación: clonando el perfil en vez de construir la vista campo por campo, cuatro aserciones se ponen en rojo.
+
+**Falta (cliente):** el HUD que lo dibuje, la vitrina y el `TextService`.
 
 ### E4 · Sonido base del tema papel
 

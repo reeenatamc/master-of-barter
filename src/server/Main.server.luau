@@ -19,6 +19,7 @@ local DuelService = require(script.Parent.Services.DuelService)
 local EconomyService = require(script.Parent.Services.EconomyService)
 local InventoryService = require(script.Parent.Services.InventoryService)
 local MatchmakingService = require(script.Parent.Services.MatchmakingService)
+local PlayerDataService = require(script.Parent.Services.PlayerDataService)
 local ShopService = require(script.Parent.Services.ShopService)
 
 Net.createAll()
@@ -29,6 +30,9 @@ DataService.init()
 -- Inventory before duels: it listens for profiles loading, and a profile that
 -- loads before it is listening never gets its starter copies.
 InventoryService.init()
+-- Before DuelService: it subscribes to profileLoaded, and a profile that loads
+-- before it is listening never gets its first push.
+PlayerDataService.init()
 DuelService.init()
 -- Bots before matchmaking: matchmaking can start a bot duel on its first tick,
 -- and a bot whose brain is not listening yet sits still for the whole duel.

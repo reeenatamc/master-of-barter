@@ -369,6 +369,37 @@ export type Stats = {
 --- Both inventories are counts per item, not lists of instances. Copies of one
 --- object are interchangeable, so a count says everything a list would and
 --- survives a DataStore round trip more cheaply.
+--[=[
+	@interface PlayerDataView
+	@within Types
+	.clips number
+	.collection { [ItemId]: number }
+	.duelCopies { [ItemId]: number }
+
+	Your own profile, as your own client sees it. Sent to ONE recipient ever --
+	its owner -- and never to a rival.
+
+	NOTE WHAT IS ABSENT, because in this project that is where the design lives:
+
+	- **`escrow`** is bookkeeping. Showing "3 copies in limbo" invites a support
+	  question about a state that resolves itself a second later.
+	- **`receipts`** is idempotency machinery for purchases. Nothing to draw.
+	- **`botEarnings`** is the anti-farming counter, and replicating it would be
+	  the `isBot` mistake again: a client that can read its daily bot-earnings
+	  total can work out that filler opponents exist and exactly how much they
+	  are worth. docs/gdd.md §34 says no obvious signals, and a number that only
+	  moves against bots is as obvious as a label.
+
+	Like `WrappedItemView`, this type is built field by field and never cloned
+	from the profile -- so a field added to `Profile` cannot arrive here by
+	accident, which is the whole point of it being a separate type.
+]=]
+export type PlayerDataView = {
+	clips: number,
+	collection: { [ItemId]: number },
+	duelCopies: { [ItemId]: number },
+}
+
 export type Profile = {
 	dataVersion: number,
 	clips: number,

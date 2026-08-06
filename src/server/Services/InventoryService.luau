@@ -23,12 +23,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ReplicatedStorage:WaitForChild("Shared")
 local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
+local Signal = require(ReplicatedStorage.Shared.Util.Signal)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DataService = require(script.Parent.DataService)
 
 local InventoryService = {}
+
+--- Fired after anything moves in either inventory, with the player.
+---
+--- Carries no payload beyond who changed: a subscriber that needs the numbers
+--- reads the profile, which is the only copy. Passing the values here would
+--- create a second one, and two copies of a balance is how they disagree.
+InventoryService.changed = Signal.new()
 
 --- How many copies of this object the player can stake. Zero if there is no
 --- profile, which is a normal state, not an error.
@@ -108,6 +116,7 @@ function InventoryService.takeCopy(player: Player, itemId: Types.ItemId, duelId:
 	-- having had it. The copy is gone from duelCopies either way; this is what
 	-- makes the difference reportable later.
 	table.insert(profile.escrow, { itemId = itemId, duelId = duelId, copyId = copyId })
+	InventoryService.changed:fire(player)
 	return true
 end
 
@@ -120,6 +129,7 @@ function InventoryService.giveCopy(player: Player, itemId: Types.ItemId, count: 
 	end
 	local amount = count or 1
 	profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + amount
+	InventoryService.changed:fire(player)
 end
 
 --- The exact inverse of `takeCopy`: removes THIS copy's escrow entry and gives
@@ -140,6 +150,7 @@ function InventoryService.returnCopy(player: Player, itemId: Types.ItemId, duelI
 		if entry.copyId == copyId then
 			table.remove(profile.escrow, index)
 			profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + 1
+			InventoryService.changed:fire(player)
 			return
 		end
 	end
@@ -244,6 +255,7 @@ function InventoryService.collect(player: Player, itemId: Types.ItemId)
 		return
 	end
 	profile.collection[itemId] = (profile.collection[itemId] or 0) + 1
+	InventoryService.changed:fire(player)
 end
 
 --- Gives a brand new player something to duel with. Copies, not collection: the
@@ -256,6 +268,7 @@ local function grantStarter(player: Player, profile: Types.Profile)
 	for _, itemId in Items.starterCopies do
 		profile.duelCopies[itemId] = (profile.duelCopies[itemId] or 0) + 1
 	end
+	InventoryService.changed:fire(player)
 end
 
 --- Wires the service. Called by Main after DataService, whose signal it needs.

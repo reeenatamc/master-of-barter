@@ -816,6 +816,8 @@ Por eso el presupuesto es **parte del contrato de la proyección**, no un coment
 
 **Son dos garantías distintas y hoy solo se ejercita una.** Un PASS significa *"los dos caminos no se pisaron"*, **no** *"el claim está probado"*.
 
+> **Dicho sin rodeos, porque es lo que hay que poder leer de un vistazo: el claim de `resolving` hoy NO está probado por nada.** No por este check, no por el spec, no por el auto-juego. Es código correcto y sin evidencia — que es una categoría distinta de "código probado" y de "código sospechoso", y merece su propio nombre en el mapa.
+
 ### Por qué el claim no llega a actuar
 
 Protege el tramo entre reclamar el duelo y emitir el broadcast. Ese tramo solo importa si algo **cede** ahí adentro, y hoy nada cede: la revelación se construye de forma síncrona y viaja dentro del `DuelState` final; la pausa dramática la maneja el cliente.

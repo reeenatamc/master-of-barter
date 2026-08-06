@@ -46,6 +46,7 @@ Net.createAll()
 DuelRules.debugLogs = true
 
 InventoryService.init()
+require(Services.PlayerDataService).init()
 DuelService.init()
 BotService.init()
 

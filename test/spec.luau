@@ -13,6 +13,7 @@
 
 local Items = require(Config.Items)
 local InventoryService = require(Services.InventoryService)
+local EconomyService = require(Services.EconomyService)
 local BotService = require(Services.BotService)
 
 local passed, failed = 0, 0
@@ -452,6 +453,57 @@ do
 	local duelId = DuelService.start(a, b)
 	advance(DuelRules.phaseSeconds.BuildingOffers + 1)
 	check("nobody offered, so the duel is gone", DuelService.debugDuel(duelId :: string) == nil)
+end
+
+-- ── 10. Your own data, and only your own ────────────────────────────────────
+
+print("\n[spec] PlayerData: what the owner gets, and what nobody gets")
+do
+	local a, b = freshPlayers()
+	advance(0)
+
+	local mine = {}
+	for _, entry in sent do
+		if entry.remote == "PlayerData" then
+			table.insert(mine, entry)
+		end
+	end
+
+	check(`a profile loading pushes its owner's data ({#mine} sends)`, #mine == 2, `{#mine}`)
+	check("each push went to exactly one recipient", mine[1] ~= nil and mine[1].player ~= nil)
+
+	-- The structural half: the view is built field by field, so a field added
+	-- to Profile cannot arrive here by accident. Asserted against the payload
+	-- rather than read off the type, which is the difference that matters.
+	local payload = mine[1].args[1]
+	local keys = {}
+	for key in payload do
+		table.insert(keys, key)
+	end
+	table.sort(keys)
+	check(
+		`the payload carries exactly clips, collection, duelCopies (got: {table.concat(keys, ", ")})`,
+		#keys == 3 and payload.clips ~= nil and payload.collection ~= nil and payload.duelCopies ~= nil
+	)
+	check("botEarnings never leaves the server", (payload :: any).botEarnings == nil)
+	check("escrow never leaves the server", (payload :: any).escrow == nil)
+	check("receipts never leave the server", (payload :: any).receipts == nil)
+
+	-- Coalescing: a duel's payout moves copies AND Clips several times, and the
+	-- client should hear about it once.
+	table.clear(sent)
+	InventoryService.giveCopy(a, Items.order[1])
+	InventoryService.giveCopy(a, Items.order[2])
+	EconomyService.credit(a, 10, "spec")
+	advance(0)
+
+	local pushes = 0
+	for _, entry in sent do
+		if entry.remote == "PlayerData" then
+			pushes += 1
+		end
+	end
+	check(`three changes in one tick coalesce into one push ({pushes})`, pushes == 1, `{pushes}`)
 end
 
 print(`\n[spec] {passed} passed, {failed} failed`)
