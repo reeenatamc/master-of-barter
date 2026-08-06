@@ -37,6 +37,10 @@ Tiene que imprimir una tabla, no `nil`. Si imprime `nil`, el perfil no cargó y 
 
 ## Prueba 2 — cierre abrupto sin pérdida
 
+> **⚠️ ESTA PRUEBA NO FUNCIONA CON EL SIMULADOR, y el documento decía lo contrario.** El mock de ProfileStore guarda en una tabla común de módulo (`local MockStore = {}`); al apretar **Stop**, Studio recarga los scripts y esa tabla vuelve a cero. Con `useMockInStudio = true` esto **siempre** muestra el valor inicial, ande o no ande el guardado — un falso fallo garantizado.
+>
+> **Es la misma prueba que la 4**, que sí apaga el simulador. Correr las dos era correr una que no puede pasar y después la de verdad. Ver `sesion-unica.md`, donde quedaron unificadas.
+
 Esta es la que importa más. Prueba que lo que ganaste sigue ahí después de un cierre feo.
 
 1. **Play**. En la Command Bar, contexto **Server**, escribí algo en el perfil:

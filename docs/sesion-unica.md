@@ -10,7 +10,7 @@ No están en orden numérico: están en orden de **fricción**. Lo que antes era
 
 | Bloque | Qué prueba | Jugadores | Tiempo |
 |---|---|---|---|
-| **1** | Persistencia (checkpoint 3) 🔴 | 1–2 | 20 min |
+| **1** | Persistencia (checkpoint 3) 🔴 | 1–2 | 15 min |
 | **2** | Visual + bucle + economía (checkpoints 2 y 4, prueba etapa 1) | 2 | 25 min |
 | **3** | Desconexión 🔴 | 2 | 3 min |
 | **4** | Bots y arranque en frío (checkpoint 5) | 1 | 5 min |
@@ -84,24 +84,7 @@ Eso prueba dos cosas de una: el perfil cargó **y** el servidor se lo mandó al 
 > ```
 > Es ProfileStore tanteando la API real al arrancar. La tantea **siempre**, aunque después use el simulador — y en 1.1 a 1.3 usa el simulador, que es lo que queremos. **Si el HUD muestra tus Clips, el perfil cargó.**
 
-## 1.2 — Cierre abrupto sin pérdida
-
-**La que más importa.** Prueba que lo que ganaste sigue ahí después de un cierre feo.
-
-1. Esperá los 15 segundos → entra el bot.
-2. **Q** para ofertar. Esperá unos segundos: el bot oferta solo.
-3. **R** para aceptar. Mirá la revelación.
-4. **Anotá los Clips del HUD.** Cambiaron: pagaste la falsificación y cobraste el duelo.
-5. **Stop** con el cuadrado rojo. Sin avisar, sin esperar.
-6. **Play** de nuevo. Mirá el HUD.
-
-✅ Los Clips son **los que anotaste**.
-❌ Volvieron a **250** → el guardado no ocurrió. **Parás.** Es exactamente el fallo silencioso que este bloque existe para atrapar.
-
-> **Sin consola, a propósito.** La versión anterior escribía `clips = 9999` desde la Command Bar, y eso obliga a cambiarle el contexto a *Server*: en *Client* el `ServerScriptService` está **vacío** —los scripts de servidor no se replican, que es justamente lo que queremos— y el comando falla con `Services is not a valid member`.
-> Jugar un duelo prueba lo mismo, se parece más a lo que hace un jugador de verdad, y no requiere tocar nada.
-
-## 1.3 — Dos sesiones peleando por un perfil
+## 1.2 — Dos sesiones peleando por un perfil
 
 1. **Test** → **2** jugadores → **Start**.
 2. En el Output del **servidor**, buscá `has no profile; spectator mode`.
@@ -110,9 +93,17 @@ Eso prueba dos cosas de una: el perfil cargó **y** el servidor se lo mandó al 
 ✅ Si cerrás una ventana y volvés a entrar rápido con el mismo jugador y **sí** aparece, **eso está bien** — es el lock haciendo su trabajo.
 ❌ Que alguien entre con un perfil **vacío** en vez de quedar como espectador.
 
-## 1.4 — Contra el DataStore de verdad
+*(Esta sí funciona con el simulador: el session locking vive en memoria dentro de una misma corrida de Studio.)*
 
-Las tres anteriores usan el simulador. **Un simulador que se porta bien no prueba que un DataStore se porte bien.**
+---
+
+## 1.3 — Que el progreso sobreviva 🔴
+
+**La prueba que este bloque existe para hacer, y la única que la prueba.**
+
+> **⚠️ NO se puede hacer con el simulador, y saberlo ahorra un susto.** El simulador de ProfileStore guarda en una tabla común de módulo: cuando apretás **Stop**, Studio recarga los scripts y **esa tabla vuelve a cero**. Con el simulador prendido, esta prueba **siempre** te va a mostrar 250 — ande o no ande el guardado. Un 250 ahí no significa nada.
+>
+> Por eso hay que apagarlo. No es un paso extra: **es la prueba**.
 
 ### Preparación (una sola vez en la vida del proyecto)
 
@@ -122,13 +113,18 @@ Las tres anteriores usan el simulador. **Un simulador que se porta bien no prueb
 
 ### La prueba
 
-Repetí **1.2** entera: jugás un duelo, anotás los Clips, Stop de golpe, Play, mirás el HUD.
+1. **Play**, un jugador. Esperá los 15 segundos → entra el bot.
+2. Jugá un duelo entero: **Q** para ofertar, esperá que el bot oferte, **R** para aceptar.
+3. **Mirá el HUD.** Los Clips ya no dicen 250: pagaste la falsificación y cobraste el duelo. **No hace falta anotar el número** — lo que delata el fallo es que vuelva a 250 redondo.
+4. **Stop** con el cuadrado rojo. Sin avisar, sin esperar.
+5. **Play** de nuevo. Mirá el HUD.
 
-✅ Sigue diciendo 9999 → **la persistencia está probada de verdad.**
+✅ **No dice 250** → **la persistencia está probada de verdad.** Es lo único que este bloque tenía que contestar.
+❌ Volvió a **250** → el guardado no ocurrió. **Parás** y me lo mandás.
 
 ### Si queda como espectador, mirá el motivo
 
-El servidor te dice **por qué**, y hasta te dice qué significa, porque los dos fallos se ven igual:
+El servidor te dice **por qué**, y hasta qué significa, porque los dos fallos se ven igual:
 
 ```
 [DataService] Player1 has no profile; spectator mode. DataStore access: NoAccess.
