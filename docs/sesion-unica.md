@@ -157,6 +157,9 @@ El servidor te dice **por qué**, y hasta qué significa, porque los dos fallos 
 
 Antes de tocar nada, **mirá**. Diez minutos de mirar, y anotá lo que te chirríe.
 
+> **Los tiempos de fase están subidos a 600 segundos para esta sesión.** Con los de balance real (45 para ofertar) el watchdog cancelaba el duelo y **te desarmaba la mesa a mitad de la revisión** — una prueba que pide más tiempo del que el juego concede no es una prueba, es una carrera.
+> **Volverlos a 45 y 30 está en el cierre**, abajo de todo.
+
 ### El tablero
 
 | Mirá | Qué está en juego |
@@ -337,8 +340,9 @@ Y algo que no cuesta nada mirar: **la colección de los dos igual que al empezar
 
 # Al terminar
 
-1. `DuelRules.debugLogs` → **`false`**.
-2. `DataConfig.useMockInStudio` → **`true`** (si el bloque 1.4 lo dejó en `false`).
+1. `DuelRules.phaseSeconds` → **`BuildingOffers = 45`** y **`Negotiating = 30`**. Están subidos a 600 para que el tablero no se desarmara mientras lo mirabas; esos son los de balance real.
+2. `DuelRules.debugLogs` → **`false`**.
+3. `DataConfig.useMockInStudio` → **`true`** (si el bloque 1.3 lo dejó en `false`).
 
 ---
 

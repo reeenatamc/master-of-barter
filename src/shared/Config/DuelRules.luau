@@ -55,9 +55,17 @@ local limits = {
 	First guesses. Etapa 1 explicitly asks to time real duels and tune these
 	until a duel fits in 2-3 minutes.
 ]=]
+--- ⚠️ SUBIDOS PARA LA SESIÓN DE PRUEBAS (2026-08-05). Los de balance real son
+--- BuildingOffers = 45 y Negotiating = 30, y hay que volver a ponerlos ahí
+--- cuando la revisión visual termine — está en el cierre de sesion-unica.md.
+---
+--- Por qué: el checkpoint visual pide diez minutos de MIRAR el tablero, y con
+--- 45 segundos el watchdog cancelaba el duelo y desarmaba la mesa a mitad de la
+--- revisión. Una prueba que pide más tiempo del que el juego concede no es una
+--- prueba, es una carrera.
 local phaseSeconds: { [string]: number } = {
-	BuildingOffers = 45,
-	Negotiating = 30,
+	BuildingOffers = 600,
+	Negotiating = 600,
 	Reveal = 8,
 	Results = 12,
 }
