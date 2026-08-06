@@ -26,10 +26,16 @@ No están en orden numérico: están en orden de **fricción**. Lo que antes era
 ## Antes de empezar (una vez, dos minutos)
 
 1. **`rojo serve`** corriendo, plugin conectado en Studio.
-2. En `src/shared/Config/DuelRules.luau`: **`debugLogs = true`**.
-3. En `src/shared/Config/DataConfig.luau`: confirmá **`useMockInStudio = true`**.
+2. `DuelRules.debugLogs` ya está en **`true`** y `DataConfig.useMockInStudio` en **`true`**. **No tenés que tocar nada.**
 
-Rojo sincroniza los dos solos. **No los vas a tocar de nuevo hasta el bloque 1, paso 4.**
+**Cómo sabés que el Play arrancó bien.** En el Output tienen que estar estas dos líneas, las dos:
+
+```
+[MasterOfBarter] server ready
+[MasterOfBarter] client ready
+```
+
+Si falta la del servidor, Rojo no sincronizó: apretá **Connect** de nuevo en el panel de Rojo y volvé a darle Play.
 
 ### El teclado, completo
 

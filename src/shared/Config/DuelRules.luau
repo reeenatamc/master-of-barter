@@ -121,7 +121,7 @@ local emoteCooldownSeconds = 1.5
 	Off by default. Note that leaks are NOT gated by this: a non-zero live count
 	always warns. A flag can hide a confirmation, never a failure.
 ]=]
-local debugLogs = false
+local debugLogs = true
 
 return {
 	limits = limits,

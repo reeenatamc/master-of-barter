@@ -423,9 +423,14 @@ function DuelController.start()
 		end
 	end)
 
-	if DuelRules.debugLogs then
-		bindDebugKeys()
-	end
+	-- ALWAYS, never behind debugLogs. These keys are not a debug convenience:
+	-- until card E2 draws a real interface they are the ONLY way to play, and
+	-- gating them on a flag named "debug LOGS" meant the game silently could not
+	-- be played at all when it was off. Pressing Q did nothing, printed nothing,
+	-- and looked like a broken project.
+	--
+	-- A flag should govern what its name says. This one governs logging.
+	bindDebugKeys()
 
 	Net.get(Net.names.PlayerData).OnClientEvent:Connect(function(data: Types.PlayerDataView)
 		playerData = data
