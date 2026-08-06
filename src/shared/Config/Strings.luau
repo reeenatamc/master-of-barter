@@ -145,6 +145,12 @@ local notices = {
 	spectatorNoDuel = "No pudimos cargar tu progreso, así que no podés apostar todavía. Salí y volvé a entrar para reintentar.",
 	shopNotStocked = "Eso ya no está en el kiosco. Don Trueque rota lo que ofrece cada tanto.",
 	shopCannotAfford = "No te alcanzan los Clips para eso.",
+	showcaseNameLength = "El nombre de tu vitrina tiene que tener entre 3 y 24 letras.",
+	showcaseTooSoon = "Recién le cambiaste el nombre. Esperá unos segundos.",
+	--- Dice qué hacer, no solo que falló. Y NO dice "tu texto fue rechazado":
+	--- un filtro que no contestó no es lo mismo que un texto inapropiado, y
+	--- acusar al jugador de algo que no hizo es peor que pedirle que reintente.
+	showcaseFilterFailed = "No pudimos revisar ese nombre ahora mismo. Probá de nuevo en un momento.",
 	--- Llegó al tope diario contra rivales de relleno. Dice qué pasa ahora
 	--- ("seguís en la cola"), no solo qué no pasa: un aviso que solo niega deja
 	--- al jugador sin saber si tiene que hacer algo.
@@ -171,6 +177,20 @@ local kiosk = {
 	owned = "tenés {n}",
 }
 
+--[=[
+	@prop showcase { [string]: string }
+	@within Strings
+
+	La vitrina del lobby. Único lugar donde el jugador escribe.
+]=]
+local showcase = {
+	namePlaceholder = "poné un nombre…",
+	rename = "PONER",
+	--- Antes de que tenga nombre. No dice "sin nombre" —que suena a error—
+	--- sino algo que invita a ponerle uno.
+	unnamed = "Tu vitrina",
+}
+
 local currencyName = "Clips"
 
 return {
@@ -180,6 +200,7 @@ return {
 	duelButtons = duelButtons,
 	duelScreen = duelScreen,
 	kiosk = kiosk,
+	showcase = showcase,
 	notices = notices,
 	emoteSymbols = emoteSymbols,
 	currencyName = currencyName,

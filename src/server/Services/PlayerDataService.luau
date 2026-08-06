@@ -51,6 +51,12 @@ local function viewOf(profile: Types.Profile): Types.PlayerDataView
 		clips = profile.clips,
 		collection = table.clone(profile.collection),
 		duelCopies = table.clone(profile.duelCopies),
+		-- Already filtered when it was stored, so this is a copy of safe text
+		-- rather than a filtering step that could be forgotten.
+		showcase = {
+			name = profile.showcase.name,
+			items = table.clone(profile.showcase.items),
+		},
 	}
 end
 

@@ -47,6 +47,7 @@ DuelRules.debugLogs = true
 
 InventoryService.init()
 require(Services.PlayerDataService).init()
+require(Services.ShowcaseService).init()
 DuelService.init()
 BotService.init()
 
@@ -67,6 +68,7 @@ local function addPlayer(name: string)
 		receipts = {},
 		escrow = {},
 		botEarnings = { date = "", value = 0 },
+		showcase = { name = "", items = {} },
 	}
 	DataStub.profileLoaded:fire(player, profiles[player])
 	return player

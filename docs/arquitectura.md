@@ -152,6 +152,7 @@ El remoto llegó a existir declarado y sin disparar. Eso no es una línea muerta
   Recibos = {},          -- ids de ProcessReceipt ya otorgados (idempotencia)
   Escrow = {},           -- { {itemId, duelId} } copias apostadas y sin resolver
   BotEarnings = { Fecha = "", Valor = 0 },  -- valor extraído hoy de rivales de relleno
+  Vitrina = { Nombre = "", Objetos = {} },  -- nombre YA FILTRADO + ids en exhibición
 }
 ```
 
@@ -163,6 +164,11 @@ La lista existe para que esa pérdida sea **detectable**: al cargar un perfil, t
 Es **un solo número para las dos monedas** —Clips ganados **más** el `baseValue` de las copias recibidas— porque el bot acuña las dos: topear solo los Clips dejaría las copias farmeables por el mismo camino.
 El tope **no reduce el pago**: por debajo, un duelo contra bot paga exactamente igual que uno contra persona, porque un pago distinto sería una señal obvia en el primer duelo (§34 del GDD lo prohíbe). Lo que hace al alcanzarlo es **dejar de ofrecer bots en la cola**. Se aplica ahí y no al pagar porque un duelo que llegó a la revelación ya intercambió las apuestas: no pagarle a alguien que ya entregó sus copias convierte un tope neutro en un castigo.
 `Fecha` es un día UTC. Que esté vencida **es** el reinicio, así que nada agenda uno.
+
+**Sobre `Vitrina` (agregado en E3):** es el **único texto escrito por un jugador** en todo el juego, así que carga sola toda la superficie de moderación del proyecto.
+`Nombre` guarda **lo que salió de TextService, nunca lo que el jugador tipeó**. No hay texto crudo de usuario en ningún perfil, en ningún log ni en ninguna vista — ni siquiera de vuelta a su autor. Es más estricto que lo que Roblox pide (la API permite filtrar por espectador, lo que obligaría a guardar el crudo), y se eligió así porque guardar texto crudo de usuarios es un pasivo que este juego no necesita para nada.
+**Y falla cerrado:** si el filtro no contesta —es una llamada de red y puede tirar—, **no se guarda nada y no se muestra nada**. Es el único lugar del proyecto donde la dirección segura es negarse: en todos los demás un camino lateral que falla degrada, porque el costo de frenar es peor que el de seguir. Acá el costo de seguir es texto sin filtrar en un muro público.
+`Objetos` son ids de la colección permanente. **Exhibir nunca arriesga nada** (§21).
 
 **Agregar un campo NO requiere subir `DataVersion`:** `profile:Reconcile()` corre en cada carga, antes de `migrate`, y completa las claves faltantes desde la plantilla. La versión y la cadena de migraciones son para **cambiar** una forma —renombrar, reestructurar, que un campo pase a significar otra cosa—, que es lo que Reconcile no puede adivinar. Subirla por un agregado dejaría un paso de migración que no hace nada.
 

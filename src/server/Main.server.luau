@@ -21,6 +21,7 @@ local InventoryService = require(script.Parent.Services.InventoryService)
 local MatchmakingService = require(script.Parent.Services.MatchmakingService)
 local PlayerDataService = require(script.Parent.Services.PlayerDataService)
 local ShopService = require(script.Parent.Services.ShopService)
+local ShowcaseService = require(script.Parent.Services.ShowcaseService)
 
 Net.createAll()
 
@@ -39,6 +40,7 @@ DuelService.init()
 BotService.init()
 MatchmakingService.init()
 ShopService.init()
+ShowcaseService.init()
 
 -- Neither of these wires anything: EconomyService is a gate and
 -- AnalyticsService is a door. Required here anyway so a missing module fails at

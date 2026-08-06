@@ -186,7 +186,25 @@ PlayersService.PlayerAdded = { Connect = function() return { Disconnect = functi
 
 workspace = { GetServerTimeNow = function() return vnow end }
 
+--- Roblox's moderation filter. The stub REFUSES by default -- see the spec: a
+--- test environment that silently approves everything would make "fail closed"
+--- pass without the code doing anything.
+local filterBehaviour = "refuse"
+local TextService = {
+	FilterStringAsync = function(_self, text, _userId, _context)
+		if filterBehaviour == "refuse" then
+			error("harness: TextService refused")
+		end
+		return {
+			GetNonChatStringForBroadcastAsync = function()
+				return `[filtrado]{text}`
+			end,
+		}
+	end,
+}
+
 local SERVICES_BY_NAME = {
+	TextService = TextService,
 	ReplicatedStorage = ReplicatedStorage,
 	HttpService = HttpService,
 	RunService = RunService,

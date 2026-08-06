@@ -68,6 +68,7 @@ local TEMPLATE: Profile = {
 	receipts = {},
 	escrow = {},
 	botEarnings = { date = "", value = 0 },
+	showcase = { name = "", items = {} },
 }
 
 local realStore = ProfileStore.New(DataConfig.storeName, TEMPLATE)

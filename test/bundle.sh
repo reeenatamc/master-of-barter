@@ -34,10 +34,12 @@ Economy:src/shared/Config/Economy.luau
 DuelRules:src/shared/Config/DuelRules.luau
 Strings:src/shared/Config/Strings.luau
 Bots:src/shared/Config/Bots.luau
-Analytics:src/shared/Config/Analytics.luau"
+Analytics:src/shared/Config/Analytics.luau
+Showcase:src/shared/Config/Showcase.luau"
 UTIL="Signal:src/shared/Util/Signal.luau
 Trove:src/shared/Util/Trove.luau
-Net:src/shared/Util/Net.luau"
+Net:src/shared/Util/Net.luau
+Kiosk:src/shared/Util/Kiosk.luau"
 SERVICES="AnalyticsService:src/server/Services/AnalyticsService.luau
 DuelTypes:src/server/Services/DuelTypes.luau
 DuelView:src/server/Services/DuelView.luau
@@ -48,7 +50,8 @@ DuelService:src/server/Services/DuelService.luau
 BotService:src/server/Services/BotService.luau
 EconomyService:src/server/Services/EconomyService.luau
 InventoryService:src/server/Services/InventoryService.luau
-PlayerDataService:src/server/Services/PlayerDataService.luau"
+PlayerDataService:src/server/Services/PlayerDataService.luau
+ShowcaseService:src/server/Services/ShowcaseService.luau"
 
 mkdir -p "$(dirname "$OUT")"
 cat test/prelude.luau > "$OUT"

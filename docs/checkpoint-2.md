@@ -20,7 +20,11 @@ Esto es lo único que necesita tus ojos ahora. Todo lo demás siguió sin vos.
 > | Ganá o gastá Clips y mirá el número | Tiene que **saltar y asentarse**, no cambiar de golpe. Un número que salta es un número que nadie nota |
 > | ¿La inclinación de los papelitos se siente **hecha a mano o descuidada**? | Es a propósito (`Theme.tiltDegrees`), y si se lee como error hay que bajarla |
 >
-> **Lo que todavía NO está:** el kiosco (P0) y la vitrina (P2, necesita `TextService`). El HUD era la mitad que desbloqueaba todo lo demás — sin él, el cliente no sabía ni cuántos Clips tenía.
+> **El kiosco y la vitrina también entraron** (2026-08-05), así que **el paquete visual está completo**: tablero, catálogo, móvil, HUD, kiosco y vitrina en una sola sentada.
+>
+> **Kiosco:** cuatro papelitos con precio, COMPRAR **deshabilitado con el motivo** (*"te faltan 40"*), contador de rotación y el cartel de que el stock es igual para todos. Mirá que COMPRAR **no compita** con los tres botones de negociación — no es verde a propósito, se destaca por tamaño y trazo. Si igual te roba la atención, es señal de que la jerarquía no alcanzó.
+>
+> **Vitrina:** nombre editable y cuatro ranuras. **Lo que hay que probar acá es de moderación, no de estética:** escribí un nombre y fijate que lo que queda en pantalla **no sea exactamente lo que tipeaste** — pasa por el filtro de Roblox y se muestra el resultado. Si ves tu texto tal cual, avisá: sería el único fallo grave del paquete.
 
 ---
 

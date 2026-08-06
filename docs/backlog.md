@@ -268,7 +268,7 @@ Criterios: 3 botones grandes, oferta legible, inspección cómoda con dedo; apro
 > **Criterio añadido — "Pedir más" se deshabilita contra una oferta llena, con motivo visible.** El servidor rechaza el pedido cuando el rival ya puso el máximo de envoltorios (`maxItemsPerOffer`), porque no se le puede pedir más a quien no puede dar más. Eso dejó de ser una regla interna: es una regla que el jugador **siente**.
 > Un botón que existe, se toca y **no hace nada** se lee como un bug del juego, no como una regla. Así que en la UI real el botón va gris **con el motivo a la vista** ("ya ofreció el máximo"), y lo mismo vale para las otras dos veces que un botón puede ser ilegal: sin pedidos restantes (`raisesLeft = 0`) y sin ficha (`fakeCallsLeft = 0`). Los tres estados ya viajan en el `DuelState`; falta que la piel los dibuje.
 
-### E3 · HUD, kiosco y vitrina — **mitad servidor ✅ 2026-08-05**
+### E3 · HUD, kiosco y vitrina ✅ **completa 2026-08-05**
 
 **Prioridad:** P0 (HUD, kiosco) / P2 (vitrina) · M
 
@@ -284,7 +284,9 @@ Criterios: Clips y colección siempre coherentes con servidor; vitrina filtra te
 
 **Entregado (kiosco, 2026-08-05):** `ShopScreen` — cuatro papelitos con nombre, precio y COMPRAR; deshabilitado **con motivo** (*"te faltan 40"*) en vez de botón muerto; contador de rotación y el cartel de que el stock es el mismo para todos. La derivación del stock se movió a `Shared/Util/Kiosk.luau` para que cliente y servidor usen **la misma función**, y pasó a reloj sincronizado.
 
-**Falta:** la vitrina (P2, con `TextService`). El HUD y el kiosco ya están sumados al paquete visual del checkpoint 2.
+**Entregado (vitrina, 2026-08-05):** `ShowcaseService` + `ShowcaseScreen`. Nombre filtrado por `TextService` **antes de guardarse**, y solo se guarda y se muestra el resultado — nunca el crudo, ni a su autor. **Falla cerrado**: filtro que no contesta = nada guardado. Cooldown de renombre para no gastar el presupuesto de la API de moderación. Cuatro ranuras con objetos de la colección, validados por posesión.
+
+**E3 completa.** El paquete visual del checkpoint 2 queda cerrado: tablero, catálogo, móvil, HUD, kiosco y vitrina.
 
 ### E4 · Sonido base del tema papel
 

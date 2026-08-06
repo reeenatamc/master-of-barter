@@ -398,6 +398,13 @@ export type PlayerDataView = {
 	clips: number,
 	collection: { [ItemId]: number },
 	duelCopies: { [ItemId]: number },
+	--- Already filtered, like everything about a showcase that leaves the
+	--- server. Your own included: the raw string is never sent back, not even
+	--- to whoever typed it.
+	showcase: {
+		name: string,
+		items: { ItemId },
+	},
 }
 
 export type Profile = {
@@ -417,6 +424,19 @@ export type Profile = {
 	quests: {
 		date: string,
 		progress: { [string]: number },
+	},
+	--- The public showcase in the lobby (docs/gdd.md §22, §32).
+	---
+	--- `name` is ALREADY FILTERED. What is stored is the output of
+	--- TextService, never what the player typed -- so there is no raw
+	--- user-written text anywhere in this profile, and no display path that
+	--- could reach it by mistake. See ShowcaseService.
+	---
+	--- `items` are ids from the permanent collection. Ids, not copies: showing
+	--- something off never risks it (§21).
+	showcase: {
+		name: string,
+		items: { ItemId },
 	},
 	--- Total VALUE pulled out of filler opponents today: Clips won plus the
 	--- baseValue of the copies received (card D1).

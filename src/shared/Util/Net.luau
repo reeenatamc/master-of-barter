@@ -31,6 +31,7 @@ local NAMES = {
 	QueueJoin = "QueueJoin",
 	QueueLeave = "QueueLeave",
 	ShopBuy = "ShopBuy",
+	ShowcaseSet = "ShowcaseSet",
 
 	-- Server -> client. These carry already-censored views, never raw truth.
 	--

@@ -15,6 +15,8 @@ local Items = require(Config.Items)
 local InventoryService = require(Services.InventoryService)
 local EconomyService = require(Services.EconomyService)
 local BotService = require(Services.BotService)
+local ShowcaseService = require(Services.ShowcaseService)
+local Showcase = require(Config.Showcase)
 
 local passed, failed = 0, 0
 
@@ -481,9 +483,21 @@ do
 		table.insert(keys, key)
 	end
 	table.sort(keys)
+	-- The whitelist, asserted. It caught the showcase field being added the day
+	-- it was added, which is the entire reason it counts keys instead of
+	-- checking for known-bad ones.
+	--
+	-- Adding a field here is a deliberate act, and it comes with the human half
+	-- of the side-channel question: not only "does this carry a secret" (the
+	-- types answer that) but "does this MOVE with one". `showcase` does not --
+	-- the name is already filtered and the items are public by definition.
 	check(
-		`the payload carries exactly clips, collection, duelCopies (got: {table.concat(keys, ", ")})`,
-		#keys == 3 and payload.clips ~= nil and payload.collection ~= nil and payload.duelCopies ~= nil
+		`the payload carries exactly clips, collection, duelCopies, showcase (got: {table.concat(keys, ", ")})`,
+		#keys == 4
+			and payload.clips ~= nil
+			and payload.collection ~= nil
+			and payload.duelCopies ~= nil
+			and payload.showcase ~= nil
 	)
 	check("botEarnings never leaves the server", (payload :: any).botEarnings == nil)
 	check("escrow never leaves the server", (payload :: any).escrow == nil)
@@ -551,6 +565,73 @@ do
 	)
 	check("the run actually sent something (so the check can fail)", next(seen) ~= nil)
 	check("exactly two of them are VIEWS", seen.DuelState ~= nil and seen.PlayerData ~= nil)
+end
+
+-- ── 12. THE SHOWCASE: the only user-written text in the game ────────────────
+--
+-- The one surface that carries the moderation burden, so it gets the treatment
+-- a moderation surface deserves: both directions asserted, with the failing
+-- direction FIRST.
+--
+-- The harness's TextService stub REFUSES by default, deliberately. A test
+-- environment that silently approved everything would make "fail closed" pass
+-- without the code doing anything -- the sixth false green, wearing a new hat.
+
+print("\n[spec] the showcase, and its filter")
+do
+	local a = addPlayer("ShowcaseA")
+	advance(0)
+
+	-- ── the filter refuses ──────────────────────────────────────────────────
+	filterBehaviour = "refuse"
+	ShowcaseService.setName(a, "un nombre cualquiera")
+	check("a filter that did not answer stores NOTHING", profiles[a].showcase.name == "", `"{profiles[a].showcase.name}"`)
+
+	-- ── the filter answers ──────────────────────────────────────────────────
+	filterBehaviour = "allow"
+	-- The cooldown is real, so the clock has to move.
+	advance(Showcase.renameCooldownSeconds + 1)
+	ShowcaseService.setName(a, "Mi Vitrina")
+
+	check("an accepted name is stored", profiles[a].showcase.name ~= "")
+	check(
+		`what is stored is the FILTERED string, never the raw one (got "{profiles[a].showcase.name}")`,
+		profiles[a].showcase.name ~= "Mi Vitrina" and string.find(profiles[a].showcase.name, "filtrado") ~= nil
+	)
+
+	-- ── the boring layers, which are where most of the abuse lands ──────────
+	local stored = profiles[a].showcase.name
+	advance(Showcase.renameCooldownSeconds + 1)
+	ShowcaseService.setName(a, "ab")
+	check("a name under the minimum is refused", profiles[a].showcase.name == stored)
+
+	advance(Showcase.renameCooldownSeconds + 1)
+	ShowcaseService.setName(a, string.rep("x", Showcase.nameLength.max + 1))
+	check("a name over the maximum is refused", profiles[a].showcase.name == stored)
+
+	advance(Showcase.renameCooldownSeconds + 1)
+	ShowcaseService.setName(a, 42)
+	check("a name that is not a string is refused", profiles[a].showcase.name == stored)
+
+	-- The cooldown: two in a row, the second must not land.
+	advance(Showcase.renameCooldownSeconds + 1)
+	ShowcaseService.setName(a, "Primera")
+	local afterFirst = profiles[a].showcase.name
+	ShowcaseService.setName(a, "Segunda Inmediata")
+	check("a rename inside the cooldown is refused", profiles[a].showcase.name == afterFirst)
+
+	-- ── the shelf: you cannot show off what you have not won ────────────────
+	ShowcaseService.setItems(a, { Items.order[1] })
+	check("an item that is not in the collection is refused", #profiles[a].showcase.items == 0)
+
+	InventoryService.collect(a, Items.order[1])
+	ShowcaseService.setItems(a, { Items.order[1], Items.order[1] })
+	check("a collected item can be shown, and only once", #profiles[a].showcase.items == 1)
+
+	ShowcaseService.setItems(a, { "no_existe" })
+	check("an unknown item id is refused", #profiles[a].showcase.items == 1)
+
+	filterBehaviour = "refuse"
 end
 
 print(`\n[spec] {passed} passed, {failed} failed`)
