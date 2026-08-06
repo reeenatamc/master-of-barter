@@ -290,21 +290,30 @@ En el **servidor**:
 
 ### Y la mitad que importa del escrow
 
-Antes de cerrar la ventana, en la Command Bar (**Server**):
+Antes de cerrar la ventana, en la Command Bar del **servidor**:
 
 ```lua
 local D = require(game.ServerScriptService.Services.DataService)
 for _, p in game.Players:GetPlayers() do print(p.Name, D.get(p).duelCopies) end
 ```
 
-Ofertá con objetos **reales** (**E**) desde slot 2 y volvé a imprimir: **al que ofertó le faltan esas copias**. Salieron del perfil al ofertar — eso es el escrow.
+Ofertá con objetos **reales** (**E**) desde una ventana y volvé a imprimir: **al que ofertó le faltan esas copias**. Salieron del perfil al ofertar — eso es el escrow.
 
-Ahora cerrá la ventana de slot 2 e imprimí el perfil del que quedó.
+Ahora cerrá esa ventana e imprimí el perfil del que quedó.
 
-| Si ves | Es | Gravedad |
-|---|---|---|
-| El que se quedó **no recibió nada** | **Pérdida** | Malo |
-| El que se fue **conserva** lo que apostó | **Duplicación** | **Peor** — infla la economía de todos, para siempre |
+**Qué tiene que pasar hoy: cada uno recupera lo suyo.** Nadie gana, nadie pierde.
+
+> **Esto NO es lo que el GDD pide a futuro, y la diferencia es una tarjeta sin hacer, no un fallo.** `gdd.md` §32 dice que quien se desconecta pierde el duelo y **su apuesta pasa al rival**. Eso es la tarjeta **A5**, que depende de A2 y E2 y todavía no existe.
+> Hasta que exista, devolver todo es la opción segura: nadie se lleva algo que no ganó.
+>
+> *(Una versión anterior de este documento decía que el que se quedaba tenía que recibir las copias del otro, y marcaba lo contrario como fallo grave. Era mío el error: describía A5 como si estuviera hecha.)*
+
+**Lo único que sí sería un fallo:**
+
+| Si ves | Es |
+|---|---|
+| Al que se fue le **faltan** copias y a nadie le aparecieron | **Pérdida** — se evaporaron |
+| Los dos tienen **más** copias que al empezar | **Duplicación** — el peor de los dos |
 
 Y algo que no cuesta nada mirar: **la colección de los dos igual que al empezar**. Un duelo mueve copias, nunca colección.
 
