@@ -189,6 +189,9 @@ local showcase = {
 	--- Antes de que tenga nombre. No dice "sin nombre" —que suena a error—
 	--- sino algo que invita a ponerle uno.
 	unnamed = "Tu vitrina",
+	--- Etiqueta de la pestaña que la abre. Corta: es una solapa de papel, no un
+	--- titular.
+	tab = "VITRINA",
 }
 
 local currencyName = "Clips"

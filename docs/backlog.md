@@ -257,8 +257,9 @@ Criterios: cada objeto se ve como una cosa y no como una fila de texto — **pla
 
 Criterios: caminar, unirse a cola desde una mesa, volver del duelo al mismo punto.
 
-> **⚠️ E1 REEMPLAZA Y ELIMINA las teclas K y L.** Hoy el kiosco y la vitrina se montan ocultos y **nada los abre**: E1 es la tarjeta que construye el puesto de Don Trueque y el muro de estantes, que son lo que los va a revelar. Mientras tanto hay dos teclas de depuración en `ShopController` marcadas TEMP.
-> **Borrarlas es parte del criterio de cierre de E1, no una limpieza posterior.** Un TEMP sin fecha de muerte es un permanente con otro nombre — y este en particular es una superficie que abre pantallas desde el teclado, que no es algo que deba quedar en un juego publicado.
+> **⚠️ E1 REEMPLAZA Y ELIMINA las teclas K y L *y las dos solapas de pantalla*.** Hoy el kiosco y la vitrina se montan ocultos y **nada los abre**: E1 es la tarjeta que construye el puesto de Don Trueque y el muro de estantes, que son lo que los va a revelar. Mientras tanto hay dos teclas de depuración en `ShopController` marcadas TEMP.
+> Las solapas (`buildTabs` en `ShopController`) se agregaron el 2026-08-05 porque un teléfono no tiene teclado y sin ellas la mitad del paquete visual era inalcanzable en móvil — que es justo donde hay que juzgarlo.
+> **Borrar las dos cosas es parte del criterio de cierre de E1, no una limpieza posterior.** Un TEMP sin fecha de muerte es un permanente con otro nombre — y este en particular es una superficie que abre pantallas desde el teclado, que no es algo que deba quedar en un juego publicado.
 
 ### E2 · UI de duelo estilo papel usable en móvil
 
