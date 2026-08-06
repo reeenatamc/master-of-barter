@@ -729,6 +729,23 @@ function DuelService.applyAction(duel: Duel, side: Side, action: unknown): strin
 			return "a raise is already pending on the rival"
 		end
 
+		-- A DEMAND NOBODY COULD MEET IS REFUSED HERE, not answered and then
+		-- refused forever after.
+		--
+		-- An amendment must hold at least one wrapper more than the offer it
+		-- amends, and never more than maxItemsPerOffer. Against an offer already
+		-- at that maximum those two rules contradict: the rival needed 5 with a
+		-- ceiling of 4. Every possible answer was rejected, so the side owing it
+		-- could not act, and the duel sat until the phase watchdog killed it.
+		--
+		-- Found by the self-play harness on the very first run against a real
+		-- profile -- one duel in fifty, which is roughly never in a play-test and
+		-- constantly once there are players.
+		local rivalOffer = rival.offer
+		if rivalOffer and #rivalOffer >= DuelRules.limits.maxItemsPerOffer then
+			return `rival already offered the maximum of {DuelRules.limits.maxItemsPerOffer} wrappers`
+		end
+
 		side.raisesLeft -= 1
 		rival.amendRequested = true
 		duel.turn = rival.slot

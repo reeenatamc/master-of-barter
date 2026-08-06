@@ -27,6 +27,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
 local Bots = require(ReplicatedStorage.Shared.Config.Bots)
+local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Types = require(ReplicatedStorage.Shared.Types)
 
@@ -38,6 +39,7 @@ type Side = DuelTypes.Side
 type Duel = DuelTypes.Duel
 
 local isBot = DuelTypes.isBot
+local otherSlot = DuelTypes.otherSlot
 
 local BotService = {}
 
@@ -80,33 +82,52 @@ end
 --- `taken` comes in from the caller so an amendment cannot wrap a copy already
 --- on the table -- the same "same copy wrapped twice" rule the server would
 --- refuse it with anyway.
-local function buildRequests(side: Side, count: number, taken: { [string]: boolean }): { Types.WrapRequest }
+---
+--- `fakesAlready` is the same story for the forgery cap. An amendment resends an
+--- offer that may already hold the maximum, and a bot that appended one more got
+--- refused and then sat there owing an amendment it could never make -- a duel
+--- frozen until the watchdog killed it. Found by self-play at duel 106 of 200.
+---
+--- Returns FEWER than `count` when nothing legal is left to add. The caller has
+--- to handle that rather than send a short offer and be refused.
+local function buildRequests(
+	side: Side,
+	count: number,
+	taken: { [string]: boolean },
+	fakesAlready: number
+): { Types.WrapRequest }
 	local requests: { Types.WrapRequest } = {}
+	local fakes = fakesAlready
+	local limit = DuelRules.limits.fakesPerDuel
 
 	for _ = 1, count do
-		local wantsFake = rng:NextNumber() < Bots.fakeChance
-
-		if not wantsFake then
-			local free: { Types.DuelCopy } = {}
-			for _, copy in side.hand do
-				if not taken[copy.copyId] then
-					table.insert(free, copy)
-				end
-			end
-
-			-- If nothing is left, fall through to a forgery rather than offer
-			-- fewer wrappers than asked: a short offer gets refused and the bot
-			-- would sit still, which the player experiences as a frozen duel.
-			if #free > 0 then
-				local copy = free[rng:NextInteger(1, #free)]
-				taken[copy.copyId] = true
-				table.insert(requests, { copyId = copy.copyId, isFake = false, claim = copy.itemId })
-				continue
+		local free: { Types.DuelCopy } = {}
+		for _, copy in side.hand do
+			if not taken[copy.copyId] then
+				table.insert(free, copy)
 			end
 		end
 
-		local claim = Items.order[rng:NextInteger(1, #Items.order)]
-		table.insert(requests, { copyId = nil, isFake = true, claim = claim })
+		local mayForge = fakes < limit
+		local wantsFake = mayForge and rng:NextNumber() < Bots.fakeChance
+		-- Out of copies: forge instead of offering less, as long as forging is
+		-- still allowed.
+		if not wantsFake and #free == 0 and mayForge then
+			wantsFake = true
+		end
+
+		if wantsFake then
+			local claim = Items.order[rng:NextInteger(1, #Items.order)]
+			table.insert(requests, { copyId = nil, isFake = true, claim = claim })
+			fakes += 1
+		elseif #free > 0 then
+			local copy = free[rng:NextInteger(1, #free)]
+			taken[copy.copyId] = true
+			table.insert(requests, { copyId = copy.copyId, isFake = false, claim = copy.itemId })
+		else
+			-- No copy left and the forgery cap is spent. Nothing legal to add.
+			break
+		end
 	end
 
 	return requests
@@ -135,7 +156,7 @@ end
 
 local function makeOffer(duel: Duel, side: Side)
 	local size = rng:NextInteger(Bots.offerSize.min, Bots.offerSize.max)
-	local refusal = DuelService.applyOffer(duel, side, buildRequests(side, size, {}))
+	local refusal = DuelService.applyOffer(duel, side, buildRequests(side, size, {}, 0))
 	if refusal then
 		warn(`[BotService] {side.displayName} could not offer: {refusal}`)
 	end
@@ -143,24 +164,71 @@ end
 
 local function makeAmendment(duel: Duel, side: Side)
 	local requests, taken = currentRequests(side)
+
+	local fakes = 0
+	for _, request in requests do
+		if request.isFake then
+			fakes += 1
+		end
+	end
+
 	-- Exactly one more than what is there: what "Pedir más" asked for.
-	for _, extra in buildRequests(side, 1, taken) do
-		table.insert(requests, extra)
+	local extra = buildRequests(side, 1, taken, fakes)
+
+	--- Walking away is legal, immediate, and what a person would do. It is the
+	--- difference between a rival who says no and a rival who goes silent for
+	--- thirty seconds until the watchdog ends the duel.
+	local function giveUp(why: string)
+		warn(`[BotService] {side.displayName} declines: cannot amend ({why})`)
+		local refusal = DuelService.applyAction(duel, side, "Decline")
+		if refusal then
+			warn(`[BotService] {side.displayName} could not even decline: {refusal}`)
+		end
+	end
+
+	if #extra == 0 then
+		return giveUp("no copy left to wrap and no forgery left to make")
+	end
+
+	for _, request in extra do
+		table.insert(requests, request)
 	end
 
 	local refusal = DuelService.applyOffer(duel, side, requests)
 	if refusal then
-		warn(`[BotService] {side.displayName} could not amend: {refusal}`)
+		-- Declining on ANY refusal, not just the ones predicted above. A bot that
+		-- owes an amendment and does nothing is a frozen duel, and the reason it
+		-- froze does not change what the player sees.
+		return giveUp(refusal)
 	end
 end
 
 --- Answers the rival's offer. The rolls are blind, which is the point.
+---
+--- NEVER ENDS ITS TURN WITHOUT HAVING ACTED. This is the rule the whole brain
+--- hangs on, and self-play found both places it was broken: a bot whose chosen
+--- action is refused still HOLDS THE TURN, so if it does nothing the duel sits
+--- there until the phase watchdog kills it. The player's experience is a rival
+--- that freezes and a duel that dies for no visible reason.
+---
+--- So every refusal falls back to Accept, which is always legal for whoever
+--- holds the turn in Negotiating. Accepting a bad trade is a worse move than
+--- raising; freezing is not a move at all.
 local function decide(duel: Duel, side: Side)
 	local action: Types.DuelAction
 
+	-- A raise against an offer already at the maximum is refused by the server
+	-- (nothing could be added to answer it), so it is not offered as a choice
+	-- here either. Checked rather than left to the fallback: choosing an action
+	-- known to be illegal and recovering from it would hide the next real bug in
+	-- a warning that is normal.
+	local rival = duel.sides[otherSlot(side.slot)]
+	local rivalOffer = rival.offer
+	local rivalAtMax = rivalOffer ~= nil and #rivalOffer >= DuelRules.limits.maxItemsPerOffer
+
 	if side.fakeCallsLeft > 0 and rng:NextNumber() < Bots.fakeCallChance then
 		action = "FakeCall"
-	elseif side.raisesLeft > 0 and rng:NextNumber() < Bots.raiseChance then
+	elseif side.raisesLeft > 0 and not rivalAtMax and rng:NextNumber() < Bots.raiseChance then
 		action = "RaiseOffer"
 	elseif rng:NextNumber() < Bots.declineChance then
 		action = "Decline"
@@ -169,8 +237,16 @@ local function decide(duel: Duel, side: Side)
 	end
 
 	local refusal = DuelService.applyAction(duel, side, action)
-	if refusal then
-		warn(`[BotService] {side.displayName} could not {action}: {refusal}`)
+	if not refusal then
+		return
+	end
+
+	warn(`[BotService] {side.displayName} could not {action}: {refusal}; accepting instead`)
+	local fallback = DuelService.applyAction(duel, side, "Accept")
+	if fallback then
+		-- Nothing legal left at all. Loud, because it means this bot is about to
+		-- let a duel die and the reason is not one of the two already known.
+		warn(`[BotService] {side.displayName} CANNOT ACT AT ALL: {fallback}`)
 	end
 end
 
@@ -318,7 +394,11 @@ function BotService.selfPlay(count: number, opponent: Player?)
 		-- Waited for one at a time on purpose. Overlapping duels would make a
 		-- hang look like slowness, and a hang is exactly what this is hunting.
 		local waitedFrom = done
-		local deadline = os.clock() + 30
+		-- Comfortably past the longest phase timeout, so a duel the WATCHDOG
+		-- cancels still arrives here as a finished duel with reason "timed out"
+		-- -- a loud outcome. If this deadline raced the watchdog they would be
+		-- indistinguishable, and a cancelled duel would be reported as a hang.
+		local deadline = os.clock() + 120
 		while done == waitedFrom and os.clock() < deadline do
 			task.wait(0.05)
 		end
@@ -346,7 +426,15 @@ function BotService.selfPlay(count: number, opponent: Player?)
 		print(`  copies stuck in escrow          : {stuckEscrow}   (VACUOUS -- no profile in play)`)
 	end
 
-	local ok = leaks == 0 and stuckEscrow == 0 and done == count
+	-- A timed-out duel counts as a FAILURE, not an outcome. With bots acting in
+	-- hundredths of a second a watchdog should never have to rescue anything, so
+	-- every timeout means a side could not act. Reporting PASS beside a
+	-- "TIMED OUT: 2" line is exactly the false green this project keeps finding.
+	local timeouts = outcomes["TIMED OUT"] or 0
+	local ok = leaks == 0 and stuckEscrow == 0 and done == count and timeouts == 0
+	if timeouts > 0 then
+		print(`  duels a watchdog had to rescue  : {timeouts}   (expected 0 -- a side could not act)`)
+	end
 	print(if ok then "  RESULT: PASS" else "  RESULT: FAIL")
 end
 
