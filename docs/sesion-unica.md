@@ -58,6 +58,8 @@ No hay UI de duelo con mouse todavía; todo va por teclas. **Esta es la única l
 
 **Cómo saber quién sos:** cada cliente imprime `you=slot1` o `you=slot2`. El slot 1 abre la negociación.
 
+**No te vas a poder mover durante el duelo, y es a propósito.** WASD no hace nada: el personaje queda anclado a la mesa. `gdd.md` §5 lo pide — *"sin movimiento de personaje durante el duelo"*. Todo se toca, nada se camina.
+
 **Dónde está el Output:** pestaña **View** → **Output**. En pruebas de dos jugadores hay una ventana por cliente más la del servidor; cuando abajo diga "en el servidor", es la que dice *Server*.
 
 ---

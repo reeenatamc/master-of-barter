@@ -69,7 +69,11 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	local sheet = Instance.new("Part")
 	sheet.Name = "Board"
 	sheet.Size = Theme.table.boardSize
-	sheet.CFrame = origin * CFrame.new(0, Theme.table.height + Theme.table.boardSize.Y / 2, 0)
+	-- Turned by Theme.table.boardYaw so the layout's near row lands near the
+	-- player. See that value for why it is a knob and not a constant.
+	sheet.CFrame = origin
+		* CFrame.new(0, Theme.table.height + Theme.table.boardSize.Y / 2, 0)
+		* CFrame.Angles(0, math.rad(Theme.table.boardYaw), 0)
 	sheet.Anchored = true
 	sheet.Color = Theme.palette.paper
 	sheet.Material = Enum.Material.SmoothPlastic

@@ -229,6 +229,19 @@ local tableSpec = {
 	--- Resolution of the surface drawn on the board. The knob for §38's low-end
 	--- budget: higher is sharper and costs more.
 	pixelsPerStud = 110,
+	--- How the board is turned on the table, in degrees.
+	---
+	--- A SurfaceGui on a horizontal face maps its own up/down onto one of the
+	--- part's horizontal axes, and WHICH one is not something to reason about
+	--- from a document -- the first build put the three buttons along the left
+	--- and right edges, written sideways, which is unreadable and was invisible
+	--- until somebody looked.
+	---
+	--- So it is a number rather than a fact: the layout wants its near row NEAR
+	--- the player, and this is what makes that true. If it ever comes out
+	--- sideways again, try 0, 90, 180, 270 -- one of them is right, and looking
+	--- costs ten seconds against an afternoon of deriving it.
+	boardYaw = 90,
 }
 
 --- [propuesta] Where the camera sits during a duel. Over your own shoulder,
