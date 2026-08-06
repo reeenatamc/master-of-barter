@@ -8,7 +8,19 @@ Esto es lo único que necesita tus ojos ahora. Todo lo demás siguió sin vos.
 
 **Tiempo estimado: 15 minutos.** Diez de mirar, cinco de decir qué está mal.
 
-> **Se suma a este paquete la mitad cliente de E3** —HUD de Clips y colección, vitrina— cuando esté construida. La mitad servidor ya está: `PlayerDataService` te empuja tus Clips y tus copias, coalescido y solo a vos. Falta el dibujo, que es superficie visual y por lo tanto de esta sentada, no de otra. Así tu sesión visual cubre las dos cosas de una.
+> **El HUD de E3 ya está construido y entra a este paquete** (2026-08-05). Dos papelitos arriba a la izquierda: **Clips** y **colección** (`n / 12`). El servidor los empuja y el HUD los dibuja; nada ahí calcula nada.
+>
+> **Qué mirar, y por qué cada cosa:**
+>
+> | Mirá | Qué está en juego |
+> |---|---|
+> | ¿Se lee de un vistazo **en el teléfono chico**? | Los papelitos miden 20% del ancho. Si en móvil hay que entrecerrar los ojos, el número está mal y es un valor, no un rediseño |
+> | ¿**Tapa** algo? Sobre todo al rival | §11: ver al rival es mecánico. Un HUD que estorba es un HUD que se mueve o se achica |
+> | ¿Parece **dibujado por la misma birome** que el tablero? | §28 es no negociable. Si el HUD parece de otro juego, no cumple, por prolijo que sea |
+> | Ganá o gastá Clips y mirá el número | Tiene que **saltar y asentarse**, no cambiar de golpe. Un número que salta es un número que nadie nota |
+> | ¿La inclinación de los papelitos se siente **hecha a mano o descuidada**? | Es a propósito (`Theme.tiltDegrees`), y si se lee como error hay que bajarla |
+>
+> **Lo que todavía NO está:** el kiosco (P0) y la vitrina (P2, necesita `TextService`). El HUD era la mitad que desbloqueaba todo lo demás — sin él, el cliente no sabía ni cuántos Clips tenía.
 
 ---
 

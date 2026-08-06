@@ -280,7 +280,9 @@ Criterios: Clips y colección siempre coherentes con servidor; vitrina filtra te
 
 **Y `botEarnings` NO se replica**, por la misma razón que se borró `isBot`: un cliente que lee su total diario contra bots deduce que los bots existen y cuánto valen. §34 prohíbe las señales obvias, y un número que solo se mueve contra bots es tan obvio como una etiqueta. Verificado por mutación: clonando el perfil en vez de construir la vista campo por campo, cuatro aserciones se ponen en rojo.
 
-**Falta (cliente):** el HUD que lo dibuje, la vitrina y el `TextService`.
+**Entregado (cliente, 2026-08-05):** `HudScreen` — dos papelitos con Clips y colección, montados una sola vez y para siempre (es cromo: sobrevive a todos los duelos, por eso no está en el trove del duelo). `ScreenGui` y no sobre el tablero, que es la respuesta **opuesta** a la de los botones de negociación y por el **mismo** criterio de §11 — ver `decisiones.md`.
+
+**Falta:** el kiosco (P0) y la vitrina (P2, con `TextService`). Las dos son superficie visual y esperan al checkpoint 2, donde el HUD ya está sumado al paquete.
 
 ### E4 · Sonido base del tema papel
 
