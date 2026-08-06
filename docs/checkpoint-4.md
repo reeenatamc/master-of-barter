@@ -4,6 +4,8 @@ sidebar_label: Checkpoint 4 · economía
 
 # Checkpoint 4 — economía (B2)
 
+> **⭐ No corras este documento suelto.** Está encadenado con los otros cuatro en **[`sesion-unica.md`](sesion-unica)**, que los ordena por fricción. Esto queda como el detalle.
+
 **El checkpoint 3 va primero y va solo.** Este espera a que la persistencia esté probada, porque acá los Clips se escriben en el perfil: si el guardado no está verificado, este checkpoint mide humo.
 
 **Tiempo: 10 minutos**, una vez que el 3 haya pasado.

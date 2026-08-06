@@ -4,6 +4,8 @@ sidebar_label: Checkpoint 3 · persistencia
 
 # Checkpoint 3 — persistencia (B1)
 
+> **⭐ No corras este documento suelto.** Está encadenado con los otros cuatro en **[`sesion-unica.md`](sesion-unica)**, que los ordena por fricción. Esto queda como el detalle.
+
 **Este no se agrupa y no se difiere.** Es la regla que ya fijamos: los datos que se guardan no se auto-certifican. Un duelo roto se ve en un segundo; un guardado roto se ve la semana que viene, cuando a alguien le falta la colección.
 
 **Tiempo: 25 minutos.** Cinco pruebas, en orden. La quinta es la que más importa: apostar objetos de verdad y cortar la conexión a mitad.

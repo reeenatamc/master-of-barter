@@ -6,6 +6,8 @@ sidebar_label: Checkpoint 2 · revisión visual
 
 Esto es lo único que necesita tus ojos ahora. Todo lo demás siguió sin vos.
 
+> **⭐ No corras este documento suelto.** Está encadenado con los otros cuatro en **[`sesion-unica.md`](sesion-unica)**, que los ordena por fricción y ahorra tres arranques de Play. Esto queda como el detalle de qué mirar y por qué.
+
 **Tiempo estimado: 15 minutos.** Diez de mirar, cinco de decir qué está mal.
 
 > **El HUD de E3 ya está construido y entra a este paquete** (2026-08-05). Dos papelitos arriba a la izquierda: **Clips** y **colección** (`n / 12`). El servidor los empuja y el HUD los dibuja; nada ahí calcula nada.

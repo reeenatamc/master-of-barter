@@ -42,6 +42,31 @@ function ShopController.setShowcaseOpen(visible: boolean)
 	end
 end
 
+--- TEMP: opens the kiosk and the showcase from the keyboard.
+---
+--- Card E1 builds the lobby, and in the lobby you walk up to Don Trueque's
+--- stall and to the wall of shelves -- those are what will open these screens.
+--- Until then they are mounted and hidden with nothing to reveal them, which
+--- would make them impossible to review.
+---
+--- Letters, not digits: 1-9 are Roblox's backpack hotbar and never reach here.
+local function bindDebugKeys()
+	local UserInputService = game:GetService("UserInputService")
+
+	UserInputService.InputBegan:Connect(function(input: InputObject, busy: boolean)
+		if busy or input.UserInputType ~= Enum.UserInputType.Keyboard then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.K then
+			ShopController.setOpen(not open)
+			print(`[Shop] kiosk {if open then "open" else "closed"}`)
+		elseif input.KeyCode == Enum.KeyCode.L then
+			ShopController.setShowcaseOpen(not shelfOpen)
+			print(`[Shop] showcase {if shelfOpen then "open" else "closed"}`)
+		end
+	end)
+end
+
 function ShopController.start()
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 	local screen = ShopScreen.mount(playerGui)
@@ -60,6 +85,8 @@ function ShopController.start()
 	DuelController.onPlayerData(showcase.render)
 	screen.setVisible(open)
 	showcase.setVisible(shelfOpen)
+
+	bindDebugKeys()
 end
 
 return ShopController

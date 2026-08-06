@@ -4,6 +4,8 @@ sidebar_label: Prueba · Etapa 1
 
 # Sesión de prueba — punto de control Etapa 1 (tras A4)
 
+> **⭐ No corras este documento suelto.** Está encadenado con los otros cuatro en **[`sesion-unica.md`](sesion-unica)**, que los ordena por fricción. Esto queda como el detalle.
+
 **Duración: 10 minutos.** Eran 20–30.
 
 Lo que se fue no se dejó de probar: **se automatizó.** Los bloques C, D y F de la versión anterior son ahora 34 aserciones que corren en menos de un segundo:

@@ -4,6 +4,8 @@ sidebar_label: Checkpoint 5 · bots y partición
 
 # Checkpoint 5 — bots, matchmaking y la partición de DuelService
 
+> **⭐ No corras este documento suelto.** Está encadenado con los otros cuatro en **[`sesion-unica.md`](sesion-unica)**, que los ordena por fricción. Esto queda como el detalle.
+
 **Tiempo: 5 minutos.** Una prueba que importa —la 1, que D1 funcione— y una opcional.
 
 Las pruebas 3 y 4 **salieron de tu lista**: las corre `./selfplay.sh` sin Studio. Los números están abajo.
