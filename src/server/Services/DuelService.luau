@@ -582,6 +582,20 @@ function DuelService.finish(duelId: string, reason: string)
 	DuelService.duelFinished:fire(duelId, reason, live)
 end
 
+--- The live duel with this id, or nil.
+---
+--- DEBUG ONLY, gated like the rest: this hands out the table that holds every
+--- wrapper's `isFake`, so it is the one accessor that must never be reachable
+--- from anything a client can touch. It exists for the spec suite, which
+--- asserts on duel state directly rather than inferring it from what leaked
+--- out.
+function DuelService.debugDuel(duelId: string): Duel?
+	if not DuelRules.debugLogs then
+		return nil
+	end
+	return duels[duelId]
+end
+
 --- Starts a duel between two filler opponents, with nobody watching.
 ---
 --- DEBUG ONLY, and gated on the same flag as the race check: this creates

@@ -764,3 +764,40 @@ Por eso el presupuesto es **parte del contrato de la proyección**, no un coment
 3. **La degradación se elige de antemano.** Pasado el presupuesto: eventos sin breakdowns, nunca sin eventos. De los dos fallos posibles, el que no se propaga.
 
 **Y la cuota se trata como permanente aunque la doc no lo jure.** Es la lectura segura en los dos mundos: si Roblox la resetea, sobró prudencia; si no, se salvaron los breakdowns de la cuenta.
+
+---
+
+## 2026-08-05 · ⚠️ CORRECCIÓN — la compuerta de fase NO era load-bearing
+
+**El 2026-08-04 escribí, y Renata adoptó, que la compuerta `if duel.phase == "Reveal"` dentro de `stateFor` era "el único punto del código donde la regla de oro se levanta" y "pieza load-bearing".**
+
+**Era una exageración, y la prueba de mutación la desarmó.** Borrando la compuerta entera, el spec sigue en verde y ningún cliente recibe nada de más.
+
+**Por qué:** `duel.reveal` **solo se asigna en la transición terminal**. Durante toda la negociación es `nil`, así que la compuerta no está reteniendo nada — no hay qué retener.
+
+| | Qué impide realmente la fuga |
+|---|---|
+| **Load-bearing** | Que `duel.reveal` se asigne **únicamente** al entrar en Reveal |
+| **Defensa en profundidad** | La compuerta de fase en `stateFor` |
+
+**La compuerta se queda, y sigue valiendo** — pero por una razón distinta de la que le atribuí: existe para el día en que algo **sí** calcule la revelación antes de tiempo (pre-renderizar la animación, una mecánica de inspección, un modo espectador). Ese día es la única cosa entre la verdad y un cliente.
+
+**Y la aserción que la cubría no podía fallar**, que por nuestro propio canon es un falso verde. Se arregló haciéndola real: el spec ahora **planta** una revelación a mitad de la negociación —exactamente lo que haría esa función futura— y verifica que no llegue a nadie. Con la compuerta borrada, esa aserción **falla**.
+
+**La lección operativa:** *"esta línea es lo que nos protege"* es una hipótesis, y la prueba de mutación es cómo se verifica. Sin ella, la frase se propaga por los documentos y la gente empieza a razonar sobre seguridad con un mapa equivocado — que es peor que no tener mapa, porque se confía.
+
+---
+
+## 2026-08-05 · 🔒 CANON — una prueba de mutación es cómo se gana el verde
+
+**Tres cosas pasaron al escribir el spec, y las tres son la misma disciplina.**
+
+**1. La mutación que no mutó.** Los primeros tres intentos de romper `viewOf` a propósito fueron **no-ops silenciosos**: el `replace` no matcheaba porque el archivo estaba en varias líneas y mi patrón en una. Reporté "el spec no caza la mutación" cuando la mutación nunca existió.
+
+> **Una prueba de mutación necesita su propia verificación**: que la mutación entró. Ahora el script afirma que el objetivo existe antes de reemplazar, y cuenta el marcador en el bundle.
+
+**2. La aserción que sí servía.** Con la mutación de verdad aplicada, la regla de oro cazó **180 fugas** en 40 duelos. Ese número es lo que convierte *"`WrappedItemView` no tiene campo para `isFake`"* en *"ningún cliente recibió uno"* — que son afirmaciones distintas y solo la segunda es una prueba.
+
+**3. La aserción que no podía fallar.** La de la compuerta de fase pasaba con la compuerta borrada. Ver la corrección de arriba.
+
+**Regla:** toda aserción que cubra una regla inviolable se acompaña de la mutación que la rompe, y se verifica que **con la mutación falla**. Un verde que nunca vio rojo no es evidencia de nada.

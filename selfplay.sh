@@ -8,6 +8,7 @@
 #   ./selfplay.sh            200 bot-vs-bot duels
 #   ./selfplay.sh 500        more of them
 #   ./selfplay.sh 50 puppet  50 duels against a REAL in-memory profile
+#   ./selfplay.sh spec       the deterministic assertions (fast, and the gate)
 #
 # The puppet run is the one that certifies the escrow: in a pure bot-vs-bot duel
 # neither side has a profile, so nothing is ever written to escrow and "ended at
@@ -19,8 +20,13 @@
 set -e
 cd "$(dirname "$0")"
 
-COUNT="${1:-200}"
-MODE="${2:-bots}"
+if [ "$1" = "spec" ]; then
+	COUNT=0
+	MODE=spec
+else
+	COUNT="${1:-200}"
+	MODE="${2:-bots}"
+fi
 
 if ! command -v luau >/dev/null 2>&1; then
 	echo "luau not found on PATH."

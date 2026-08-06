@@ -361,15 +361,15 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 | ~~Payload del rival: solo `appearance`, `claim`, `wrappedId`~~ | A1.3 | ✅ **Verificado en runtime el 2026-08-04.** Los dos envoltorios, real y falso, llegaron con los mismos tres campos. |
 | ~~Bucle completo: ofertar → negociar → aceptar → revelar~~ | A2.1+A3 | ✅ **2026-08-04.** Mentir ganó 210 a 10. Ambos clientes vieron la misma revelación. |
 | ~~Pedir más + ficha ¡ES FAKE! acertando~~ | A2.2+A4 | ✅ **2026-08-04.** `shouted ES FAKE and was RIGHT`; el tramposo quedó en 0 y `slipped 0` pese a que sus envoltorios cambiaron de manos. |
-| Aceptar / Rechazar fuera de turno, acciones inválidas | A2.1 | Pendiente (bloque C). Lógica pura, agrupable. |
-| Timeout de `Negotiating` → `Cancelled` con contador en 0 | A2.1 | Lógica de juego pura, agrupable. |
+| ~~Aceptar / Rechazar fuera de turno, acciones inválidas~~ | A2.1 | ✅ **2026-08-05, automatizado.** `./selfplay.sh spec` |
+| ~~Timeout de `Negotiating` → `Cancelled` con contador en 0~~ | A2.1 | ✅ **2026-08-05, automatizado.** Con reloj virtual, en milisegundos |
 | `runFinishRaceCheck()` → PASS | A2.1 | Cubre menos de lo que parece: ver la nota en A3 sobre el claim de `resolving`. |
-| Pedir más: límite de 3 por lado, enmienda validada por cantidad | A2.2 | Lógica de juego pura, agrupable. |
-| Revelación: `isFake` aparece **solo** al aceptar, igual para los dos, y nunca antes | A3 | Es el momento en que la regla de oro se levanta. Mirar que en ninguna fase previa llegue `reveal` al cliente. |
-| Marcador: genuino = `baseValue`, fake = 0, gana quien recibió más | A3 | Crudo a propósito. Se espera que "falsificá todo" domine hasta que exista A4. |
+| ~~Pedir más: límite de 3 por lado, enmienda validada por cantidad~~ | A2.2 | ✅ **2026-08-05, automatizado.** |
+| ~~Revelación: `isFake` solo al aceptar, nunca antes~~ | A3 | ✅ **2026-08-05, automatizado y con prueba de mutación.** El spec inspecciona **todos** los `DuelState` que el servidor mandó en 40 duelos y verifica que ningún envoltorio rival trae `isFake`. Rompiendo `viewOf` a propósito, caza 180 fugas. |
+| ~~Marcador: genuino = `baseValue`, fake = 0, gana quien recibió más~~ | A3 | ✅ **2026-08-05, automatizado.** |
 | ~~Ficha ¡ES FAKE!: acierto → te llevás la oferta del tramposo~~ | A4 | ✅ **2026-08-04.** Acierto verificado. Falta probar el fallo (acusar a quien no mintió) y que la segunda ficha del mismo lado se rechace. |
 | ~~**E0 — mesa de duelo fea**~~ | E0 | ✅ **2026-08-04.** Duelo completo jugado con botones: elegir real/falso, ofertar, negociar, aceptar, revelar, acusar. Sin teclado, sin Output. Ese era el criterio de aceptación de la tarjeta. |
 | **Equilibrio del bucle completo** | A2–A4 | No es una prueba de código, es la pregunta de la Etapa 1. Ver la hipótesis "acusá siempre" en la tarjeta A4. |
-| Watchdog por generación: tras un raise + enmienda, el duelo **no** se cancela antes de tiempo por el timer viejo | A2.2 | Sutil. El fallo se ve como un duelo que muere solo a mitad de negociación, y es fácil confundirlo con otra cosa. Hacer al menos un raise + enmienda y esperar a que el reloj pase el deadline original. |
+| ~~Watchdog por generación~~ | A2.2 | ✅ **2026-08-05, automatizado.** El reloj virtual pasa el deadline viejo y el nuevo en la misma corrida — imposible de hacer a mano sin esperar 30s reales. |
 
 **No agrupable** (regla de CLAUDE.md): nada que toque ProfileStore, guardado o `ProcessReceipt` entra en esta lista. Eso se prueba cuando se escribe.
