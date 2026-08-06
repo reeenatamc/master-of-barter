@@ -696,3 +696,43 @@ De ahí las dos formas que ahora tiene el arnés: los timeouts y las activacione
 **Alternativa descartada:** dejar `AnalyticsService` como stub hasta poder verificar. Se descartó porque los `TODO(F3)` ya eran cuatro y crecían: cada uno era un lugar donde el código sabía algo que nadie iba a contar. Que el destino final esté pendiente no es razón para no tener la puerta.
 
 **Y una cosa que el diseño hace a propósito:** el evento se llama `duel_finished` y lleva `accusedBy` y `accusationCorrect` como campos, en vez de haber un evento `fake_called` aparte. Una acusación es un **hecho sobre un duelo**, no una cosa distinta que pasó cerca. Un duelo, una fila — que es lo que hace que la pregunta de §8 ("¿la ficha se queda?") se conteste con una consulta y no con un join.
+
+---
+
+## 2026-08-05 · La verificación de la API cambió el diseño, no la firma
+
+**Renata verificó `LogCustomEvent` contra la doc. Tres hechos, y el tercero es el que importa.**
+
+**1. La firma estaba bien.** `LogCustomEvent(player, eventName, value, customFields)`, `value` por defecto 1. La cuarentena no era paranoia, pero por la firma no hacía falta.
+
+**2. Hizo falta por esto:** `customFields` **solo honra `CustomField01/02/03`** (`Enum.AnalyticsCustomFieldKeys`). Cualquier otra clave **se ignora en silencio**.
+
+> Pasar `{raises = 3, fakes = 2}` habría **compilado, corrido, y tirado los datos a la nada.**
+
+Cuarta aparición del falso verde, y la primera atajada **antes de nacer**. La cuarentena valió por una razón distinta de la que la motivó — que es más o menos la definición de que valía la pena.
+
+Además: los valores deben ser **strings**, y hay tope de **8.000 combinaciones únicas** entre los tres campos, compartido por toda la experiencia y **permanente**.
+
+**3. La restricción que cambia el diseño:** los eventos custom son **agregaciones con breakdowns**, no filas guardadas ni consultables. *"Un duelo, una fila, una consulta"* **no existe** en ese dashboard.
+
+**Lo que NO cambia:** el esquema interno. La fila completa, con la acusación como campo, sigue siendo la fuente de verdad y es lo que guarda el buffer. **Lo que sale es una proyección**, no un volcado: `duel_finished` con `value=1` y tres dimensiones — `fakes-N` / `acusacion-acerto|fallo|no_hubo` / `raises-N`. La pregunta de §8 se contesta con un breakdown, no con una query.
+
+### El riesgo de cardinalidad era real y específico
+
+Varios motivos de rechazo llevan **GUIDs** (`does not own copy {copyId}`). Mandarlos crudos habría quemado las 8.000 combinaciones **permanentes** de la cuenta en una tarde ocupada, llevándose puestos todos los breakdowns útiles.
+
+**Se normaliza el motivo a su plantilla** antes de proyectarlo: 17 mensajes distintos colapsan en 12 plantillas, verificado contra strings reales.
+
+**Alternativa descartada: una tabla de motivos conocidos.** Una tabla hay que mantenerla, y el día que alguien edite un mensaje el bucket deja de matchear **en silencio** — el mismo falso verde, un nivel más arriba. Despojar es mecánico, no se mantiene, y un mensaje nuevo se agrupa solo.
+
+**Y un cortacircuitos:** las combinaciones se cuentan en `record`, **no en el sink**. Las 8.000 se gastan con lo que uno *mandaría*, así que el número tiene que ser conocible con el sink apagado — que es justamente lo que le permite al auto-juego **medir** la aritmética en vez de confiar en ella (200 duelos → 24 combinaciones contra un presupuesto de 2.000). Pasado el presupuesto, los eventos siguen saliendo **sin breakdowns**: perder las dimensiones en un servidor se recupera; gastar la cuota permanente de la experiencia, no.
+
+---
+
+## 2026-08-05 · 🔒 CANON — la analítica nunca puede ser causa de fallo del juego
+
+**Jerarquía, no preferencia.** Un duelo que termina tiene que terminar aunque el evento que lo describe no se pueda mandar. La analítica es lo **menos importante** de cualquier camino de código donde esté.
+
+En la práctica: el sink va en `pcall`, y uno que falla **se desactiva** en vez de reintentar —un aviso por duelo es cómo un fallo chico se convierte en la razón por la que nadie lee el output—; los eventos se registran **al final** de `finish`, con el duelo ya liberado; y el cortacircuitos de cardinalidad degrada a "sin breakdowns" en vez de a "sin eventos".
+
+Es la misma familia que *"cobrar antes de otorgar"* y que *"el escrow sale al ofertar"*: **elegir de antemano cuál mitad se sacrifica cuando algo falla**, en vez de descubrirlo el día que falla.

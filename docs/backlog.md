@@ -304,11 +304,15 @@ Objetivo: el balance del bluff se decide con datos. Criterios: funnel de onboard
 
 **Entregado:** `AnalyticsService` (una sola puerta, buffer en anillo, sinks que se desactivan solos ante error) + `Config/Analytics.luau` con los nombres de evento. Cinco eventos vivos: `duel_started`, `duel_finished`, `escrow_orphaned`, `request_rejected`, `bot_fallback`, `shop_purchase`. Cerró los cuatro `TODO(F3)` que el mes venía acumulando.
 
+**⚠️ El dashboard de Roblox NO va a decidir la ficha, y conviene saberlo antes de la sesión.** Los eventos custom de Roblox son **agregaciones con breakdowns** por tres campos, no filas consultables. Con **dos personas**, el N es ridículo y ningún breakdown dice nada.
+
+**El veredicto de la ficha sale de la observación de Renata + el log interno de eventos**, que ya existe, ya se imprime y ya se testea. El binding de Roblox es para **alfa en adelante**, cuando haya jugadores de verdad. No bloquea nada de la sesión de diversión 2.
+
 **Lo que falta, y por qué no está:**
 
 | Pendiente | Bloqueado por |
 |---|---|
-| **Verificar `LogCustomEvent`** contra create.roblox.com/docs y prender `Analytics.sendToRoblox` | Nada — son cinco minutos de alguien con la doc abierta. La firma está escrita **de memoria** y por eso el flag sale apagado (regla 5). Todo lo demás ya funciona sin él |
+| ~~Verificar `LogCustomEvent`~~ ✅ **hecho 2026-08-05** | La firma estaba bien; lo que cambió el diseño fue otra cosa (ver abajo) |
 | **Funnel de onboarding** paso a paso | **F1** (tutorial con Don Trueque). Un funnel sin los pasos que mide no es un funnel |
 | **Compra Robux** | **B5**, que es caso (b) y espera |
 
