@@ -191,7 +191,7 @@ Objetivo: matar el arranque en frío. Criterios: cola en servidor; si no hay riv
 | Qué | Dónde vive | Por qué no se arregló acá |
 |---|---|---|
 | El bot **nunca acepta, rechaza, pide más ni acusa** contra un humano: `beginNegotiating` da el turno siempre al slot 1. `Bots.raiseChance`/`fakeCallChance`/`declineChance` solo corren bot-vs-bot | **A2** (alternancia de turnos) | Alternar turnos es diseño de negociación —quién presiona a quién y cuándo—, no una tarjeta de bots |
-| **Silla vacía**: te sentás solo a la mesa, porque un bot no tiene personaje. §11 hace mecánico ver al rival, así que es la señal obvia que §34 prohíbe | **E1/E2** (escena) | Es trabajo de escena, no de matchmaking |
+| ~~**Silla vacía**~~ ✅ **2026-08-05** | — | El bot tiene cuerpo: `DuelSceneService.seatBot` arma un avatar R15 desde un `HumanoidDescription` propio. **No** se carga el avatar de un usuario real —sería llevar puesta la cara de alguien— así que solo se eligen colores: nada de ids de ropa escritos de memoria |
 | **Avatar**: `userId` salió del payload replicado porque un bot no tiene cuenta y cualquier valor ahí era el dato. Cuando E2 necesite miniaturas, vuelve **con una respuesta deliberada para bots** | **E2** | No había consumidor; un campo sin lector es una decisión tomada por accidente (regla 6) |
 
 ### D2 · Como jugadora quiero bots con personalidades que bluffean creíblemente

@@ -18,6 +18,7 @@
 	real lobby. Hand-placing parts for it would be effort with a known expiry.
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
@@ -85,6 +86,83 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
+--- Gives a filler opponent a body.
+---
+--- A bot has no Roblox account, so nothing hands it an avatar -- and an empty
+--- chair across the table is the most obvious "this is not a person" signal
+--- there is, which is precisely what docs/gdd.md §34 rules out.
+---
+--- Built from a HumanoidDescription rather than loaded from a real user id.
+--- `CreateHumanoidModelFromUserId` would work and would mean wearing an actual
+--- person's likeness, which is not ours to borrow for an opponent that lies to
+--- people for a living.
+---
+--- Only body colours are set: no accessories, no clothing asset ids. Those ids
+--- would be written from memory, and this project has a rule about that. The
+--- result is a plain avatar in the right proportions, which is all the framing
+--- needs (§11: you read the rival, so the rival has to be there).
+local function buildBotBody(displayName: string, seed: number): Model?
+	local ok: boolean, model: any = pcall(function()
+		local description = Instance.new("HumanoidDescription")
+
+		-- Varied so two bots at neighbouring tables are not twins. Drawn from
+		-- the seed rather than at random so one bot keeps one look.
+		local shirts = {
+			Color3.fromRGB(64, 108, 176),
+			Color3.fromRGB(196, 86, 96),
+			Color3.fromRGB(88, 152, 108),
+			Color3.fromRGB(148, 104, 176),
+		}
+		local skins = {
+			Color3.fromRGB(234, 194, 160),
+			Color3.fromRGB(198, 148, 110),
+			Color3.fromRGB(142, 100, 72),
+			Color3.fromRGB(246, 216, 190),
+		}
+		description.TorsoColor = shirts[(seed % #shirts) + 1]
+		description.LeftArmColor = skins[(seed % #skins) + 1]
+		description.RightArmColor = description.LeftArmColor
+		description.HeadColor = description.LeftArmColor
+		description.LeftLegColor = Color3.fromRGB(58, 62, 76)
+		description.RightLegColor = description.LeftLegColor
+
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+	end)
+
+	if not ok or typeof(model) ~= "Instance" then
+		warn(`[Scene] could not build a body for {displayName}: {model}`)
+		return nil
+	end
+
+	local body = model :: Model
+	body.Name = displayName
+	return body
+end
+
+--- Stands a filler opponent at its side of the table, facing the sheet.
+local function seatBot(displayName: string, origin: CFrame, slot: Slot, parent: Instance): Model?
+	local body = buildBotBody(displayName, slot + #displayName)
+	if not body then
+		return nil
+	end
+
+	local spot = origin * CFrame.new(standOffset(slot))
+	local lookAt = origin.Position + Vector3.new(0, Theme.table.height, 0)
+
+	body.Parent = parent
+	body:PivotTo(CFrame.lookAt(spot.Position + Vector3.new(0, 3, 0), lookAt))
+
+	-- Anchored like a player's, and for the same reason: nothing wanders off
+	-- mid-duel. A bot's body has no controller anyway, but an unanchored rig
+	-- falls over, and a rival lying face down is its own kind of tell.
+	local root = body:FindFirstChild("HumanoidRootPart")
+	if root and root:IsA("BasePart") then
+		root.Anchored = true
+	end
+
+	return body
+end
+
 --- Stands a player at their side of the table, facing the sheet.
 ---
 --- Anchored on purpose: docs/gdd.md §12 has no character movement during a
@@ -122,20 +200,39 @@ end
 --- Builds the table for a duel and stands both players at it. Returns a
 --- cleanup function; the caller registers it in the duel's Trove, so the scene
 --- goes away by every route the duel can end, disconnects included.
-function DuelSceneService.open(duelId: string, participants: { { player: Player, slot: Slot } }): () -> ()
+--- One seat. `player` is nil for a filler opponent, which is the whole reason
+--- this type is not just a Player: the scene has to seat somebody either way.
+export type Participant = {
+	player: Player?,
+	displayName: string,
+	slot: Slot,
+}
+
+function DuelSceneService.open(duelId: string, participants: { Participant }): () -> ()
 	nextIndex += 1
 	local origin = CFrame.new(nextIndex * SPACING, 0, 0)
 
 	local model = buildModel(duelId, origin)
 
 	for _, entry in participants do
-		seat(entry.player, origin, entry.slot)
+		local player = entry.player
+		if player then
+			seat(player, origin, entry.slot)
+		else
+			-- A bot's body belongs to the duel's model, so it is destroyed with
+			-- the table by the same cleanup. Nothing to release afterwards:
+			-- there is no player to give movement back to.
+			seatBot(entry.displayName, origin, entry.slot, model)
+		end
 	end
 
 	return function()
 		model:Destroy()
 		for _, entry in participants do
-			release(entry.player)
+			local player = entry.player
+			if player then
+				release(player)
+			end
 		end
 	end
 end

@@ -302,12 +302,16 @@ local function openDuel(sideA: Side, sideB: Side): string?
 	-- the same statement that creates it, like every other resource a duel
 	-- owns: the scene disappears by every route the duel can end, disconnects
 	-- included (card E2, docs/gdd.md §11).
-	local seated: { { player: Player, slot: Slot } } = {}
+	-- BOTH sides, bots included. A filler opponent gets a body now (see
+	-- DuelSceneService): an empty chair across the table is the most obvious
+	-- "this is not a person" signal there is, and §34 rules that out.
+	local seated: { DuelSceneService.Participant } = {}
 	for _, side in duel.sides do
-		local person = side.player
-		if person then
-			table.insert(seated, { player = person, slot = side.slot })
-		end
+		table.insert(seated, {
+			player = side.player,
+			displayName = side.displayName,
+			slot = side.slot,
+		})
 	end
 	duel.trove:Add(DuelSceneService.open(duel.id, seated))
 
