@@ -147,6 +147,54 @@ local function buildBotBody(displayName: string, seed: number): Model?
 	return body
 end
 
+--- Sculpts a fringe onto the head, out of parts.
+---
+--- Hair in Roblox is normally a catalogue accessory, which is an asset id --
+--- something that either exists or does not, and cannot be invented. Geometry
+--- can: this is built the same way the table and the board are, which is the
+--- project's habit anyway (docs/decisiones.md: the scene is code, not a model).
+---
+--- Deliberately asymmetric, heavier over one eye. A symmetric fringe reads as a
+--- helmet; the whole point of this shape is that it is falling over half a face.
+local function addFringe(body: Model, tint: Color3)
+	local head = body:FindFirstChild("Head")
+	if not head or not head:IsA("BasePart") then
+		return
+	end
+
+	--- A slab across the brow, a long sweep over the left eye, two shorter locks
+	--- on the right, and a back so it is not a bald head with a fringe glued on.
+	type Lock = { offset: Vector3, size: Vector3, tilt: number }
+	local locks: { Lock } = {
+		{ offset = Vector3.new(0, 0.42, -0.06), size = Vector3.new(1.24, 0.36, 1.12), tilt = 0 },
+		{ offset = Vector3.new(-0.30, 0.10, -0.50), size = Vector3.new(0.62, 0.86, 0.30), tilt = -0.35 },
+		{ offset = Vector3.new(0.34, 0.20, -0.48), size = Vector3.new(0.44, 0.60, 0.28), tilt = 0.30 },
+		{ offset = Vector3.new(0.52, 0.26, -0.30), size = Vector3.new(0.30, 0.52, 0.30), tilt = 0.55 },
+		{ offset = Vector3.new(0, 0.24, 0.52), size = Vector3.new(1.16, 0.72, 0.26), tilt = 0 },
+	}
+
+	for index, lock in locks do
+		local strand = Instance.new("Part")
+		strand.Name = `Hair{index}`
+		strand.Size = lock.size
+		strand.Color = tint
+		strand.Material = Enum.Material.SmoothPlastic
+		strand.CanCollide = false
+		strand.CanQuery = false
+		strand.CanTouch = false
+		strand.Massless = true
+		strand.CFrame = head.CFrame * CFrame.new(lock.offset) * CFrame.Angles(0, 0, lock.tilt)
+		strand.Parent = body
+
+		-- Welded rather than positioned once: the body is anchored today, but a
+		-- head that ever moves should not leave its hair behind.
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = head
+		weld.Part1 = strand
+		weld.Parent = strand
+	end
+end
+
 --- Stands a filler opponent at its side of the table, facing the sheet.
 local function seatBot(displayName: string, origin: CFrame, slot: Slot, parent: Instance): Model?
 	local body = buildBotBody(displayName, slot + #displayName)
@@ -159,6 +207,10 @@ local function seatBot(displayName: string, origin: CFrame, slot: Slot, parent: 
 
 	body.Parent = parent
 	body:PivotTo(CFrame.lookAt(spot.Position + Vector3.new(0, 3, 0), lookAt))
+
+	-- After the pivot, so the strands are built against the head where it
+	-- actually ended up rather than where the rig was assembled.
+	addFringe(body, Color3.fromRGB(16, 14, 20))
 
 	-- Anchored like a player's, and for the same reason: nothing wanders off
 	-- mid-duel. A bot's body has no controller anyway, but an unanchored rig
