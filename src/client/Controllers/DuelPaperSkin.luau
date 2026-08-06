@@ -111,9 +111,11 @@ function DuelPaperSkin.mount(
 	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	surface.PixelsPerStud = Theme.table.pixelsPerStud
 	surface.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	-- Lit like paper, not like a screen. A glowing board is the fastest way to
-	-- lose the whole aesthetic.
-	surface.LightInfluence = 1
+	-- How much the world's light tints this. See Theme.table.boardLight: at 1
+	-- the ambient grey of an empty baseplate drains every colour on the board,
+	-- which is why the buttons could be mixed at full strength and still arrive
+	-- grey.
+	surface.LightInfluence = Theme.table.boardLight
 	surface.Parent = parent
 	trove:Add(function()
 		surface:Destroy()

@@ -69,12 +69,12 @@ local palette = {
 	--- first pass raised only the outline and the board still read washed out,
 	--- because the pale rectangle is what the eye actually sees. These are the
 	--- colours now, and the symbol sits on them in white.
-	accept = Color3.fromRGB(24, 158, 62),
-	acceptFill = Color3.fromRGB(46, 194, 84),
-	decline = Color3.fromRGB(206, 32, 30),
-	declineFill = Color3.fromRGB(238, 58, 54),
-	raise = Color3.fromRGB(224, 146, 8),
-	raiseFill = Color3.fromRGB(250, 178, 26),
+	accept = Color3.fromRGB(10, 150, 46),
+	acceptFill = Color3.fromRGB(24, 214, 76),
+	decline = Color3.fromRGB(196, 12, 20),
+	declineFill = Color3.fromRGB(252, 34, 40),
+	raise = Color3.fromRGB(220, 132, 0),
+	raiseFill = Color3.fromRGB(255, 182, 8),
 
 	--- The accusation. Deliberately NOT the same red as Rechazar: they are
 	--- opposite moves and sharing a colour would make the loudest button in the
@@ -276,6 +276,18 @@ local tableSpec = {
 	--- ever comes out sideways again, try 0, 180, 270 -- looking costs ten
 	--- seconds against an afternoon of deriving it wrong.
 	boardYaw = 90,
+	--- How much the scene's lighting tints the board, 0 to 1.
+	---
+	--- At 1 the surface is lit like real paper -- which is what it wanted to be
+	--- -- and the grey ambient light of an empty baseplate DRAINS every colour
+	--- on it. The buttons were mixed at full strength and arriving on screen
+	--- grey, and no amount of saturating the values fixes that: the problem is
+	--- downstream of the colour.
+	---
+	--- Low enough that the buttons carry their own colour, high enough that the
+	--- board is not a glowing screen lying on a table. If the lobby's lighting
+	--- turns out warm and generous (card E1), this can go back up.
+	boardLight = 0.2,
 }
 
 --- [propuesta] Where the camera sits during a duel. Over your own shoulder,
