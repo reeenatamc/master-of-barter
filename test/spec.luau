@@ -506,5 +506,52 @@ do
 	check(`three changes in one tick coalesce into one push ({pushes})`, pushes == 1, `{pushes}`)
 end
 
+-- ── 11. THE EXITS INVENTORY, wired instead of noted ─────────────────────────
+--
+-- decisiones.md carries a certified list of every way the server talks to a
+-- client, and its own rule says "counting the exits only works as an audit if
+-- the right number is known". A number in a document goes stale the day
+-- somebody adds a remote and forgets the document -- which already happened
+-- once, when PlayerData turned ONE view into two.
+--
+-- So the document is not the only copy any more. This asserts the set, and a
+-- new server-to-client send that nobody wrote down turns it red with its own
+-- name in the message.
+
+print("\n[spec] the exits inventory")
+do
+	local a, b = freshPlayers()
+	BotService.selfPlay(30, a)
+
+	-- Everything a duel, a shop refusal, an emote or a payout can send.
+	local SANCTIONED = {
+		DuelState = "view: the duel as one side sees it",
+		PlayerData = "view: your own profile, to you only",
+		Notice = "trivial: a string from Config/Strings",
+		DuelEmote = "trivial: slot + emoteId",
+	}
+
+	local seen: { [string]: number } = {}
+	for _, entry in sent do
+		seen[entry.remote] = (seen[entry.remote] or 0) + 1
+	end
+
+	local unknown = {}
+	for name in seen do
+		if SANCTIONED[name] == nil then
+			table.insert(unknown, name)
+		end
+	end
+	table.sort(unknown)
+
+	check(
+		`every send went through a sanctioned remote ({#unknown} unknown)`,
+		#unknown == 0,
+		`UNDOCUMENTED: {table.concat(unknown, ", ")} -- update the inventory in decisiones.md`
+	)
+	check("the run actually sent something (so the check can fail)", next(seen) ~= nil)
+	check("exactly two of them are VIEWS", seen.DuelState ~= nil and seen.PlayerData ~= nil)
+end
+
 print(`\n[spec] {passed} passed, {failed} failed`)
 print(if failed == 0 then "RESULT: PASS" else "RESULT: FAIL")

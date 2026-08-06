@@ -942,6 +942,15 @@ Los seis avisos: dos en `DuelService` (espectador sin perfil), tres en `ShopServ
 
 **Y por qué esta entrada existe:** *"contar las salidas solo sirve como auditoría si el número correcto es conocido y chico"*. Dos es chico. Tres sería una alarma. Cero sería un bug.
 
+**Pero el documento ya no es la única copia.** Esta lista se quedó vieja el día que `PlayerData` convirtió una vista en dos, y una lista que se queda vieja es peor que ninguna. Así que —doctrina de las deudas condicionales aplicada al propio inventario— **está cableada**: el spec junta el conjunto de remotos que el servidor usó en 30 duelos y lo compara con esta tabla. Un envío servidor→cliente que nadie anotó pone la corrida en rojo **con su propio nombre en el mensaje**:
+
+```
+FAIL  every send went through a sanctioned remote (1 unknown)
+      --  UNDOCUMENTED: QueueJoin -- update the inventory in decisiones.md
+```
+
+Verificado con control positivo: se agregó un envío por un remoto ajeno y la aserción lo nombró.
+
 ---
 
 ## 2026-08-05 · 🔒 CANON — las vistas se construyen, nunca se clonan

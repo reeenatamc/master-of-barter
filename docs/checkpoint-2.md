@@ -8,6 +8,8 @@ Esto es lo único que necesita tus ojos ahora. Todo lo demás siguió sin vos.
 
 **Tiempo estimado: 15 minutos.** Diez de mirar, cinco de decir qué está mal.
 
+> **Se suma a este paquete la mitad cliente de E3** —HUD de Clips y colección, vitrina— cuando esté construida. La mitad servidor ya está: `PlayerDataService` te empuja tus Clips y tus copias, coalescido y solo a vos. Falta el dibujo, que es superficie visual y por lo tanto de esta sentada, no de otra. Así tu sesión visual cubre las dos cosas de una.
+
 ---
 
 ## Lo que cambió desde la primera versión de este checkpoint
