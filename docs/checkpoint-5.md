@@ -4,9 +4,9 @@ sidebar_label: Checkpoint 5 · bots y partición
 
 # Checkpoint 5 — bots, matchmaking y la partición de DuelService
 
-**Tiempo: 8 minutos.** Tres pruebas, y **una sola importa**: la 1, que D1 funcione. Las otras dos confirman cosas ya verificadas por tipos y por lectura.
+**Tiempo: 5 minutos.** Una prueba que importa —la 1, que D1 funcione— y una opcional.
 
-La que era la prueba 4 —el auto-juego— **ya está corrida y salió de tu lista**: ahora corre sin Studio con un comando. Los números están abajo.
+Las pruebas 3 y 4 **salieron de tu lista**: las corre `./selfplay.sh` sin Studio. Los números están abajo.
 
 **Este checkpoint no cambia tu orden de cola.** Sigue mandando el checkpoint 3 (persistencia) primero y solo, después la sesión de diversión 2. Este entra donde te quede cómodo — pero **leé la sección "Lo que necesita tu sí o tu no"**, porque ahí hay una corrección de seguridad esperándote.
 
@@ -68,21 +68,11 @@ Entre 1,2 y 4,5 segundos después el bot oferta solo, y el duelo pasa a `Negotia
 
 ---
 
-## Prueba 3 — nada se rompió con la partición (opcional)
+## Prueba 3 — ~~nada se rompió con la partición~~ ya está corrida ✅
 
-`DuelService` pasó de 1095 líneas a cinco módulos. **El comportamiento no cambió**, y esta prueba lo confirma con números.
+`runFinishRaceCheck` está en el spec (`./selfplay.sh spec`), junto con otras 33 aserciones. Sale de tu lista.
 
-1. `DuelRules.debugLogs = true` en `src/shared/Config/DuelRules.luau`.
-2. Test → **2** jugadores. Duelo hasta llegar a `Negotiating`.
-3. Command Bar, contexto **Server**:
-
-```lua
-require(game.ServerScriptService.Services.DuelService).runFinishRaceCheck()
-```
-
-Tiene que imprimir **RESULT: PASS** con los seis números en lo esperado. Es la misma prueba de antes de partir.
-
-4. Volvé `debugLogs` a `false`.
+**Con una aclaración que vale más que el PASS:** ese check **cubre menos de lo que parece**. Al segundo camino terminal lo frena el **registro** (`duels[id]` ya en `nil`), no el claim de `resolving` — probado borrando el claim entero y viendo que el check sigue en verde. Ver `decisiones.md`.
 
 ---
 

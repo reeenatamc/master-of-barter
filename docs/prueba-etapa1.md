@@ -4,42 +4,36 @@ sidebar_label: Prueba · Etapa 1
 
 # Sesión de prueba — punto de control Etapa 1 (tras A4)
 
-Una sola sesión que ejercita todo lo acumulado sin probar: **A2.1, A2.2, A3, A4** y el camino de desconexión del commit `72114f7`. Está ordenada para que no tengas que reiniciar entre bloques más de lo necesario.
+**Duración: 10 minutos.** Eran 20–30.
 
-Duración estimada: 20–30 min.
+Lo que se fue no se dejó de probar: **se automatizó.** Los bloques C, D y F de la versión anterior son ahora 34 aserciones que corren en menos de un segundo:
+
+```
+./selfplay.sh spec
+```
+
+Ahí viven, y con mejor cobertura que en Studio: acciones fuera de turno, las siete ofertas malformadas, el ataque de duplicación, el límite de 3 pedidos, la enmienda que no crece, los dos timeouts de fase, el watchdog por generación, el marcador, la ficha, la carrera de `finish()`, y la regla de oro verificada contra **todos** los `DuelState` que el servidor mandó en 40 duelos.
+
+**Lo que queda acá es lo que ninguna máquina puede hacer:**
+
+| Bloque | Por qué sigue siendo tuyo |
+|---|---|
+| **A y B** — el bucle completo | No verifican nada: preguntan si **es divertido**. Ese es el punto de la Etapa 1 y no hay test que lo conteste |
+| **E** — desconexión | Necesita un cliente real cerrando una ventana real. El arnés no tiene clientes |
 
 ---
 
 ## Antes de empezar
 
 1. `rojo serve` corriendo y el plugin conectado.
-2. En `src/shared/Config/DuelRules.luau`, poné **`debugLogs = true`**. Rojo lo sincroniza solo.
-3. Pestaña **Test** → *Clients and Servers* → **2** jugadores → **Start**. Se abren tres ventanas: un servidor y dos clientes.
+2. En `src/shared/Config/DuelRules.luau`, poné **`debugLogs = true`**.
+3. Pestaña **Test** → *Clients and Servers* → **2** jugadores → **Start**.
 
-**No hace falta preparar nada en la Command Bar.** Todo se maneja con teclas, y esa es una corrección importante de este documento:
+**Teclas:** **Q** ofertar 1 real + 1 fake · **E** ofertar 2 reales · **R** aceptar · **T** rechazar · **Z** pedir más · **X** enmendar · **C** ¡ES FAKE!
 
-> La versión anterior pedía `_G.dc = require(...)` en la Command Bar de cada cliente. **Eso no funciona.** La Command Bar de Studio tiene su propio caché de módulos *y* sus propios globales: `require` ahí devuelve una **segunda copia vacía** del controlador, y el `_G` que ves no es el `_G` del cliente. No hay forma de alcanzar el controlador vivo desde esa consola. Por eso todo pasó a teclas, que corren dentro del cliente.
-
-**Las teclas** (letras y no dígitos: 1-9 son la mochila de Roblox y WASD es movimiento):
-
-| Tecla | Qué hace |
-|---|---|
-| **Q** | Ofertar 1 genuino + 1 falsificación |
-| **E** | Ofertar 2 genuinos (oferta honesta) |
-| **R** | Aceptar |
-| **T** | Rechazar |
-| **Z** | Pedir más |
-| **X** | Enmendar (reenvía tu oferta + 1 falsificación) |
-| **C** | ¡ES FAKE! |
-| **B** | Batería de ofertas malformadas — todas deben rechazarse |
-| **V** | Ataque de duplicación — debe rechazarse |
-
-**Cómo saber quién es quién:** al entrar, cada cliente imprime `you=slot1` o `you=slot2`. El slot 1 es el que abre la negociación.
-
-**Sobre los nombres de objetos:** el catálogo tiene 12 objetos y las manos se reparten de la colección de cada quien, así que los nombres concretos varían. Abajo se describe la **forma** de la salida, no los nombres — si un día cambia el catálogo, la prueba sigue valiendo.
+**Cómo saber quién es quién:** cada cliente imprime `you=slot1` o `you=slot2`. El slot 1 abre la negociación.
 
 ---
-
 ## Bloque A — el bucle completo, versión "el tramposo gana"
 
 Esto es lo que responde la pregunta de la Etapa 1. Todo lo demás es plomería.
@@ -101,102 +95,10 @@ Fijate en `slipped 0 fake(s)` de slot 1: la falsificación cambió de manos, per
 
 ---
 
-## Bloque C — validación (lo que tiene que ser rechazado)
-
-### C-1 — acciones inválidas
-
-Llegá a `Negotiating` con **Q** en los dos. Desde el cliente **slot 2** (que no tiene el turno) apretá **R** (aceptar) y después **C** (¡ES FAKE!).
-
-En el Output del **servidor**, dos rechazos:
-
-```
-[DuelService] request from Player2 rejected: not your turn (slot 1 is up)
-```
-
-### C-2 — la batería de ofertas malformadas: tecla **B**
-
-**Corré esto ANTES de ofertar, apenas empieza el duelo.** Es lo que cambió respecto de la versión vieja de este documento y es el punto entero:
-
-> Desde `Negotiating`, **todos** estos payloads chocan primero contra el chequeo de fase y devuelven `no raise is pending on you`. La versión anterior de esta prueba los mandaba desde ahí y contaba eso como aprobado — pero un rechazo por fase **no prueba nada** sobre la capa que cada caso fue escrito para ejercitar.
-
-1. Duelo nuevo. **No ofertes.**
-2. Apretá **B**.
-
-Seis payloads salen seguidos, cada uno anunciado por el cliente, y **los seis tienen que ser rechazados** con un motivo distinto:
-
-| # | Payload | Rechazo esperado | Qué capa prueba |
-|---|---|---|---|
-| 1 | claim que no existe en el catálogo | `unknown claim "no_existe"` | Existencia contra Config |
-| 2 | envoltorio genuino que declara otra cosa | `genuine wrapper claims ... but holds ...` | Coherencia del modelo A |
-| 3 | `isFake=true` con un `copyId` | `isFake disagrees with copyId` | Coherencia del modelo A |
-| 4 | tres falsificaciones | `more than 2 fakes` | Límite de Config |
-| 5 | oferta vacía | `offer has 0 wrappers, needs 1-4` | Rango |
-| 6 | la misma copia envuelta dos veces | `same copy wrapped twice` | Unicidad **dentro** del payload |
-
-3. **Después de la batería, mirá tu mano.** Tiene que estar intacta: seis ofertas rechazadas no sacan ni una copia del perfil. Si falta alguna, un rechazo dejó estado a medias — que es peor que aceptar la oferta.
-
-> El caso 6 merece una nota: es de la misma familia que C-DUPE. Los dos son "el cliente arma la lista y el servidor no puede suponer nada sobre su forma" — uno dentro de un payload, el otro entre dos payloads sucesivos.
-
-Y las fichas: llegá a `Negotiating` y apretá **C** dos veces desde slot 1 → la segunda da `no FakeCall tokens left`.
-
-### C-DUPE 🔴 — el ataque de duplicación, caso de regresión permanente
-
-**Este no se saltea nunca.** Es el agujero más serio que tuvo el proyecto: el escrow confiaba en el **orden** de una lista que arma el **cliente**. Está arreglado en dos lugares independientes, y esta prueba verifica que los dos siguen ahí.
-
-**Pasos:**
-
-1. Dos jugadores. Los dos ofertan (**Q**).
-2. Desde **slot 1**, pedí más (**Z**).
-3. Desde **slot 2** —que ahora debe una enmienda— apretá **V**.
-
-**El payload que manda V** es el ataque exacto: el envoltorio **nuevo primero**, la oferta anterior después.
-
-```
-oferta original:  [ real A ]
-enmienda enviada: [ real B , real A ]     ← B adelante: eso es todo el ataque
-```
-
-**Qué tiene que salir en el Output del servidor:**
-
-```
-[Duel] sending the dupe payload: new wrapper first, previous offer after   (cliente)
-[DuelService] request from Player2 rejected: amendment changed wrapper 1; it may only append
-```
-
-**Y lo que tiene que seguir siendo cierto después:** el perfil del slot 2 no cambió. Ni ganó una copia ni perdió una:
-
-```lua
-print(require(game.ServerScriptService.Services.DataService).get(game.Players:GetPlayers()[2]).duelCopies)
-```
-
-**Las dos defensas, y por qué son dos:**
-
-| Defensa | Dónde | Qué aporta |
-|---|---|---|
-| Una enmienda debe **empezar** con la oferta que enmienda | `DuelOffers` | El rechazo claro, y que la cuenta del costo siga siendo exacta |
-| `takeCopy` **rechaza un `copyId` que ya está en escrow** | `InventoryService` | Que ninguna ruta futura pueda reabrir el agujero suponiendo un orden otra vez |
-
-La primera dice *"este camino no dupea"*. La segunda dice *"no existe camino que dupee"*. Si algún día alguien borra la primera, el ataque tiene que seguir fallando — con un mensaje más feo (`cannot stake copy ... `) pero fallando igual. **Esa es la prueba de que el arreglo es estructural y no una convención.**
-
----
-
-## Bloque D — límites y timeouts
-
-> **Antes de este bloque:** si tenés `phaseSeconds` subido para tener tiempo de tipear (300s), bajá `BuildingOffers` y `Negotiating` a **15** en `DuelRules.luau`. Con 300 te quedás cinco minutos mirando la pantalla en cada fila. Los tiempos de abajo asumen 15.
-
-| # | Qué | Qué mirar |
-|---|---|---|
-| D1 | Reiniciá, llegá a `Negotiating`, apretá **Z** 4 veces desde slot 1 (con **X** en slot 2 entre medio, porque cada pedido hay que satisfacerlo) | La cuarta da `no raises left (limit is 3 per side)` |
-| D2 | Enmendar sin agregar nada: en slot 2, con un pedido pendiente, apretá **V** (que reenvía la oferta reordenada, no ampliada) | Rechazo. Ver C-DUPE: hoy corta antes, en la regla de que una enmienda solo puede **agregar** |
-| D3 | **Watchdog por generación.** **Z** en slot 1 + **X** en slot 2, y después **no toques nada** | El duelo **no** se cancela antes de tiempo. Si muere contando desde que empezó `Negotiating` en vez de desde la enmienda, el timer viejo no se está descartando |
-| D4 | Reiniciá, llegá a `Negotiating`, no toques nada | `Cancelled` + `expected 0 live objects, got 0` |
-| D5 | Reiniciá, no ofertes nada, esperá | `BuildingOffers timed out` + `got 0` |
-
----
 
 ## Bloque E — desconexión 🔴
 
-**Este es el importante.** Es el único que cubre un cambio ya commiteado y sin probar (`72114f7`), y un camino de desconexión roto no da error: corrompe después.
+**El único bloque de verificación que queda, y es el que más importa.** Un camino de desconexión roto no da error: corrompe después. Y el arnés no puede tocarlo, porque no tiene clientes que cerrar.
 
 1. Reiniciá. Llegá a `Negotiating` con **Q** en los dos.
 2. **Cerrá la ventana de slot 2** (la X de la ventana, no Stop).
@@ -219,31 +121,8 @@ Repetilo una vez más cerrando durante `BuildingOffers` en vez de `Negotiating`.
 
 ---
 
-## Bloque F — la carrera de `finish()`
+## Y al terminar
 
-Necesita la Command Bar de la **ventana del servidor** (contexto Server), con un duelo vivo en `Negotiating`:
+`debugLogs` a `false`.
 
-```lua
-require(game.ServerScriptService.Services.DuelService).runFinishRaceCheck()
-```
-
-Seis líneas con lo esperado al lado y `RESULT: PASS`.
-
-**Lo que este PASS NO significa:** el segundo camino queda frenado por el registro (`duels[id]` ya en nil), no por el claim de `resolving`. El claim protege contra un yield antes del broadcast, y hoy no existe ninguno. Está anotado en la tarjeta A3 del backlog: esa deuda se salda cuando B1/B3 metan un guardado real ahí.
-
----
-
-## Al terminar
-
-1. **Volvé `debugLogs` a `false`** en `DuelRules.luau:46`.
-2. Si bajaste algún tiempo de `phaseSeconds` para no esperar, devolvelo.
-
-## Qué anotar
-
-Lo técnico se ve solo: pasa o no pasa. Lo que no puedo ver yo:
-
-- ¿Hubo un momento de tensión antes de aceptar?
-- ¿La revelación se sintió como algo, o fue solo texto?
-- ¿Acusar se sintió como apostar o como cobrar?
-- ¿Cuánto duró un duelo de punta a punta? (el objetivo del GDD §7 son 2–3 min)
-- ¿Alguien pidió "otra"? — ese es el criterio de aceptación real de la Etapa 1.
+**Lo que este documento ya no te pide, y por qué está bien:** los bloques automatizados no se "confían" — se corren en cada cambio que toque el duelo, que es más de lo que una sesión manual podía dar. Varios de ellos, además, se probaron por **mutación**: se rompió la defensa a propósito y se verificó que la aserción se pone en rojo. Un verde que nunca vio rojo no es evidencia de nada.
