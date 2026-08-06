@@ -150,8 +150,12 @@ function DuelPaperSkin.mount(
 	local nearActions = zone(0.79, 0.13)
 	local emoteStrip = zone(0.94, 0.05)
 
+	-- The header is off the board while it is bare. It still exists so the
+	-- view model has somewhere to put a phase message when the redesign decides
+	-- where that belongs -- on the board, above the table, or nowhere.
 	local banner = text("", UDim2.fromScale(0.5, 0.05), Theme.palette.ink, Theme.fonts.marker)
 	banner.Position = UDim2.fromScale(0.25, 0.4)
+	banner.Visible = false
 	banner.Parent = page
 
 	local function clear(container: Instance)

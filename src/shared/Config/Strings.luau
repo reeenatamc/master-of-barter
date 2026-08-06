@@ -79,12 +79,17 @@ local rarityNames: { [Rarity]: string } = {
 
 	The three negotiation buttons are the visual signature of the game
 	(docs/gdd.md §25), so their wording is design, not decoration.
+
+	SYMBOLS, NOT WORDS, since 2026-08-05: the reference board carries ✓ + ✗ and
+	nothing else. A symbol reads at any angle and in any language, which matters
+	on a board seen in perspective from across a table -- and it is what keeps
+	the board bare while the design is being reworked.
 ]=]
 local duelButtons = {
-	accept = "Aceptar",
-	decline = "Rechazar",
-	raiseOffer = "Pedir más",
-	fakeCall = "¡ES FAKE!",
+	accept = "✓",
+	decline = "✗",
+	raiseOffer = "+",
+	fakeCall = "!",
 }
 
 --[=[
