@@ -1044,3 +1044,37 @@ Se arregló **antes** de escribir la aserción.
 **Alternativa descartada:** dibujar los Clips sobre la propia hoja del duelo. Se descartó porque desaparecería en el lobby y en el kiosco, que es donde más falta hace saber cuánto tenés.
 
 **Lo que el arnés NO puede verificar:** nada de esto. El auto-juego no tiene clientes, así que el HUD entero —que se vea, que sea legible en un teléfono chico, que el número no tape nada— es de los ojos de Renata. Va al paquete visual del checkpoint 2.
+
+---
+
+## 2026-08-05 · 🔒 CANON — el test de ubicación: cuatro preguntas para todo elemento de UI
+
+**Una regla que siempre da la misma respuesta es un hábito. Un criterio que produce `ScreenGui` para el HUD y mundo-3D para los botones, desde las mismas cuatro preguntas, es un principio funcionando.**
+
+Todo elemento de interfaz nuevo se ubica contestando esto, **no por analogía con lo último que se construyó**:
+
+| # | Pregunta | Por qué decide |
+|---|---|---|
+| 1 | ¿Es **juego** o es **cromo**? | El juego vive donde se juega; el cromo acompaña |
+| 2 | ¿Existe **fuera del duelo**? | Si vive en el lobby, no puede depender de que haya un tablero |
+| 3 | ¿**Tapa al rival**? | §11: verlo es mecánico. Nada puede taparlo |
+| 4 | ¿**Se toca**? | Solo lo que se toca hereda el problema de precisión táctil en móvil |
+
+**Resultados registrados hasta ahora:**
+
+| Elemento | 1 | 2 | 3 | 4 | Dónde vive |
+|---|---|---|---|---|---|
+| Botones de negociación | juego | no | sí | sí | **Sobre la hoja**, en el mundo |
+| HUD (Clips, colección) | cromo | sí | no | no | **`ScreenGui`**, una esquina |
+
+### Corolario 1 — el monopolio visual de los tres botones
+
+> **Un HUD que compitiera con ellos se estaría quedando con la excepción ajena.**
+
+Los tres rellenos de color son **capital de diseño**: le dicen al jugador dónde se toca sin decírselo. **Toda pantalla nueva hereda la prohibición** — papel y birome, y si algo necesita destacarse se resuelve con **jerarquía visual** (tamaño, peso, aire), no robándose la excepción.
+
+### Corolario 2 — la vida de un objeto sigue a su DUEÑO
+
+El HUD **no** está en el trove del duelo, y la razón exacta importa: el cromo pertenece a la **sesión**, no a la partida. Meterlo ahí te borraba los Clips al terminar cada mano.
+
+**Pregunta de cierre para todo montaje futuro: ¿quién es el dueño de la vida de esto?** No "¿dónde es cómodo registrarlo?".
