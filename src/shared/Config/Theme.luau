@@ -65,12 +65,16 @@ local palette = {
 	--- "Pedir más" moved from blue to AMBER, which is what both reference
 	--- images show. Amber also reads as the middle answer between yes and no,
 	--- which blue never did.
-	accept = Color3.fromRGB(38, 176, 76),
-	acceptFill = Color3.fromRGB(178, 232, 176),
-	decline = Color3.fromRGB(228, 46, 44),
-	declineFill = Color3.fromRGB(248, 176, 168),
-	raise = Color3.fromRGB(246, 168, 20),
-	raiseFill = Color3.fromRGB(252, 224, 150),
+	--- The FILL is the whole button; the outline is a hairline around it. A
+	--- first pass raised only the outline and the board still read washed out,
+	--- because the pale rectangle is what the eye actually sees. These are the
+	--- colours now, and the symbol sits on them in white.
+	accept = Color3.fromRGB(24, 158, 62),
+	acceptFill = Color3.fromRGB(46, 194, 84),
+	decline = Color3.fromRGB(206, 32, 30),
+	declineFill = Color3.fromRGB(238, 58, 54),
+	raise = Color3.fromRGB(224, 146, 8),
+	raiseFill = Color3.fromRGB(250, 178, 26),
 
 	--- The accusation. Deliberately NOT the same red as Rechazar: they are
 	--- opposite moves and sharing a colour would make the loudest button in the
@@ -78,8 +82,8 @@ local palette = {
 	---
 	--- docs/gdd.md §29 wants this stamped rather than pressed, so this colour is
 	--- ink for a rubber stamp, and the shape it belongs on is still open.
-	fakeCall = Color3.fromRGB(156, 30, 38),
-	fakeCallFill = Color3.fromRGB(226, 150, 142),
+	fakeCall = Color3.fromRGB(120, 18, 92),
+	fakeCallFill = Color3.fromRGB(176, 32, 132),
 
 	good = Color3.fromRGB(58, 132, 62),
 	bad = Color3.fromRGB(196, 60, 52),

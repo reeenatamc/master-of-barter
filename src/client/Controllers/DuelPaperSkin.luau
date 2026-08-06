@@ -195,8 +195,13 @@ function DuelPaperSkin.mount(
 		if big and scheme then
 			-- Yours: filled, and the colour says what it does before the icon
 			-- gets read.
+			--
+			-- The symbol goes WHITE on the fill. It used to be drawn in the
+			-- outline colour, which was legible only while the fill was pale --
+			-- the moment the fill got its real saturation, colour on colour
+			-- stopped reading at all.
 			face.BackgroundColor3 = scheme.fill
-			face.TextColor3 = scheme.line
+			face.TextColor3 = Theme.palette.paper
 			face.BackgroundTransparency = if spec.enabled then 0 else 0.55
 		else
 			-- Theirs, and everything else: outline only, on bare paper.
