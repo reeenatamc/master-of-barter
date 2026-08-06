@@ -923,7 +923,16 @@ Las dos frases eran razonables, estaban escritas por gente que había leído el 
 | **DuelState** | `DuelState` | `DuelView.stateFor` (local del módulo) | Una recipiente por lado; **censura por defecto** (`viewOf` campo por campo, sin lugar donde poner `isFake`); la verdad solo en fase `Reveal` |
 | **PlayerDataView** | `PlayerData` | `PlayerDataService.viewOf` (local del módulo) | **Un solo destinatario: su dueño**; lista blanca de tres campos; coalescida |
 
-**Los otros 7 envíos son triviales y no cargan objetos de duelo:** 5 avisos (`Notice` con strings de `Config/Strings`) y 1 emote (`slot` + `emoteId`), más el push de `PlayerData`… que ya está contado arriba. **Desglose exacto: 5 `Notice` + 1 `DuelEmote` + 1 `DuelState` + 1 `PlayerData` = 8 sitios de `FireClient`, en 2 vistas y 6 triviales.**
+**Desglose exacto, 9 sitios de `FireClient`:**
+
+| Cuántos | Remoto | Qué lleva | ¿Vista? |
+|---|---|---|---|
+| 1 | `DuelState` | El duelo como lo ve un lado | **Sí** |
+| 1 | `PlayerData` | Tu propio perfil | **Sí** |
+| 6 | `Notice` | Un string de `Config/Strings` | No |
+| 1 | `DuelEmote` | `slot` + `emoteId` | No |
+
+Los seis avisos: dos en `DuelService` (espectador sin perfil), tres en `ShopService` (sin stock, sin Clips, espectador) y uno en `MatchmakingService` (tope diario alcanzado). Ninguno carga objetos de duelo ni nada derivado de un perfil.
 
 ### Lo que una auditoría tiene que encontrar
 
