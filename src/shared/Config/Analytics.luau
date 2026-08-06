@@ -53,14 +53,31 @@ local events = {
 
 	Whether to forward events to Roblox's own AnalyticsService.
 
-	**OFF, and deliberately.** The engine binding is written but its exact
-	signature has NOT been checked against create.roblox.com/docs, and this
-	project's rule 5 says an invented API costs hours. Flipping this on is a
-	five-minute job for whoever verifies `LogCustomEvent` -- until then every
-	event still reaches the console and the in-memory buffer, so nothing
-	downstream is waiting on it.
+	**ON**, since the API was verified against create.roblox.com/docs on
+	2026-08-05. What that verification changed is in `AnalyticsService`: Roblox
+	keeps only three custom fields and only as breakdown dimensions, so what
+	goes out is a PROJECTION of each event, not the event.
 ]=]
-local sendToRoblox = false
+local sendToRoblox = true
+
+--[=[
+	@prop uniqueCombinationBudget number
+	@within Analytics
+
+	How many distinct three-field combinations this server will send before it
+	stops attaching custom fields at all.
+
+	Roblox caps an experience at **8,000 unique combinations across the three
+	fields**, and that ceiling is shared by every event and never resets. One
+	bug that puts an unbounded value in a field -- a copy id, a player name, a
+	Clips amount -- burns the whole budget permanently and takes the useful
+	breakdowns down with it.
+
+	So this sits well under the real cap and is a circuit breaker, not a target:
+	crossing it means something is wrong, and the right failure is to keep
+	counting events with no breakdown rather than to poison the account.
+]=]
+local uniqueCombinationBudget = 2000
 
 --[=[
 	@prop bufferSize number
@@ -75,5 +92,6 @@ local bufferSize = 200
 return {
 	events = events,
 	sendToRoblox = sendToRoblox,
+	uniqueCombinationBudget = uniqueCombinationBudget,
 	bufferSize = bufferSize,
 }

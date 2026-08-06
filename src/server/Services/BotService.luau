@@ -26,12 +26,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 ReplicatedStorage:WaitForChild("Shared")
-local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local Bots = require(ReplicatedStorage.Shared.Config.Bots)
 local DuelRules = require(ReplicatedStorage.Shared.Config.DuelRules)
 local Items = require(ReplicatedStorage.Shared.Config.Items)
 local Types = require(ReplicatedStorage.Shared.Types)
 
+local Analytics = require(ReplicatedStorage.Shared.Config.Analytics)
 local AnalyticsService = require(script.Parent.AnalyticsService)
 local DuelService = require(script.Parent.DuelService)
 local DuelTypes = require(script.Parent.DuelTypes)
@@ -424,6 +424,7 @@ function BotService.selfPlay(count: number, opponent: Player?)
 
 	fastThinking = true
 	puppet = opponent
+	AnalyticsService.reset()
 	local fallbacksBefore = fallbacks
 	local startedAt = os.clock()
 
@@ -486,6 +487,13 @@ function BotService.selfPlay(count: number, opponent: Player?)
 		print(`  duels a watchdog had to rescue  : {timeouts}   (expected 0 -- a side could not act)`)
 	end
 	print(`  liveness fallbacks fired        : {netFired}   (expected 0 -- a hole in the brain)`)
+	-- Measured, not assumed. Each projection in AnalyticsService writes its
+	-- combination arithmetic in a comment; this is the number that says whether
+	-- the arithmetic was right, and whether anything is quietly unbounded.
+	print(
+		`  analytics field combinations    : {AnalyticsService.combinationCount()}`
+			.. `   (budget {Analytics.uniqueCombinationBudget})`
+	)
 	print(if ok then "  RESULT: PASS" else "  RESULT: FAIL")
 end
 

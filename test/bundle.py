@@ -154,7 +154,17 @@ end
 
 Vector3 = { new = function(x, y, z) return { X = x, Y = y, Z = z } end }
 Color3 = { fromRGB = function(r, g, b) return { R = r, G = g, B = b } end }
-Enum = setmetatable({}, { __index = function(_, k) return setmetatable({}, { __index = function(_, k2) return k2 end }) end })
+-- Enum.Whatever.Member.Name resolves to "Member", which is what the analytics
+-- custom-field keys are.
+Enum = setmetatable({}, {
+	__index = function()
+		return setmetatable({}, {
+			__index = function(_, member)
+				return { Name = member }
+			end,
+		})
+	end,
+})
 
 -- ── the fake instance tree ───────────────────────────────────────────────────
 
