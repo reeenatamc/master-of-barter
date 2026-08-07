@@ -366,10 +366,18 @@ local tableSpec = {
 	basket = {
 		--- The plain number, not an "rbxassetid://" string: it is handed to
 		--- `Content.fromAssetId`, which takes the id itself.
-		assetId = 74562733627832,
+		--- Uploaded by `./tools/subir-modelo.sh`, which is where the id came
+		--- from; `assets/subidos.json` says which file it was.
+		assetId = 84909726712624,
 		--- Studs, in the MODEL's own axes -- see `rotation` below, which is what
 		--- decides where each of these ends up pointing.
-		size = Vector3.new(5.1, 3.2, 2.25),
+		---
+		--- These are the model's OWN proportions, read off the file rather than
+		--- chosen: a size that disagrees with the mesh does not resize it, it
+		--- stretches it. The tray is 5.0 x 2.9 x 1.35, which is a good deal
+		--- shallower than the basket it replaced (2.25 tall) -- the point being
+		--- that you can see what is in it.
+		size = Vector3.new(5.0, 2.9, 1.35),
 		--- Degrees. THE MODEL IS Z-UP AND ROBLOX IS Y-UP, so without this the
 		--- basket lies on its side. Turning +90 about X sends the model's -Z to
 		--- the world's +Y, which stands it on its floor.
