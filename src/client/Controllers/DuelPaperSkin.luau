@@ -149,10 +149,10 @@ function DuelPaperSkin.mount(
 		return frame
 	end
 
-	local farActions = zone(0.025, 0.145)
+	local farActions = zone(0.015, 0.185)
 	local farSlots = zone(0.18, 0.22)
 	local nearSlots = zone(0.5, 0.22)
-	local nearActions = zone(0.755, 0.225)
+	local nearActions = zone(0.735, 0.285)
 
 	--- A line ruled all the way across the sheet.
 	---
@@ -185,14 +185,14 @@ function DuelPaperSkin.mount(
 	-- ONE line per row, not a box around each row: under the far marks and
 	-- above the near ones. Blue is yours, pink is theirs -- which half of the
 	-- sheet belongs to whom is answered by the pen before any symbol is read.
-	rule(0.175, Theme.palette.ruleFar)
-	rule(0.745, Theme.palette.ruleNear)
+	rule(0.212, Theme.palette.ruleFar)
+	rule(0.725, Theme.palette.ruleNear)
 
 	-- Thirds, matching where the marks sit.
-	divider(0.353, 0.015, 0.162, Theme.palette.ruleFar)
-	divider(0.647, 0.015, 0.162, Theme.palette.ruleFar)
-	divider(0.353, 0.748, 0.24, Theme.palette.ruleNear)
-	divider(0.647, 0.748, 0.24, Theme.palette.ruleNear)
+	divider(0.353, 0.006, 0.206, Theme.palette.ruleFar)
+	divider(0.647, 0.006, 0.206, Theme.palette.ruleFar)
+	divider(0.353, 0.728, 0.266, Theme.palette.ruleNear)
+	divider(0.647, 0.728, 0.266, Theme.palette.ruleNear)
 
 	--- The accusation's own corner: bottom right of the sheet, clear of
 	--- everything. Its own frame so its position is stated once here instead of
