@@ -337,9 +337,22 @@ local tableSpec = {
 		--- The plain number, not an "rbxassetid://" string: it is handed to
 		--- `Content.fromAssetId`, which takes the id itself.
 		assetId = 74562733627832,
-		--- Studs. The model is about 5.1 x 3.2 x 2.25 in its own units and this
-		--- is what it becomes on the table.
+		--- Studs, in the MODEL's own axes -- see `rotation` below, which is what
+		--- decides where each of these ends up pointing.
 		size = Vector3.new(5.1, 3.2, 2.25),
+		--- Degrees. THE MODEL IS Z-UP AND ROBLOX IS Y-UP, so without this the
+		--- basket lies on its side.
+		---
+		--- Not guessed and not eyeballed: measured off the source mesh. The
+		--- floor of a basket is the one face of its bounding box that is
+		--- actually a surface, and 78% of the face at Z-minimum is covered
+		--- while the face at Z-maximum is 18% -- a rim, which is what an
+		--- opening looks like. Blender's convention, exported straight through.
+		---
+		--- Turning -90 degrees about X sends the model's +Z to the world's +Y.
+		--- So on the table the basket ends up 5.1 wide, 2.25 tall and 3.2 deep:
+		--- `size` above is in model axes, and this is what reorders them.
+		rotation = Vector3.new(-90, 0, 0),
 		--- How far out from the middle of the table, left and right.
 		offset = 9.5,
 		--- Clear plastic, from the model's own recommended settings.

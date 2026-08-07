@@ -147,9 +147,23 @@ local function buildBasket(origin: CFrame, side: number, parent: Instance)
 		basket.CanCollide = false
 		basket.CanQuery = true
 
-		-- Sitting ON the table, not floating over it: half its own height above
-		-- the surface, out to the side by `offset`.
-		basket.CFrame = origin * CFrame.new(side * spec.offset, Theme.table.height + spec.size.Y / 2, 0)
+		-- The model is Z-up and Roblox is Y-up, so it has to be turned before it
+		-- is placed. See Theme: the angle was measured off the mesh, not guessed.
+		local turn = CFrame.Angles(
+			math.rad(spec.rotation.X),
+			math.rad(spec.rotation.Y),
+			math.rad(spec.rotation.Z)
+		)
+
+		-- How tall it is AFTER turning, which is not `size.Y` once a rotation is
+		-- in play -- turning swaps which of the three numbers points up. Derived
+		-- from the angle rather than written down beside it, so changing the
+		-- angle in Config cannot leave the basket sunk into the wood or hovering
+		-- over it.
+		local standing = turn:VectorToWorldSpace(spec.size)
+		local lift = Theme.table.height + math.abs(standing.Y) / 2
+
+		basket.CFrame = origin * CFrame.new(side * spec.offset, lift, 0) * turn
 		basket.Parent = parent
 	end)
 end
