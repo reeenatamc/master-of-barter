@@ -242,7 +242,12 @@ function DuelPaperSkin.mount(
 		container.BackgroundTransparency = 1
 
 		local face = Instance.new("TextLabel")
-		face.Size = UDim2.fromScale(1, 1)
+		-- Bigger than the cell, centred on it. See Theme.table.markScale: the
+		-- font's own padding is what was keeping these small, and the only way
+		-- to grow the drawing is to grow the box it is fitted into.
+		face.AnchorPoint = Vector2.new(0.5, 0.5)
+		face.Position = UDim2.fromScale(0.5, 0.5)
+		face.Size = UDim2.fromScale(1, Theme.table.markScale)
 		face.Text = spec.label
 		face.TextScaled = true
 		face.Font = Theme.fonts.marker

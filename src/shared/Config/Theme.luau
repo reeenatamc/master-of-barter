@@ -331,6 +331,18 @@ local tableSpec = {
 	--- Flip either to true and it comes back where it was.
 	showEmotes = false,
 	showToken = false,
+
+	--- How much bigger than its cell a mark's text box is.
+	---
+	--- `TextScaled` fits the LINE, not the drawing, and PermanentMarker carries
+	--- a lot of empty air above and below the stroke -- so a mark told to fill
+	--- its cell came out at about a third of it. Giving the label more box than
+	--- the cell has makes the visible glyph grow; the overflow lands on empty
+	--- paper.
+	---
+	--- Raise it for bigger marks. Past about 2 they start reaching the ruled
+	--- lines, which is the real ceiling.
+	markScale = 1.75,
 }
 
 --- [propuesta] Where the camera sits during a duel. Over your own shoulder,
