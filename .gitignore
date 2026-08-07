@@ -31,3 +31,9 @@ Thumbs.db
 
 # Instrucciones para el agente: privadas, no son parte del juego.
 /CLAUDE.md
+
+# Originales de arte: los .fbx crudos, los .obj sin simplificar y las texturas
+# a resolucion completa. Se quedan en el disco para poder rehacer un modelo,
+# pero NO entran a git: un objeto pesa unos 23 MB en bruto contra 1,2 ya
+# procesado, y doce objetos serian casi 300 MB en una historia que no olvida.
+/assets/fuentes/
