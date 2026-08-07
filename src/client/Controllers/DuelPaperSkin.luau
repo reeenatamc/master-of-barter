@@ -150,7 +150,20 @@ function DuelPaperSkin.mount(
 	local farSlots = zone(0.18, 0.22)
 	local nearSlots = zone(0.5, 0.22)
 	local nearActions = zone(0.79, 0.13)
+
+	--- The accusation's own corner: bottom right of the sheet, clear of
+	--- everything. Its own frame so its position is stated once here instead of
+	--- being computed against whatever it was parented to.
+	local tokenCorner = Instance.new("Frame")
+	tokenCorner.Size = UDim2.fromScale(0.14, 0.07)
+	tokenCorner.Position = UDim2.fromScale(0.81, 0.925)
+	tokenCorner.BackgroundTransparency = 1
+	tokenCorner.Parent = page
+	-- Narrower than the rest, so it stops before the corner where the token
+	-- lives. Two things sharing one strip is what put the accusation on top of
+	-- an emoji the first time.
 	local emoteStrip = zone(0.94, 0.05)
+	emoteStrip.Size = UDim2.fromScale(0.68, 0.05)
 
 	-- The header is off the board while it is bare. It still exists so the
 	-- view model has somewhere to put a phase message when the redesign decides
@@ -391,10 +404,14 @@ function DuelPaperSkin.mount(
 		end
 
 		if token then
-			-- Bottom right corner, small, off the row entirely.
-			local mark = cutout(token, UDim2.fromScale(0.16, 1.1), 7, true)
-			mark.Position = UDim2.fromScale(0.84, 1.2)
-			mark.Parent = nearActions
+			-- THE CORNER, and against the page rather than the action row.
+			-- Hung off the row it landed mid-board and on top of the emotes:
+			-- "esquina" means the corner of the sheet, so it is measured from
+			-- the sheet.
+			clear(tokenCorner)
+			local mark = cutout(token, UDim2.fromScale(1, 1), 7, true)
+			mark.Position = UDim2.fromScale(0, 0)
+			mark.Parent = tokenCorner
 		end
 	end
 
