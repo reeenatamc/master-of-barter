@@ -1324,3 +1324,26 @@ Las reglas entraron **antes** de que el `.env` existiera, y se verificaron crean
 `${x,,}` es de bash 4 y **macOS trae bash 3.2** — muere con "bad substitution". El pasaje a minúsculas va por `tr`.
 
 Y el error de credencial faltante ahora **nombra lo que SÍ está** además de lo que falta. "no ROBLOX_USER_ID" al lado de un archivo que contiene `ROBLOX_ID_USER` es un diagnóstico de dos corridas; mostrando las dos listas se ve en la primera.
+
+## 2026-08-07 — El circuito de modelos quedó probado de punta a punta
+
+`.glb` → `./tools/subir-modelo.sh` → asset id → `InsertService:LoadAsset` → en la mesa. **Sin abrir Studio.** Verificado corriéndolo, no razonándolo.
+
+**El riesgo que investigamos no se materializó.** `LoadAsset` exige que el asset sea del creador del juego, y el DevForum tiene reportes abiertos de `"Asset is not trusted for this place"` que muerden *incluso con assets propios*. Con la cuenta de Renata y su lugar, cargó limpio. Queda anotado porque si algún día aparece, ya sabemos que es un bug conocido de Roblox y no algo que rompimos.
+
+### La API correcta depende de cómo se subió el modelo
+
+| se subió con | queda como | se carga con |
+|---|---|---|
+| importador de Studio | **malla** | `AssetService:CreateMeshPartAsync` |
+| Open Cloud (nuestro script) | **modelo** | `InsertService:LoadAsset` |
+
+Esto costó una ronda: cambié la forma de subir y dejé la forma de cargar. Y el modelo es la mejor de las dos — conserva materiales, texturas y varias piezas, que es lo que van a necesitar los squishies.
+
+### Dos fallos silenciosos seguidos, y qué se cambió por eso
+
+`MeshId` no asignable, y después un id de modelo dado a una función que pide malla. **Los dos: nada en la mesa, nada en el Output.** Los dos se diagnosticaron mirando la mesa, porque el log no tenía nada que decir — y la rama que se rinde a propósito (el duelo terminó mientras el asset viajaba) tampoco decía nada.
+
+> **Una función cuyo único mensaje es una advertencia es una función que no puede decirte que funcionó.**
+
+Ahora informa **todas** las salidas, el éxito incluido: `[Scene] basket 1 placed at ...`. Un print de más cuesta una línea; un fallo mudo costó dos rondas cada vez.
