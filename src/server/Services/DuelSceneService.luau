@@ -155,15 +155,19 @@ local function buildBasket(origin: CFrame, side: number, parent: Instance)
 			math.rad(spec.rotation.Z)
 		)
 
-		-- How tall it is AFTER turning, which is not `size.Y` once a rotation is
-		-- in play -- turning swaps which of the three numbers points up. Derived
-		-- from the angle rather than written down beside it, so changing the
-		-- angle in Config cannot leave the basket sunk into the wood or hovering
-		-- over it.
+		-- What the basket MEASURES once turned, which is not `size` any more:
+		-- turning swaps which of the three numbers points where. Both of the
+		-- numbers below come from this, rather than being written down beside
+		-- the angle, so changing the angle cannot leave a basket sunk into the
+		-- wood or glued to its edge.
 		local standing = turn:VectorToWorldSpace(spec.size)
-		local lift = Theme.table.height + math.abs(standing.Y) / 2
 
-		basket.CFrame = origin * CFrame.new(side * spec.offset, lift, 0) * turn
+		-- Sitting at table height, and clear of the table by a gap that stays a
+		-- gap: out past the edge of the wood, plus the air, plus its own half.
+		local lift = Theme.table.height + math.abs(standing.Y) / 2
+		local out = Theme.table.topSize.X / 2 + spec.gap + math.abs(standing.X) / 2
+
+		basket.CFrame = origin * CFrame.new(side * out, lift, 0) * turn
 		basket.Parent = parent
 	end)
 end

@@ -355,11 +355,26 @@ local tableSpec = {
 		--- The measurement narrowed six possibilities to two. Looking at it
 		--- picked between them. Neither step would have done on its own.
 		---
-		--- On the table the basket ends up 5.1 wide, 2.25 tall and 3.2 deep:
-		--- `size` above is in model axes, and this is what reorders them.
-		rotation = Vector3.new(90, 0, 0),
-		--- How far out from the middle of the table, left and right.
-		offset = 9.5,
+		--- The Z turn is the yaw, and it goes FIRST for a reason: `CFrame.Angles`
+		--- applies Z, then Y, then X, so at that point Z is still the model's own
+		--- vertical axis. Turning about it spins the basket where it stands,
+		--- which is what "put it lengthwise" means; the X turn then stands the
+		--- whole thing up. Yawing about world Y instead would need the opposite
+		--- composition order and buys nothing.
+		---
+		--- On the table the basket ends up 3.2 across, 2.25 tall and 5.1 deep --
+		--- its long side pointing at the players. `size` above is in model axes,
+		--- and this is what reorders them.
+		rotation = Vector3.new(90, 0, 90),
+		--- Studs of clear air between the edge of the wood and the basket.
+		---
+		--- A GAP, NOT A POSITION. How far from the middle the basket has to sit
+		--- depends on how wide it is once turned, so writing that distance down
+		--- means re-deriving it by hand every time the size or the angle moves --
+		--- and getting it wrong looks like a basket glued to the table, which is
+		--- exactly what it looked like. The distance is computed; this is the
+		--- number that actually decides anything.
+		gap = 1.5,
 		--- Clear plastic, from the model's own recommended settings.
 		color = Color3.fromRGB(220, 245, 255),
 		transparency = 0.45,
