@@ -297,7 +297,10 @@ local tableSpec = {
 	--- Lower resolution means those 100 pixels are a larger share of the sheet.
 	--- The cost is sharpness on anything with small text, which today is only
 	--- the item cards -- and those are being redrawn anyway.
-	pixelsPerStud = 48,
+	--- Bigger number, smaller marks. 48 put them right at the edge of their
+	--- cells; 54 pulls them back a touch so there is air around each one, the
+	--- way a mark drawn by hand sits inside its box rather than filling it.
+	pixelsPerStud = 54,
 	--- How the board is turned on the table, in degrees.
 	---
 	--- A SurfaceGui on a horizontal face maps its own up/down onto one of the
