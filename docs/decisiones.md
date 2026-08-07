@@ -1288,3 +1288,39 @@ local lift = Theme.table.height + math.abs(standing.Y) / 2
 ```
 
 Es la misma disciplina que `pixelsPerStud`: cuando dos números de Config tienen que concordar, el que se puede calcular se calcula. Cambiar el ángulo ya no puede dejar una canasta hundida en la madera ni flotando sobre ella.
+
+## 2026-08-07 — Subir modelos sin abrir Studio, y un `>>` que corrompió una credencial
+
+`./tools/subir-modelo.sh archivo.glb "qué es"` mide el archivo, lo sube por Open Cloud, espera la operación asincrónica, imprime el asset id y lo anota en `assets/subidos.json`. Cero Studio.
+
+**Lo que el script NO hace: escribir en Config.** Qué id va dónde es una decisión —¿la bandeja, un squishy, escenografía?— y un script que adivina mal escribe un número equivocado en silencio. Imprime; cablear es tarea de una persona.
+
+**Verificado antes de escribirlo, no después:** la URL, los nombres de los campos del multipart (`request` y `fileContent`), la forma exacta del JSON y que la respuesta es una *operación* a sondear, no un id. Nada salió de memoria.
+
+### La tarifa de 80 Robux existe, pero no es la nuestra
+
+Es para publicar ítems de avatar en el Marketplace. Subir una malla para tu propia experiencia es gratis. Queda anotado porque la búsqueda mezcla las dos cosas y es fácil concluir lo contrario.
+
+### El error que importa: `>>` sobre un archivo sin salto de línea final
+
+Agregué `ROBLOX_USER_ID` al `.env` con `>>`. El archivo no terminaba en salto de línea, así que la variable quedó **pegada al final de la clave**:
+
+```
+ROBLOX_API_KEY=a8DA9w……ROBLOX_USER_ID=11413550460
+```
+
+La API respondió `401 Invalid API Key` — técnicamente cierto y completamente engañoso: la clave estaba bien, la habíamos roto nosotros al escribirla.
+
+> **`>>` no agrega una línea. Agrega bytes.** Si el archivo no termina en `\n`, la "línea nueva" es la continuación de la vieja. En un archivo de configuración eso es un error de sintaxis; en un archivo de credenciales es una credencial silenciosamente inválida.
+
+Se detectó midiendo la *forma* del valor sin mostrarlo —largo, comillas, espacios, primeros y últimos caracteres— y los últimos seis eran `550460`, el final del user ID. La clave reparada termina en `RwZw==`, relleno base64, que es como debe terminar. **Se puede diagnosticar un secreto sin leerlo.**
+
+### El `.gitignore` se probó con un señuelo
+
+Las reglas entraron **antes** de que el `.env` existiera, y se verificaron creando un `.env` falso, preguntándole a git si lo veía, y borrándolo. Un `.gitignore` que nunca se vio funcionar no es protección — es la misma regla que "un verde que nunca vio rojo no es evidencia", aplicada a algo que no se puede deshacer: la historia de git no olvida, y una clave filtrada en un commit sigue filtrada aunque se borre después.
+
+### Dos cosas que solo aparecieron corriéndolo
+
+`${x,,}` es de bash 4 y **macOS trae bash 3.2** — muere con "bad substitution". El pasaje a minúsculas va por `tr`.
+
+Y el error de credencial faltante ahora **nombra lo que SÍ está** además de lo que falta. "no ROBLOX_USER_ID" al lado de un archivo que contiene `ROBLOX_ID_USER` es un diagnóstico de dos corridas; mostrando las dos listas se ve en la primera.
