@@ -87,7 +87,14 @@ local rarityNames: { [Rarity]: string } = {
 ]=]
 local duelButtons = {
 	accept = "✓",
-	decline = "✗",
+	--- A capital X, not the ✗ glyph. PermanentMarker does not carry U+2717 and
+	--- drew NOTHING -- the middle cell came out empty in every screenshot, with
+	--- colour and without it, and it read as a rendering bug rather than a
+	--- missing character.
+	---
+	--- The rule this leaves: a symbol here has to exist in the font. ASCII is
+	--- the only guarantee, and an X drawn in marker is the X anyway.
+	decline = "X",
 	raiseOffer = "+",
 	fakeCall = "!",
 }
