@@ -217,7 +217,10 @@ function DuelPaperSkin.mount(
 		-- Opaque either way now: grey already says "not yet", and stacking
 		-- transparency on top of it only makes the board look faded.
 		face.TextTransparency = 0
-		corner(face, 0.18)
+		-- Barely rounded. The reference is a row of boxes RULED on paper, and a
+		-- rounded rectangle reads as a UI button no matter what colour it is --
+		-- the corner is what says "drawn" or "designed".
+		corner(face, 0.04)
 		stroke(face, if big then 3 else 2, if spec.enabled then 0 else 0.6)
 
 		local target = Instance.new("TextButton")
@@ -353,23 +356,45 @@ function DuelPaperSkin.mount(
 			end
 		end
 
-		-- Yours: large, filled, along the near edge. Theirs: the same three in
-		-- outline at the far edge, so you can see what they are looking at
-		-- without being able to touch it.
-		local count = #viewModel.actions
-		for index, spec in viewModel.actions do
-			local mine = cutout(spec, UDim2.fromScale(0.9 / count, 1), index * 11, true)
-			mine.Position = UDim2.fromScale((index - 1) * (0.95 / count), 0)
+		-- THREE CELLS IN A ROW, TOUCHING. The reference is a sheet of paper with
+		-- a row of three boxes ruled on it, sharing their dividing lines -- not
+		-- three separate buttons with air between them. So they are laid out
+		-- flush, each exactly a third, and the shared edges do the dividing.
+		--
+		-- The accusation is NOT one of them. It is a once-per-duel token, it
+		-- sits in a bottom corner on its own, and putting it in the row made it
+		-- look like a fourth ordinary choice.
+		local row = {}
+		local token = nil
+		for _, spec in viewModel.actions do
+			if spec.id == "fakecall" then
+				token = spec
+			else
+				table.insert(row, spec)
+			end
+		end
+
+		local count = math.max(#row, 1)
+		for index, spec in row do
+			local mine = cutout(spec, UDim2.fromScale(1 / count, 1), index * 11, true)
+			mine.Position = UDim2.fromScale((index - 1) / count, 0)
 			mine.Parent = nearActions
 
 			local theirs = cutout(
 				{ id = `mirror:{spec.id}`, label = spec.label, enabled = false, tone = spec.tone },
-				UDim2.fromScale(0.6 / count, 1),
+				UDim2.fromScale(0.66 / count, 1),
 				index * 5,
 				false
 			)
-			theirs.Position = UDim2.fromScale(0.2 + (index - 1) * (0.62 / count), 0)
+			theirs.Position = UDim2.fromScale(0.17 + (index - 1) * (0.66 / count), 0)
 			theirs.Parent = farActions
+		end
+
+		if token then
+			-- Bottom right corner, small, off the row entirely.
+			local mark = cutout(token, UDim2.fromScale(0.16, 1.1), 7, true)
+			mark.Position = UDim2.fromScale(0.84, 1.2)
+			mark.Parent = nearActions
 		end
 	end
 

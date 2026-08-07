@@ -71,8 +71,11 @@ local palette = {
 	--- colours now, and the symbol sits on them in white.
 	accept = Color3.fromRGB(10, 150, 46),
 	acceptFill = Color3.fromRGB(24, 214, 76),
-	decline = Color3.fromRGB(196, 12, 20),
-	declineFill = Color3.fromRGB(252, 34, 40),
+	--- VIOLET, not red. The reference sheet -- the real one, drawn on paper on
+	--- an office desk -- has the ✗ in purple marker, and that is what the game
+	--- is a copy of.
+	decline = Color3.fromRGB(126, 42, 168),
+	declineFill = Color3.fromRGB(168, 66, 214),
 	raise = Color3.fromRGB(220, 132, 0),
 	raiseFill = Color3.fromRGB(255, 182, 8),
 
