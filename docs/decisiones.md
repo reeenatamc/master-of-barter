@@ -1264,7 +1264,17 @@ Las canastas salieron **acostadas**. La reacción fácil era probar ángulos has
 | X mín / X máx | 126 % | las dos paredes de los extremos |
 | Y mín / Y máx | 15 % | los lados largos, abiertos |
 
-**El modelo es Z-arriba y Roblox es Y-arriba.** Convención de Blender exportada tal cual. Girar −90° sobre X manda el +Z del modelo al +Y del mundo.
+**El modelo es Z-arriba y Roblox es Y-arriba.** Convención de Blender exportada tal cual.
+
+### Y acá la medición se quedó a mitad de camino
+
+De esa tabla saqué que la cara densa era el fondo, y **eso no se seguía de la medición** — era una suposición viajando de polizón. Con −90° la canasta salió **boca abajo**.
+
+Dos renders lo cierran: a 0° queda de costado, a −90° queda invertida. Solo una cosa explica ambas: **el fondo está en Z máximo**. Va +90.
+
+> **La medición redujo seis posibilidades a dos. Mirarlo eligió entre esas dos. Ninguno de los dos pasos alcanzaba solo.**
+
+Y la parte incómoda: escribí "medida, no calculada a ojo" como si eso zanjara el asunto. Medir el eje correcto no hace correcto lo que uno *deduce* del eje. El commit anterior sonaba más seguro de lo que el dato aguantaba.
 
 **Antes se había probado con el OBJ de al lado y daba otra cosa** (abertura en +Y): son dos exportaciones distintas del mismo objeto, con proporciones distintas. El GLB mide 5.100 × 3.229 × 2.250 — exactamente los números que ya estaban en Config, así que ese es el que se importó. **Medir el archivo equivocado se ve igual que medir bien.**
 
