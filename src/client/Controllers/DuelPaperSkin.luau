@@ -72,16 +72,6 @@ local function corner(parent: Instance, scale: number)
 	ui.Parent = parent
 end
 
---- A pen line. Everything drawn on this board goes through here, which is how
---- the one-pen rule stays true by construction rather than by memory.
-local function stroke(parent: Instance, thickness: number, transparency: number?)
-	local line = Instance.new("UIStroke")
-	line.Color = Theme.palette.ink
-	line.Thickness = thickness
-	line.Transparency = transparency or 0
-	line.Parent = parent
-end
-
 local function text(content: string, size: UDim2, color: Color3, font: Enum.Font): TextLabel
 	local element = Instance.new("TextLabel")
 	element.Size = size
@@ -352,21 +342,16 @@ function DuelPaperSkin.mount(
 		slot.Position = UDim2.fromScale((index - 1) * width + width * 0.07, 0.04)
 		slot.BackgroundTransparency = 1
 		slot.Parent = container
-		stroke(slot, 2, 0.45)
-		corner(slot, 0.06)
 
+		-- NO BOX AND NO CAPTION. An object on the table is an object, not a
+		-- card with a dashed frame and a name printed under it -- and the
+		-- middle of the sheet is meant to look like things placed on paper.
+		--
+		-- The dashed outlines and the little labels were the last of the
+		-- "interface drawn on a drawing" and went for the same reason the
+		-- button boxes did.
 		if row.itemId then
 			paperFigure(row.itemId, slot)
-		end
-
-		local caption = text(row.label, UDim2.fromScale(1, 0.16), Theme.palette.ink, Theme.fonts.hand)
-		caption.Position = UDim2.fromScale(0, 0.84)
-		caption.Parent = slot
-
-		if row.detail and row.detail ~= "" then
-			local note = text(row.detail, UDim2.fromScale(1, 0.12), Theme.palette.inkSoft, Theme.fonts.hand)
-			note.Position = UDim2.fromScale(0, 0.02)
-			note.Parent = slot
 		end
 
 		local buttons = #row.buttons
@@ -394,7 +379,17 @@ function DuelPaperSkin.mount(
 		clear(emoteStrip)
 
 		for _, panel in viewModel.panels do
-			if panel.kind == "rival" then
+			-- THE INVENTORY IS OFF THE SHEET. On the reference the objects are
+			-- on the table around the paper, and the middle of the sheet holds
+			-- only what has actually been put on it -- one object at a time,
+			-- nothing else.
+			--
+			-- What this costs, and it is not small: picking by touch. The hand
+			-- was the only way to choose what to offer, so until the objects
+			-- exist as things on the table, offering is the keyboard's job.
+			if panel.kind == "picker" then
+				continue
+			elseif panel.kind == "rival" then
 				drawStrip(farSlots, panel)
 			elseif panel.kind == "emotes" and Theme.table.showEmotes then
 				local row = panel.rows[1]
