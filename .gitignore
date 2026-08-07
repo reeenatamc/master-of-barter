@@ -37,3 +37,13 @@ Thumbs.db
 # pero NO entran a git: un objeto pesa unos 23 MB en bruto contra 1,2 ya
 # procesado, y doce objetos serian casi 300 MB en una historia que no olvida.
 /assets/fuentes/
+
+# Credenciales. La clave de Open Cloud puede subir assets a la cuenta de
+# Renata, asi que no entra a git ni una vez: la historia no olvida, y una
+# clave filtrada en un commit sigue filtrada aunque se borre despues.
+# Los patrones son deliberadamente amplios -- es mas barato ignorar de mas.
+.env
+.env.*
+!.env.example
+*.key
+/secrets/
