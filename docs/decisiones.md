@@ -1250,3 +1250,31 @@ Es la misma familia que "un verde que nunca vio rojo no es evidencia", pero peor
 Cuando el inventario salió del tablero, el panel del borrador dejó de dibujarse **pero sus botones no**: iban en una fila que no lleva ningún objeto, así que aterrizaron pegados en el medio del papel.
 
 Ahora **las filas sin objeto no se dibujan**. La regla quedó explícita en el código: el medio de la hoja tiene objetos y nada más; una fila que no es una cosa es interfaz, y la interfaz ya se fue. No se perdió nada — una oferta entera está a una tecla (Q / E) y las celdas regladas se dibujan por su propio camino.
+
+## 2026-08-07 — Orientación de la canasta: medida, no calculada a ojo
+
+Las canastas salieron **acostadas**. La reacción fácil era probar ángulos hasta que se vieran bien; en cambio se midió la malla de origen (`assets/fuentes/Canasta.glb`), y la respuesta salió en una pasada.
+
+**Cómo se encuentra el fondo de un recipiente sin abrir Blender:** de las seis caras de su caja envolvente, el fondo es la única que es *superficie de verdad*. Sumando el área de los triángulos apoyados contra cada cara:
+
+| cara | cobertura | qué es |
+|---|---|---|
+| Z mín | **78 %** | el fondo |
+| Z máx | 18 % | el borde — o sea, la abertura |
+| X mín / X máx | 126 % | las dos paredes de los extremos |
+| Y mín / Y máx | 15 % | los lados largos, abiertos |
+
+**El modelo es Z-arriba y Roblox es Y-arriba.** Convención de Blender exportada tal cual. Girar −90° sobre X manda el +Z del modelo al +Y del mundo.
+
+**Antes se había probado con el OBJ de al lado y daba otra cosa** (abertura en +Y): son dos exportaciones distintas del mismo objeto, con proporciones distintas. El GLB mide 5.100 × 3.229 × 2.250 — exactamente los números que ya estaban en Config, así que ese es el que se importó. **Medir el archivo equivocado se ve igual que medir bien.**
+
+### Lo que cambió además del ángulo
+
+`size.Y` dejó de ser la altura. Girar reordena cuál de los tres números apunta hacia arriba, así que la elevación sobre la mesa ahora **se deriva del ángulo** en vez de escribirse al lado:
+
+```lua
+local standing = turn:VectorToWorldSpace(spec.size)
+local lift = Theme.table.height + math.abs(standing.Y) / 2
+```
+
+Es la misma disciplina que `pixelsPerStud`: cuando dos números de Config tienen que concordar, el que se puede calcular se calcula. Cambiar el ángulo ya no puede dejar una canasta hundida en la madera ni flotando sobre ella.
