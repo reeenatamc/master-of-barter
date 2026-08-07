@@ -8,5 +8,10 @@
 		"assetId": "105094781133434",
 		"source": "assets/squishies/butter_squishy.glb",
 		"note": "squishy: barra de mantequilla"
+	},
+	{
+		"assetId": "128628459826751",
+		"source": "assets/squishies/butter_squishy_v2_textured.glb",
+		"note": "squishy: barra de mantequilla, con textura"
 	}
 ]

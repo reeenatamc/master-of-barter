@@ -413,7 +413,7 @@ local tableSpec = {
 		--- a single example, which is how a design ends up shaped like whatever
 		--- happened to be uploaded first.
 		demo = {
-			assetId = 105094781133434,
+			assetId = 128628459826751,
 			--- Degrees, same convention as the tray's own turn. Zero because a
 			--- stick of butter is a closed solid -- the geometry does not say
 			--- which way is up, so this one gets decided by looking.
@@ -425,25 +425,21 @@ local tableSpec = {
 			--- angle cannot leave one sticking out of the other. It is the same
 			--- reason the tray's own distance is computed and not written down.
 			fill = 0.6,
-			--- Painted on arrival, because the model's own colour does not
-			--- survive the trip.
+			--- NIL, AND THAT IS THE POINT: this model brings its own texture --
+			--- butter yellow with blue lettering, baked into a real image -- so
+			--- nothing here paints over it.
 			---
-			--- The butter IS yellow in the file -- RGB(244, 232, 168), read
-			--- straight out of it -- but it is stored as glTF VERTEX COLOURS
-			--- (COLOR_0), which Roblox's importer drops. So the block arrives
-			--- white, and this is that same colour put back by hand.
+			--- It is kept as a field rather than deleted because the previous
+			--- butter needed it. That one stored its yellow in glTF VERTEX
+			--- COLOURS, which Roblox's importer drops, and its "wrapper" was a
+			--- 1024x512 image with NOTHING DRAWN ON IT -- a valid file, correctly
+			--- embedded, correctly referenced, and blank. It arrived white and
+			--- had to be painted RGB(244, 232, 168) from here.
 			---
-			--- The wrapper's lettering cannot be recovered the same way: that
-			--- plane's texture is a 1024x512 image with NOTHING DRAWN ON IT.
-			--- The exporter made the plane and the material and never painted
-			--- the picture. Letters have to come from a real image.
-			---
-			--- Set this to nil for any model that brings a working texture. A
-			--- tint is a patch for a model that lost its colours, not a look.
-			tint = Color3.fromRGB(244, 232, 168),
-			--- Flat and matte, like the paper everything else is drawn on. The
-			--- model brought no usable material either, so this is a choice
-			--- rather than a recovery.
+			--- So: a tint is a patch for a model that lost its colours on the
+			--- way in, never a look. Fill it in only when a model arrives
+			--- broken, and say which way it was broken.
+			tint = nil :: Color3?,
 			material = Enum.Material.SmoothPlastic,
 		},
 		--- Clear plastic, from the model's own recommended settings.

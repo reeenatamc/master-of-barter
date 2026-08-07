@@ -14,6 +14,7 @@ import struct
 import sys
 
 TRIANGLE_LIMIT = 10_000  # Roblox's cap for a single mesh.
+TEXTURE_LIMIT = 1024     # Roblox scales anything bigger down to this.
 
 
 def read_glb(path):
@@ -143,11 +144,43 @@ def main():
 
     images = meta.get("images", [])
     print(f"{len(meta.get('materials', []))} materials, {len(images)} embedded images")
-    for img in images:
-        print(f"  {img.get('name', '(unnamed)')}  {img.get('mimeType', '?')}")
+
+    # WRITTEN OUT SO SOMEBODY LOOKS AT THEM. An earlier model shipped a
+    # 1024x512 texture with nothing drawn on it -- a valid image, correctly
+    # embedded, correctly referenced, and blank. No property in the file says
+    # so; the only way to know was to open it. So the tool puts the pictures
+    # where they can be opened instead of guessing from file size.
+    for index, img in enumerate(images):
+        view = meta["bufferViews"][img["bufferView"]]
+        start = view.get("byteOffset", 0)
+        data = blob[start : start + view["byteLength"]]
+        name = f"{path.rsplit('/', 1)[-1].rsplit('.', 1)[0]}-texture-{index}.png"
+        out = f"/tmp/{name}"
+        with open(out, "wb") as f:
+            f.write(data)
+
+        note = ""
+        if data[:8] == b"\x89PNG\r\n\x1a\n":
+            width, height = struct.unpack(">II", data[16:24])
+            over = " -- OVER Roblox's 1024 cap, it will be scaled down" \
+                if max(width, height) > TEXTURE_LIMIT else ""
+            note = f"{width}x{height}{over}, "
+        print(f"  {img.get('name', '(unnamed)')}  {note}written to {out}")
+        print("     LOOK AT IT. A blank texture is a valid file and says nothing.")
+
     if not images:
         print("  -> no texture travels with this file; whatever colour it has "
               "comes from its material or from us.")
+
+    # glTF vertex colours do not survive Roblox's importer, so a model whose
+    # colour lives there arrives white. Worth saying before it is uploaded.
+    for mesh in meta.get("meshes", []):
+        for prim in mesh["primitives"]:
+            if "COLOR_0" in prim["attributes"] and "TEXCOORD_0" not in prim["attributes"]:
+                print(f"\n  -> {mesh.get('name', 'a mesh')} carries its colour in VERTEX "
+                      "COLOURS and has no UVs.")
+                print("     Roblox drops those. It will arrive white and need "
+                      "painting from Config.")
 
     moved = [n for n in meta.get("nodes", [])
              if any(k in n for k in ("rotation", "scale", "matrix", "translation"))]
