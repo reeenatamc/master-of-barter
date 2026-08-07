@@ -146,10 +146,33 @@ function DuelPaperSkin.mount(
 		return frame
 	end
 
-	local farActions = zone(0.06, 0.09)
+	local farActions = zone(0.04, 0.13)
 	local farSlots = zone(0.18, 0.22)
 	local nearSlots = zone(0.5, 0.22)
-	local nearActions = zone(0.79, 0.13)
+	local nearActions = zone(0.76, 0.18)
+
+	--- A line ruled all the way across the sheet.
+	---
+	--- These are what make it read as paper somebody drew on rather than a
+	--- surface with widgets floating on it: the button rows sit BETWEEN ruled
+	--- lines, the way they do on the reference sheet, instead of hovering in
+	--- the middle of nothing.
+	local function rule(y: number)
+		local line = Instance.new("Frame")
+		line.Size = UDim2.fromScale(0.94, 0.0035)
+		line.Position = UDim2.fromScale(0.03, y)
+		line.BackgroundColor3 = Theme.palette.ink
+		line.BorderSizePixel = 0
+		line.ZIndex = 0
+		line.Parent = page
+	end
+
+	-- Under the far row and above the near one, so each row is boxed in by the
+	-- sheet itself.
+	rule(0.02)
+	rule(0.175)
+	rule(0.745)
+	rule(0.945)
 
 	--- The accusation's own corner: bottom right of the sheet, clear of
 	--- everything. Its own frame so its position is stated once here instead of
@@ -245,7 +268,7 @@ function DuelPaperSkin.mount(
 		-- it is not trim around a coloured block any more, it is what tells one
 		-- box from the next. Solid whether the button is available or not,
 		-- because a line that fades makes the sheet look half-drawn.
-		stroke(face, if big then 3 else 2, 0)
+		stroke(face, if big then 6 else 3, 0)
 
 		local target = Instance.new("TextButton")
 		target.Size = UDim2.fromScale(pad, pad)
