@@ -284,8 +284,11 @@ local tableSpec = {
 		--- 5.1 long, with a margin so it does not look wedged in.
 		width = 7,
 		--- How far out from the edge of the top it reaches. Measured off the
-		--- reference: the tongue is about a quarter of the table's depth.
-		reach = 3,
+		--- reference: the tongue is about a quarter of the table's depth. Then
+		--- rounded up to 4, because the tray it carries is 2.9 deep and 3 left
+		--- five hundredths of a stud on each side -- a fit that tight reads as a
+		--- mistake even when it is not one.
+		reach = 4,
 	},
 	--- The board itself: a thick pad of graph paper, lying FLAT. Wider than it
 	--- is deep, like the references, so the two strips of slots and the two
@@ -393,29 +396,15 @@ local tableSpec = {
 		--- The measurement narrowed six possibilities to two. Looking at it
 		--- picked between them. Neither step would have done on its own.
 		---
-		--- The Z turn is the yaw, and it goes FIRST for a reason: `CFrame.Angles`
-		--- applies Z, then Y, then X, so at that point Z is still the model's own
-		--- vertical axis. Turning about it spins the basket where it stands,
-		--- which is what "put it lengthwise" means; the X turn then stands the
-		--- whole thing up. Yawing about world Y instead would need the opposite
-		--- composition order and buys nothing.
+		--- There is no yaw any more, and that is the whole change: on the head
+		--- extension the tray lies ACROSS, its long side running left to right.
+		--- It used to carry a 90 in the Z slot to turn it lengthwise, which was
+		--- right while it sat beside the table and wrong the moment it moved to
+		--- the head.
 		---
-		--- On the table the basket ends up 3.2 across, 2.25 tall and 5.1 deep --
-		--- its long side pointing at the players. `size` above is in model axes,
-		--- and this is what reorders them.
-		rotation = Vector3.new(90, 0, 90),
-		--- Studs of clear air between the edge of the wood and the basket.
-		---
-		--- A GAP, NOT A POSITION. How far from the middle the basket has to sit
-		--- depends on how wide it is once turned, so writing that distance down
-		--- means re-deriving it by hand every time the size or the angle moves --
-		--- and getting it wrong looks like a basket glued to the table, which is
-		--- exactly what it looked like. The distance is computed; this is the
-		--- number that actually decides anything.
-		---
-		--- Small on purpose. It only has to read as "not glued to the wood";
-		--- 1.5 was enough air to read as "these belong to some other table".
-		gap = 0.4,
+		--- On the table it ends up 5.0 across, 1.35 tall and 2.9 deep. `size`
+		--- above is in model axes, and this is what reorders them.
+		rotation = Vector3.new(90, 0, 0),
 		--- Clear plastic, from the model's own recommended settings.
 		color = Color3.fromRGB(220, 245, 255),
 		transparency = 0.45,

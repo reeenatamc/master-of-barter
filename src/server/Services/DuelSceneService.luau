@@ -119,13 +119,12 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
---- ONE PLAYER'S basket, beside the table on that player's own half.
+--- ONE PLAYER'S tray, standing on that player's head extension.
 ---
---- Not "the left one and the right one": a basket belongs to somebody. It takes
---- a slot for the same reason `standOffset` does, and reuses that function's
---- rule for which way round the two sides are, so the basket and its owner can
---- never drift apart. Placed point-symmetrically, which is what two people
---- sitting at a table each with a basket at hand actually looks like.
+--- Not "the left one and the right one": a tray belongs to somebody, and the
+--- tongue of table it stands on is what says so. It takes a slot for the same
+--- reason `standOffset` does, and reuses that function's rule for which way
+--- round the two sides are, so a tray and its owner cannot drift apart.
 ---
 --- Built here rather than placed in the map, like everything else in this
 --- scene: a duel can start anywhere and several can run at once, so a basket
@@ -239,18 +238,26 @@ local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 		-- wood or glued to its edge.
 		local standing = turn:VectorToWorldSpace(spec.size)
 
-		-- Sitting at table height, and clear of the table by a gap that stays a
-		-- gap: out past the edge of the wood, plus the air, plus its own half.
+		-- Standing ON its owner's head extension, centred, which is what the
+		-- extension is there for. Both numbers come from the table itself, so a
+		-- wider head or a longer reach carries the tray with it rather than
+		-- leaving it hanging off the end.
 		local lift = Theme.table.height + math.abs(standing.Y) / 2
-		local out = Theme.table.topSize.X / 2 + spec.gap + math.abs(standing.X) / 2
+		local along = (Theme.table.topSize.Z + Theme.table.head.reach) / 2
 
-		-- Level with the middle of its owner's half of the table, so "which one
-		-- is mine" is answered by where it is rather than by a label. `side`
-		-- carries both signs at once, which is what makes the pair mirror.
-		local along = Theme.table.topSize.Z / 4
+		-- Does it actually fit on the thing it is standing on? Cheap to ask, and
+		-- the alternative is a future model that overhangs the wood in a way
+		-- nobody notices until it is in a screenshot.
+		local head = Theme.table.head
+		if math.abs(standing.X) > head.width or math.abs(standing.Z) > head.reach then
+			warn(
+				`[Scene] basket {slot} is {math.abs(standing.X)} x {math.abs(standing.Z)} `
+					.. `and the head it sits on is {head.width} x {head.reach}: it overhangs.`
+			)
+		end
 
 		basket.Parent = parent
-		basket:PivotTo(origin * CFrame.new(side * out, lift, side * along) * turn)
+		basket:PivotTo(origin * CFrame.new(0, lift, side * along) * turn)
 
 		-- Says it WORKED, not just that it did not crash. Two silent failures in
 		-- a row got past a function that only spoke up when it broke.
