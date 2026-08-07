@@ -202,16 +202,21 @@ function DuelPaperSkin.mount(
 			-- outline colour, which was legible only while the fill was pale --
 			-- the moment the fill got its real saturation, colour on colour
 			-- stopped reading at all.
-			face.BackgroundColor3 = scheme.fill
-			face.TextColor3 = Theme.palette.paper
-			face.BackgroundTransparency = if spec.enabled then 0 else 0.55
+			-- Disabled turns GREY rather than fading. A faded colour keeps its
+			-- hue and reads as a badly chosen colour instead of as an
+			-- unavailable button, which is exactly how it was read.
+			face.BackgroundColor3 = if spec.enabled then scheme.fill else Theme.palette.off
+			face.TextColor3 = if spec.enabled then Theme.palette.paper else Theme.palette.offInk
+			face.BackgroundTransparency = 0
 		else
 			-- Theirs, and everything else: outline only, on bare paper.
 			face.BackgroundTransparency = 1
 			face.TextColor3 = if spec.enabled then Theme.palette.ink else Theme.palette.inkSoft
 		end
 
-		face.TextTransparency = if spec.enabled then 0 else 0.45
+		-- Opaque either way now: grey already says "not yet", and stacking
+		-- transparency on top of it only makes the board look faded.
+		face.TextTransparency = 0
 		corner(face, 0.18)
 		stroke(face, if big then 3 else 2, if spec.enabled then 0 else 0.6)
 

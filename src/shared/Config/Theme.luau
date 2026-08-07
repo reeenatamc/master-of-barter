@@ -89,6 +89,15 @@ local palette = {
 	bad = Color3.fromRGB(196, 60, 52),
 	--- Soft shadow under something resting on the board.
 	shadow = Color3.fromRGB(186, 168, 138),
+
+	--- A button that cannot be pressed yet.
+	---
+	--- GREY, not a faded version of its own colour. Fading kept the hue and made
+	--- the game look washed out -- "no se puede todavía" and "este verde es feo"
+	--- are indistinguishable at 55% transparency, and the second reading is the
+	--- one people make. Off is a different colour, not a weaker one.
+	off = Color3.fromRGB(196, 190, 178),
+	offInk = Color3.fromRGB(148, 142, 132),
 }
 
 -- ─────────────────────────────────────────────────────────────────────────────
