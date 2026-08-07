@@ -334,7 +334,9 @@ local tableSpec = {
 	--- the sheet. That is also what answers "how do you pick an object" -- you
 	--- take it out of the basket.
 	basket = {
-		meshId = "rbxassetid://74562733627832",
+		--- The plain number, not an "rbxassetid://" string: it is handed to
+		--- `Content.fromAssetId`, which takes the id itself.
+		assetId = 74562733627832,
 		--- Studs. The model is about 5.1 x 3.2 x 2.25 in its own units and this
 		--- is what it becomes on the table.
 		size = Vector3.new(5.1, 3.2, 2.25),

@@ -333,8 +333,8 @@ function DuelPaperSkin.mount(
 		aspect.Parent = figure
 	end
 
-	--- One dashed slot, with whatever is standing in it.
-	local function drawSlot(container: Frame, row: DuelViewModel.Row, index: number, count: number)
+	--- One object standing in the middle of the sheet.
+	local function drawSlot(container: Frame, itemId: string, index: number, count: number)
 		local width = 1 / math.max(count, 3)
 
 		local slot = Instance.new("Frame")
@@ -343,30 +343,35 @@ function DuelPaperSkin.mount(
 		slot.BackgroundTransparency = 1
 		slot.Parent = container
 
-		-- NO BOX AND NO CAPTION. An object on the table is an object, not a
-		-- card with a dashed frame and a name printed under it -- and the
-		-- middle of the sheet is meant to look like things placed on paper.
+		-- NO BOX, NO CAPTION AND NO BUTTONS. An object on the table is an
+		-- object, not a card with a dashed frame, a name printed under it and
+		-- little controls attached.
 		--
-		-- The dashed outlines and the little labels were the last of the
-		-- "interface drawn on a drawing" and went for the same reason the
-		-- button boxes did.
-		if row.itemId then
-			paperFigure(row.itemId, slot)
-		end
-
-		local buttons = #row.buttons
-		for slotIndex, spec in row.buttons do
-			local element = cutout(spec, UDim2.fromScale(0.9 / buttons, 0.2), index * 7 + slotIndex, false)
-			element.Position = UDim2.fromScale(0.05 + (slotIndex - 1) * (0.9 / buttons), 0.66)
-			element.Parent = slot
-		end
+		-- The buttons went last and were the loudest: LIMPIAR and OFERTAR
+		-- belonged to the inventory, and when the inventory came off the sheet
+		-- they kept being drawn -- on a row that carries no object at all, so
+		-- they landed in the middle of the paper as "LIMPIAROFERTAR". Nothing
+		-- was lost with them: a whole offer is one keystroke away (Q / E) and
+		-- the ruled cells are drawn by their own path, not by this one.
+		paperFigure(itemId, slot)
 	end
 
+	--- Only rows that ARE something get drawn. A row with no object is a piece
+	--- of interface -- a button strip, a placeholder line -- and the middle of
+	--- the sheet holds objects.
 	local function drawStrip(container: Frame, panel: DuelViewModel.Panel)
 		clear(container)
-		local count = math.max(#panel.rows, 3)
-		for index, row in panel.rows do
-			drawSlot(container, row, index, count)
+
+		local objects: { string } = {}
+		for _, row in panel.rows do
+			if row.itemId then
+				table.insert(objects, row.itemId)
+			end
+		end
+
+		local count = math.max(#objects, 3)
+		for index, itemId in objects do
+			drawSlot(container, itemId, index, count)
 		end
 	end
 

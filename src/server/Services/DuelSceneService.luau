@@ -18,6 +18,7 @@
 	real lobby. Hand-placing parts for it would be effort with a known expiry.
 ]]
 
+local AssetService = game:GetService("AssetService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -97,34 +98,60 @@ end
 --- Failing to build one is not worth failing a duel over, so a mesh that will
 --- not load leaves a warning and no basket. The duel is still playable; it just
 --- looks poorer.
+---
+--- ── WHY NOT `Instance.new("MeshPart")` ──────────────────────────────────────
+---
+--- Because it does not work, and it does not work QUIETLY. `MeshPart.MeshId`
+--- is not assignable from a running script; the first version of this function
+--- assigned it inside a `pcall` and the write neither applied nor raised. The
+--- pcall reported success, so the warning never fired, and two MeshParts with
+--- no mesh were parented to the table -- invisible, and silent about it.
+---
+--- The lesson is bigger than the bug: A PCALL THAT RETURNS TRUE IS NOT PROOF
+--- THE WRITE HAPPENED. It only proves nothing threw. When the thing being
+--- checked is "did this take effect", check the effect.
+---
+--- `AssetService:CreateMeshPartAsync` is the runtime path, and it YIELDS --
+--- it fetches the asset. So it runs off the duel-start path: a slow asset
+--- server must not be able to delay the start of a duel, let alone fail one.
 local function buildBasket(origin: CFrame, side: number, parent: Instance)
 	local spec = Theme.table.basket
 
-	local basket = Instance.new("MeshPart")
-	basket.Name = if side < 0 then "BasketLeft" else "BasketRight"
-	basket.Size = spec.size
-	basket.Color = spec.color
-	basket.Material = Enum.Material.Glass
-	basket.Transparency = spec.transparency
-	basket.Reflectance = spec.reflectance
-	basket.CastShadow = false
-	basket.Anchored = true
-	basket.CanCollide = false
-	basket.CanQuery = true
+	task.spawn(function()
+		local ok, result = pcall(function()
+			return AssetService:CreateMeshPartAsync(Content.fromAssetId(spec.assetId))
+		end)
 
-	local ok, err = pcall(function()
-		basket.MeshId = spec.meshId
+		if not ok then
+			warn(`[Scene] the basket mesh would not load: {result}`)
+			return
+		end
+		local basket = result :: MeshPart
+
+		-- The duel can have ended while the mesh was in flight. The Trove has
+		-- already run by then, so parenting into the dead model would leak a
+		-- part with nothing left to clean it up.
+		if not parent:IsDescendantOf(game) then
+			basket:Destroy()
+			return
+		end
+
+		basket.Name = if side < 0 then "BasketLeft" else "BasketRight"
+		basket.Size = spec.size
+		basket.Color = spec.color
+		basket.Material = Enum.Material.Glass
+		basket.Transparency = spec.transparency
+		basket.Reflectance = spec.reflectance
+		basket.CastShadow = false
+		basket.Anchored = true
+		basket.CanCollide = false
+		basket.CanQuery = true
+
+		-- Sitting ON the table, not floating over it: half its own height above
+		-- the surface, out to the side by `offset`.
+		basket.CFrame = origin * CFrame.new(side * spec.offset, Theme.table.height + spec.size.Y / 2, 0)
+		basket.Parent = parent
 	end)
-	if not ok then
-		warn(`[Scene] the basket mesh would not load: {err}`)
-		basket:Destroy()
-		return
-	end
-
-	-- Sitting ON the table, not floating over it: half its own height above the
-	-- surface, out to the side by `offset`.
-	basket.CFrame = origin * CFrame.new(side * spec.offset, Theme.table.height + spec.size.Y / 2, 0)
-	basket.Parent = parent
 end
 
 --- Gives a filler opponent a body.
