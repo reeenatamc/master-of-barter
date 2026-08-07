@@ -405,6 +405,27 @@ local tableSpec = {
 		--- On the table it ends up 5.0 across, 1.35 tall and 2.9 deep. `size`
 		--- above is in model axes, and this is what reorders them.
 		rotation = Vector3.new(90, 0, 0),
+		--- ONE model standing in the tray, until squishies have a model each.
+		---
+		--- PLACEHOLDER, and marked as one on purpose. The real thing is a model
+		--- per item in Config/Items, chosen by what is actually in your hand.
+		--- Building that mapping now would mean inventing an abstraction out of
+		--- a single example, which is how a design ends up shaped like whatever
+		--- happened to be uploaded first.
+		demo = {
+			assetId = 105094781133434,
+			--- Degrees, same convention as the tray's own turn. Zero because a
+			--- stick of butter is a closed solid -- the geometry does not say
+			--- which way is up, so this one gets decided by looking.
+			rotation = Vector3.new(0, 0, 0),
+			--- How much of the tray's inside length it takes, 0 to 1.
+			---
+			--- A SHARE, NOT A SIZE. The squishy is scaled to its tray rather
+			--- than given studs, so a bigger model, a smaller tray or a changed
+			--- angle cannot leave one sticking out of the other. It is the same
+			--- reason the tray's own distance is computed and not written down.
+			fill = 0.6,
+		},
 		--- Clear plastic, from the model's own recommended settings.
 		color = Color3.fromRGB(220, 245, 255),
 		transparency = 0.45,

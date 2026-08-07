@@ -3,5 +3,10 @@
 		"assetId": "84909726712624",
 		"source": "assets/clear_tray.glb",
 		"note": "bandeja de vidrio para los squishies"
+	},
+	{
+		"assetId": "105094781133434",
+		"source": "assets/squishies/butter_squishy.glb",
+		"note": "squishy: barra de mantequilla"
 	}
 ]

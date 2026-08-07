@@ -117,10 +117,22 @@ def main():
             # first reported "X" for a tray that stands on Z.
             gap = [abs(rows[2 * k][1] - rows[2 * k + 1][1]) for k in range(3)]
             vertical = max(range(3), key=lambda k: gap[k])
-            print(f"\n  -> the vertical axis is {'XYZ'[vertical]}: its two ends "
-                  f"differ by {gap[vertical]:.0f} points while the others match.")
-            print("     Which END is the floor this CANNOT tell you -- the denser "
-                  "face is not reliably the floor. Look at it in Studio.")
+
+            # A CLOSED SOLID HAS NO ANSWER HERE, and saying one anyway is worse
+            # than saying nothing. Every face of a box is 100% covered, so every
+            # pair is level, so `max` returns whichever index came first -- and
+            # the first version announced "the vertical axis is X" about a stick
+            # of butter with the same confidence it uses on a real container.
+            if gap[vertical] < 10:
+                print("\n  -> no face is more open than its opposite: this is a "
+                      "closed solid, not a container.")
+                print("     Which way up it goes is not written in the geometry. "
+                      "Look at it in Studio.")
+            else:
+                print(f"\n  -> the vertical axis is {'XYZ'[vertical]}: its two ends "
+                      f"differ by {gap[vertical]:.0f} points while the others match.")
+                print("     Which END is the floor this CANNOT tell you -- the denser "
+                      "face is not reliably the floor. Look at it in Studio.")
 
             if "TEXCOORD_0" not in prim["attributes"]:
                 print("  -> NO UVs: an image texture cannot be applied to this.")

@@ -119,6 +119,75 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
+--- Puts one squishy in a tray.
+---
+--- Its own function, and its own failure: a squishy that will not load leaves a
+--- tray, and a tray is still a tray. Nothing here is allowed to cost a duel.
+---
+--- The squishy is SCALED TO ITS TRAY rather than given a size in studs. A model
+--- that does not fit the thing it stands in is the one mistake this cannot look
+--- right with, and the models are going to keep arriving at whatever size their
+--- exporter felt like. Same reason the tray's own distance is computed.
+local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: number, alongZ: number)
+	local spec = Theme.table.basket.demo
+
+	task.spawn(function()
+		local ok, result = pcall(function()
+			return InsertService:LoadAsset(spec.assetId)
+		end)
+		if not ok then
+			warn(`[Scene] tray {slot}: squishy {spec.assetId} would not load: {result}`)
+			return
+		end
+
+		local wrapper = result :: Model
+		local squishy = wrapper:FindFirstChildWhichIsA("Model") or wrapper
+		if squishy ~= wrapper then
+			squishy.Parent = nil
+			wrapper:Destroy()
+		end
+
+		-- The tray is what it belongs to, so the tray going away is what decides
+		-- whether there is anywhere to put it.
+		if not tray:IsDescendantOf(game) then
+			squishy:Destroy()
+			print(`[Scene] tray {slot}: the duel ended before the squishy arrived`)
+			return
+		end
+
+		squishy.Name = `Squishy{slot}`
+		for _, piece in squishy:GetDescendants() do
+			if piece:IsA("BasePart") then
+				piece.Anchored = true
+				piece.CanCollide = false
+				piece.CanQuery = true
+			end
+		end
+
+		local natural = squishy:GetExtentsSize()
+		local longest = math.max(natural.X, natural.Y, natural.Z)
+		if longest > 0 then
+			squishy:ScaleTo(insideLength * spec.fill / longest)
+		end
+
+		local turn = CFrame.Angles(
+			math.rad(spec.rotation.X),
+			math.rad(spec.rotation.Y),
+			math.rad(spec.rotation.Z)
+		)
+
+		-- Resting ON the tray's floor, which is the table surface the tray
+		-- stands on. Measured AFTER scaling and turning, because both change
+		-- which way up it is and therefore how far its middle is off the floor.
+		local grown = turn:VectorToWorldSpace(squishy:GetExtentsSize())
+		local rest = Theme.table.height + math.abs(grown.Y) / 2
+
+		squishy.Parent = tray
+		squishy:PivotTo(origin * CFrame.new(0, rest, alongZ) * turn)
+		print(`[Scene] tray {slot}: squishy in, {math.abs(grown.X)} long`)
+	end)
+end
+
 --- ONE PLAYER'S tray, standing on that player's head extension.
 ---
 --- Not "the left one and the right one": a tray belongs to somebody, and the
@@ -262,6 +331,8 @@ local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 		-- Says it WORKED, not just that it did not crash. Two silent failures in
 		-- a row got past a function that only spoke up when it broke.
 		print(`[Scene] basket {slot} placed at {basket:GetPivot().Position}`)
+
+		fillTray(basket, slot, origin, math.abs(standing.X), side * along)
 	end)
 end
 
