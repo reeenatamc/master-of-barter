@@ -262,8 +262,31 @@ local motion = {
 --- the rival could reach.
 local tableSpec = {
 	--- The table the board rests on.
-	topSize = Vector3.new(16, 0.6, 12),
+	topSize = Vector3.new(16, 0.9, 12),
+	--- Where the SURFACE is, not where the slab's middle is.
+	---
+	--- It had drifted into meaning both. Five places read it as the surface --
+	--- the sheet, the two camera look-ats, the baskets -- and one placed the
+	--- slab's centre there, which is why the paper sat sunk INSIDE the wood and
+	--- cleared it by five hundredths of a stud. It looked fine and it was one
+	--- thickness change away from the sheet vanishing into the table.
+	---
+	--- One value, one meaning. The slab now hangs below this number.
 	height = 3,
+	--- The two extensions at the head ends -- one sticking out towards each
+	--- player, where that player's basket sits.
+	---
+	--- Only the footprint. Thickness and height come from the top itself, so
+	--- they are flush with it and read as one piece of furniture rather than
+	--- two slabs that happen to touch.
+	head = {
+		--- Across the table. Has to hold a basket lying lengthwise, which is
+		--- 5.1 long, with a margin so it does not look wedged in.
+		width = 7,
+		--- How far out from the edge of the top it reaches. Measured off the
+		--- reference: the tongue is about a quarter of the table's depth.
+		reach = 3,
+	},
 	--- The board itself: a thick pad of graph paper, lying FLAT. Wider than it
 	--- is deep, like the references, so the two strips of slots and the two
 	--- button rows all fit without crowding.
@@ -278,12 +301,19 @@ local tableSpec = {
 	--- face, so the face has to be landscape in the same axes the layout is.
 	boardSize = Vector3.new(9.5, 0.35, 13),
 	--- How far back each player stands from the near edge.
-	--- Measured against the board, not guessed. With `boardSize` turned by
-	--- `boardYaw` the pad reaches 4.75 studs each way, and a standing character
-	--- is about two deep -- so at 6 both avatars had their chest INSIDE the
-	--- table. 8 leaves a bit over three studs of clearance: close enough to
-	--- read as sitting at it, far enough not to be growing out of it.
-	standDistance = 8,
+	--- Studs of air between the furthest the table reaches and where a player
+	--- stands. NOT a distance from the middle, which is what it used to be.
+	---
+	--- A fixed distance was already only just working: it was measured against
+	--- the board, and a standing character is about two studs deep, so at 6 both
+	--- avatars had their chest inside the table. The head extensions then made
+	--- it plain wrong -- they reach out TOWARDS the players, so any number
+	--- measured from the middle stands somebody in the wood as soon as the table
+	--- grows. Now the reach is computed and this is the air left after it.
+	---
+	--- 2 is what the old 8 amounted to, kept on purpose: close enough to read as
+	--- standing at the table, far enough not to be growing out of it.
+	standClearance = 2,
 	--- Resolution of the surface drawn on the board. The knob for §38's low-end
 	--- budget: higher is sharper and costs more.
 	--- Resolution of the surface drawn on the board, and -- unexpectedly -- the

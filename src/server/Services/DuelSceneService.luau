@@ -41,7 +41,11 @@ local nextIndex = 0
 --- tell the other.
 local function standOffset(slot: Slot): Vector3
 	local side = if slot == 1 then -1 else 1
-	return Vector3.new(0, 0, side * Theme.table.standDistance)
+	-- Beyond the furthest the table reaches, which is the head extension and not
+	-- the main top: the heads stick out towards the players, so a distance
+	-- measured from the middle would stand somebody inside the wood.
+	local reach = Theme.table.topSize.Z / 2 + Theme.table.head.reach
+	return Vector3.new(0, 0, side * (reach + Theme.table.standClearance))
 end
 
 --- The model for one duel: a table, a sheet standing on it, and nothing else.
@@ -52,8 +56,13 @@ local function buildModel(duelId: string, origin: CFrame): Model
 
 	local top = Instance.new("Part")
 	top.Name = "TableTop"
+	-- `height` is where the SURFACE goes, so the slab hangs below it. Every
+	-- other placement in this file already read it that way; this one did not,
+	-- and that is what buried the sheet inside the wood.
+	local slabY = Theme.table.height - Theme.table.topSize.Y / 2
+
 	top.Size = Theme.table.topSize
-	top.CFrame = origin * CFrame.new(0, Theme.table.height, 0)
+	top.CFrame = origin * CFrame.new(0, slabY, 0)
 	top.Anchored = true
 	top.Color = Theme.palette.wood
 	-- Wood, not plastic. The grain is most of what says "desk" from the camera
@@ -62,6 +71,27 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	top.TopSurface = Enum.SurfaceType.Smooth
 	top.BottomSurface = Enum.SurfaceType.Smooth
 	top.Parent = model
+
+	-- A tongue of table at each head end, one reaching towards each player,
+	-- where that player's basket sits.
+	--
+	-- Flush with the top by construction, not by two numbers agreeing: same
+	-- thickness, same centre height, so it cannot end up a step above or below
+	-- the surface it is meant to continue.
+	local head = Theme.table.head
+	for _, side in { -1, 1 } do
+		local ext = Instance.new("Part")
+		ext.Name = `TableHead{if side < 0 then 1 else 2}`
+		ext.Size = Vector3.new(head.width, Theme.table.topSize.Y, head.reach)
+		ext.CFrame = origin
+			* CFrame.new(0, slabY, side * (Theme.table.topSize.Z + head.reach) / 2)
+		ext.Anchored = true
+		ext.Color = Theme.palette.wood
+		ext.Material = Enum.Material.Wood
+		ext.TopSurface = Enum.SurfaceType.Smooth
+		ext.BottomSurface = Enum.SurfaceType.Smooth
+		ext.Parent = model
+	end
 
 	-- The board lies FLAT on the table, between the two players, and both act
 	-- on this one object -- which is what makes mirrored rows mean anything
