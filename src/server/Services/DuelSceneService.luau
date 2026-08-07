@@ -89,7 +89,13 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
---- A basket beside the table.
+--- ONE PLAYER'S basket, beside the table on that player's own half.
+---
+--- Not "the left one and the right one": a basket belongs to somebody. It takes
+--- a slot for the same reason `standOffset` does, and reuses that function's
+--- rule for which way round the two sides are, so the basket and its owner can
+--- never drift apart. Placed point-symmetrically, which is what two people
+--- sitting at a table each with a basket at hand actually looks like.
 ---
 --- Built here rather than placed in the map, like everything else in this
 --- scene: a duel can start anywhere and several can run at once, so a basket
@@ -114,8 +120,9 @@ end
 --- `AssetService:CreateMeshPartAsync` is the runtime path, and it YIELDS --
 --- it fetches the asset. So it runs off the duel-start path: a slow asset
 --- server must not be able to delay the start of a duel, let alone fail one.
-local function buildBasket(origin: CFrame, side: number, parent: Instance)
+local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 	local spec = Theme.table.basket
+	local side = if slot == 1 then -1 else 1
 
 	task.spawn(function()
 		local ok, result = pcall(function()
@@ -136,7 +143,7 @@ local function buildBasket(origin: CFrame, side: number, parent: Instance)
 			return
 		end
 
-		basket.Name = if side < 0 then "BasketLeft" else "BasketRight"
+		basket.Name = `Basket{slot}`
 		basket.Size = spec.size
 		basket.Color = spec.color
 		basket.Material = Enum.Material.Glass
@@ -167,7 +174,12 @@ local function buildBasket(origin: CFrame, side: number, parent: Instance)
 		local lift = Theme.table.height + math.abs(standing.Y) / 2
 		local out = Theme.table.topSize.X / 2 + spec.gap + math.abs(standing.X) / 2
 
-		basket.CFrame = origin * CFrame.new(side * out, lift, 0) * turn
+		-- Level with the middle of its owner's half of the table, so "which one
+		-- is mine" is answered by where it is rather than by a label. `side`
+		-- carries both signs at once, which is what makes the pair mirror.
+		local along = Theme.table.topSize.Z / 4
+
+		basket.CFrame = origin * CFrame.new(side * out, lift, side * along) * turn
 		basket.Parent = parent
 	end)
 end
@@ -360,10 +372,10 @@ function DuelSceneService.open(duelId: string, participants: { Participant }): (
 
 	local model = buildModel(duelId, origin)
 
-	-- One each side. They belong to the duel's model, so they go with the table
-	-- when it does.
-	buildBasket(origin, -1, model)
+	-- One per seat, whether or not anybody is sitting in it yet. They belong to
+	-- the duel's model, so they go with the table when it does.
 	buildBasket(origin, 1, model)
+	buildBasket(origin, 2, model)
 
 	for _, entry in participants do
 		local player = entry.player

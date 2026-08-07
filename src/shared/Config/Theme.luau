@@ -374,7 +374,10 @@ local tableSpec = {
 		--- and getting it wrong looks like a basket glued to the table, which is
 		--- exactly what it looked like. The distance is computed; this is the
 		--- number that actually decides anything.
-		gap = 1.5,
+		---
+		--- Small on purpose. It only has to read as "not glued to the wood";
+		--- 1.5 was enough air to read as "these belong to some other table".
+		gap = 0.4,
 		--- Clear plastic, from the model's own recommended settings.
 		color = Color3.fromRGB(220, 245, 255),
 		transparency = 0.45,
