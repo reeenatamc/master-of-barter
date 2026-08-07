@@ -387,7 +387,7 @@ function DuelPaperSkin.mount(
 		for _, panel in viewModel.panels do
 			if panel.kind == "rival" then
 				drawStrip(farSlots, panel)
-			elseif panel.kind == "emotes" then
+			elseif panel.kind == "emotes" and Theme.table.showEmotes then
 				local row = panel.rows[1]
 				if row then
 					local count = #row.buttons
@@ -446,7 +446,7 @@ function DuelPaperSkin.mount(
 			theirs.Parent = farActions
 		end
 
-		if token then
+		if token and Theme.table.showToken then
 			-- A CIRCLED "!", stamp-sized, in the corner of the sheet.
 			--
 			-- Not a fourth button and drawn so it cannot be mistaken for one:

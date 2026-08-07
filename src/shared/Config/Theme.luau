@@ -313,6 +313,19 @@ local tableSpec = {
 	--- board is not a glowing screen lying on a table. If the lobby's lighting
 	--- turns out warm and generous (card E1), this can go back up.
 	boardLight = 0.2,
+
+	--- Two things that are OFF the sheet until somebody decides where they go.
+	---
+	--- Neither is deleted and neither is a mechanic being removed: the emotes
+	--- and the accusation both still exist server-side, and the token is still
+	--- reachable from the keyboard. What is paused is only WHERE they are
+	--- drawn -- the reference sheet has neither on it, and guessing a spot on a
+	--- board that just found its look is how a clean drawing gets cluttered
+	--- again.
+	---
+	--- Flip either to true and it comes back where it was.
+	showEmotes = false,
+	showToken = false,
 }
 
 --- [propuesta] Where the camera sits during a duel. Over your own shoulder,
