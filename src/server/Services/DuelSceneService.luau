@@ -161,6 +161,14 @@ local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: n
 				piece.Anchored = true
 				piece.CanCollide = false
 				piece.CanQuery = true
+				-- Only when Config says to. A model that arrives with its own
+				-- working texture keeps it -- that is the whole reason for
+				-- loading models instead of bare meshes, and painting over one
+				-- by reflex would throw it away.
+				if spec.tint then
+					piece.Color = spec.tint
+					piece.Material = spec.material
+				end
 			end
 		end
 

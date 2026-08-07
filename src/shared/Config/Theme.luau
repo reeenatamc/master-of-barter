@@ -425,6 +425,26 @@ local tableSpec = {
 			--- angle cannot leave one sticking out of the other. It is the same
 			--- reason the tray's own distance is computed and not written down.
 			fill = 0.6,
+			--- Painted on arrival, because the model's own colour does not
+			--- survive the trip.
+			---
+			--- The butter IS yellow in the file -- RGB(244, 232, 168), read
+			--- straight out of it -- but it is stored as glTF VERTEX COLOURS
+			--- (COLOR_0), which Roblox's importer drops. So the block arrives
+			--- white, and this is that same colour put back by hand.
+			---
+			--- The wrapper's lettering cannot be recovered the same way: that
+			--- plane's texture is a 1024x512 image with NOTHING DRAWN ON IT.
+			--- The exporter made the plane and the material and never painted
+			--- the picture. Letters have to come from a real image.
+			---
+			--- Set this to nil for any model that brings a working texture. A
+			--- tint is a patch for a model that lost its colours, not a look.
+			tint = Color3.fromRGB(244, 232, 168),
+			--- Flat and matte, like the paper everything else is drawn on. The
+			--- model brought no usable material either, so this is a choice
+			--- rather than a recovery.
+			material = Enum.Material.SmoothPlastic,
 		},
 		--- Clear plastic, from the model's own recommended settings.
 		color = Color3.fromRGB(220, 245, 255),
