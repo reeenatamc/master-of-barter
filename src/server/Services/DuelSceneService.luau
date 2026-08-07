@@ -18,7 +18,7 @@
 	real lobby. Hand-placing parts for it would be effort with a known expiry.
 ]]
 
-local AssetService = game:GetService("AssetService")
+local InsertService = game:GetService("InsertService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -135,54 +135,83 @@ end
 --- not load leaves a warning and no basket. The duel is still playable; it just
 --- looks poorer.
 ---
---- ── WHY NOT `Instance.new("MeshPart")` ──────────────────────────────────────
+--- ── TWO APIS THAT LOOK RIGHT AND ARE NOT ───────────────────────────────────
 ---
---- Because it does not work, and it does not work QUIETLY. `MeshPart.MeshId`
---- is not assignable from a running script; the first version of this function
---- assigned it inside a `pcall` and the write neither applied nor raised. The
---- pcall reported success, so the warning never fired, and two MeshParts with
---- no mesh were parented to the table -- invisible, and silent about it.
+--- `Instance.new("MeshPart")` and then setting `MeshId` does not work, and it
+--- does not work QUIETLY: `MeshId` is not assignable from a running script, so
+--- the write neither applied nor raised. The pcall reported success, the
+--- warning never fired, and two MeshParts with no mesh hung off the table --
+--- invisible, and silent about being invisible.
 ---
---- The lesson is bigger than the bug: A PCALL THAT RETURNS TRUE IS NOT PROOF
---- THE WRITE HAPPENED. It only proves nothing threw. When the thing being
---- checked is "did this take effect", check the effect.
+--- `AssetService:CreateMeshPartAsync` was the fix for that, and it was right
+--- until the asset changed. It takes a MESH; the upload tool posts to Open
+--- Cloud, which creates a MODEL -- a container with MeshParts inside it. Same
+--- shape of failure, second time: nothing on the table, nothing in the output.
 ---
---- `AssetService:CreateMeshPartAsync` is the runtime path, and it YIELDS --
---- it fetches the asset. So it runs off the duel-start path: a slow asset
---- server must not be able to delay the start of a duel, let alone fail one.
+--- `InsertService:LoadAsset` is the one that takes a model id. It also keeps
+--- whatever the model brought with it -- materials, textures, several pieces --
+--- which is what the squishies are going to need.
+---
+--- ── AND THE REASON BOTH WERE INVISIBLE ──────────────────────────────────────
+---
+--- A PCALL THAT RETURNS TRUE IS NOT PROOF THE WORK HAPPENED. It only proves
+--- nothing threw. Both failures were diagnosed by looking at the table rather
+--- than at the log, because the log had nothing to say -- and the one branch
+--- that gave up on purpose (duel ended mid-fetch) said nothing either.
+---
+--- So this now reports EVERY outcome, success included. A function whose only
+--- output is a warning is a function that cannot tell you it ran.
+---
+--- It YIELDS -- it fetches the asset -- so it runs off the duel-start path: a
+--- slow asset server must not be able to delay the start of a duel, let alone
+--- fail one.
 local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 	local spec = Theme.table.basket
 	local side = if slot == 1 then -1 else 1
 
 	task.spawn(function()
 		local ok, result = pcall(function()
-			return AssetService:CreateMeshPartAsync(Content.fromAssetId(spec.assetId))
+			return InsertService:LoadAsset(spec.assetId)
 		end)
 
 		if not ok then
-			warn(`[Scene] the basket mesh would not load: {result}`)
+			warn(`[Scene] basket {slot}: asset {spec.assetId} would not load: {result}`)
 			return
 		end
-		local basket = result :: MeshPart
 
-		-- The duel can have ended while the mesh was in flight. The Trove has
-		-- already run by then, so parenting into the dead model would leak a
-		-- part with nothing left to clean it up.
+		-- LoadAsset hands back a wrapper Model with the uploaded model inside
+		-- it. What we want is the thing itself, so the wrapper does not add a
+		-- pivot of its own between us and the tray.
+		local wrapper = result :: Model
+		local basket = wrapper:FindFirstChildWhichIsA("Model") or wrapper
+		if basket ~= wrapper then
+			basket.Parent = nil
+			wrapper:Destroy()
+		end
+
+		-- The duel can have ended while the asset was in flight. The Trove has
+		-- already run by then, so parenting into the dead model would leak
+		-- something with nothing left to clean it up. Said out loud, because a
+		-- branch that gives up in silence is indistinguishable from a bug.
 		if not parent:IsDescendantOf(game) then
 			basket:Destroy()
+			print(`[Scene] basket {slot}: the duel ended before the asset arrived`)
 			return
 		end
 
 		basket.Name = `Basket{slot}`
-		basket.Size = spec.size
-		basket.Color = spec.color
-		basket.Material = Enum.Material.Glass
-		basket.Transparency = spec.transparency
-		basket.Reflectance = spec.reflectance
-		basket.CastShadow = false
-		basket.Anchored = true
-		basket.CanCollide = false
-		basket.CanQuery = true
+		for _, piece in basket:GetDescendants() do
+			if piece:IsA("BasePart") then
+				piece.Color = spec.color
+				piece.Material = Enum.Material.Glass
+				piece.Transparency = spec.transparency
+				piece.Reflectance = spec.reflectance
+				piece.CastShadow = false
+				piece.Anchored = true
+				piece.CanCollide = false
+				piece.CanQuery = true
+			end
+		end
 
 		-- The model is Z-up and Roblox is Y-up, so it has to be turned before it
 		-- is placed. See Theme: the angle was measured off the mesh, not guessed.
@@ -191,6 +220,17 @@ local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 			math.rad(spec.rotation.Y),
 			math.rad(spec.rotation.Z)
 		)
+
+		-- A model arrives at whatever size it was uploaded at, so it is scaled to
+		-- what Config asked for rather than assigned it: `Size` is a part's
+		-- property, not a model's. Uniform on purpose -- squashing a model to
+		-- fit three independent numbers is how a tray becomes a puddle.
+		local actual = basket:GetExtentsSize()
+		local biggest = math.max(actual.X, actual.Y, actual.Z)
+		if biggest > 0 then
+			local wanted = math.max(spec.size.X, spec.size.Y, spec.size.Z)
+			basket:ScaleTo(wanted / biggest)
+		end
 
 		-- What the basket MEASURES once turned, which is not `size` any more:
 		-- turning swaps which of the three numbers points where. Both of the
@@ -209,8 +249,12 @@ local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 		-- carries both signs at once, which is what makes the pair mirror.
 		local along = Theme.table.topSize.Z / 4
 
-		basket.CFrame = origin * CFrame.new(side * out, lift, side * along) * turn
 		basket.Parent = parent
+		basket:PivotTo(origin * CFrame.new(side * out, lift, side * along) * turn)
+
+		-- Says it WORKED, not just that it did not crash. Two silent failures in
+		-- a row got past a function that only spoke up when it broke.
+		print(`[Scene] basket {slot} placed at {basket:GetPivot().Position}`)
 	end)
 end
 
