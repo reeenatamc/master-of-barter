@@ -286,7 +286,18 @@ local tableSpec = {
 	standDistance = 8,
 	--- Resolution of the surface drawn on the board. The knob for §38's low-end
 	--- budget: higher is sharper and costs more.
-	pixelsPerStud = 110,
+	--- Resolution of the surface drawn on the board, and -- unexpectedly -- the
+	--- knob that controls how big the marks LOOK.
+	---
+	--- Roblox will not draw legacy-font text above size 100. At 110 pixels per
+	--- stud the sheet is over a thousand pixels tall, so a mark stuck at its
+	--- 100-pixel ceiling filled about a third of its cell, and no amount of
+	--- growing the cell or the label could move it: it was already at the top.
+	---
+	--- Lower resolution means those 100 pixels are a larger share of the sheet.
+	--- The cost is sharpness on anything with small text, which today is only
+	--- the item cards -- and those are being redrawn anyway.
+	pixelsPerStud = 48,
 	--- How the board is turned on the table, in degrees.
 	---
 	--- A SurfaceGui on a horizontal face maps its own up/down onto one of the
