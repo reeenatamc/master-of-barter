@@ -413,7 +413,7 @@ local tableSpec = {
 		--- a single example, which is how a design ends up shaped like whatever
 		--- happened to be uploaded first.
 		demo = {
-			assetId = 128628459826751,
+			assetId = 97748453184802,
 			--- Degrees, same convention as the tray's own turn. Zero because a
 			--- stick of butter is a closed solid -- the geometry does not say
 			--- which way is up, so this one gets decided by looking.

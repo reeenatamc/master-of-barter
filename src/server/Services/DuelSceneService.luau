@@ -119,6 +119,24 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
+--- Places a model so its MIDDLE lands on `target`, instead of its pivot.
+---
+--- `PivotTo` moves the PIVOT, and a model's pivot is wherever its exporter left
+--- the origin -- which is very often not the middle of the thing. This butter's
+--- box runs from 0 to 1 along one axis rather than -0.5 to 0.5, so pivoting it
+--- into a tray put half of it outside the tray.
+---
+--- Nothing in a file listing shows that, and no error is raised. It shows up as
+--- "it does not look like it is inside", which is a hard thing to search for.
+--- Every arithmetic in this file assumes it is positioning a middle, so every
+--- model goes through here.
+local function placeCentred(model: Model, target: CFrame)
+	local box: CFrame = model:GetBoundingBox()
+	-- Where the middle sits relative to the pivot, in the pivot's own frame.
+	local drift = model:GetPivot():ToObjectSpace(box)
+	model:PivotTo(target * drift:Inverse())
+end
+
 --- Puts one squishy in a tray.
 ---
 --- Its own function, and its own failure: a squishy that will not load leaves a
@@ -191,7 +209,7 @@ local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: n
 		local rest = Theme.table.height + math.abs(grown.Y) / 2
 
 		squishy.Parent = tray
-		squishy:PivotTo(origin * CFrame.new(0, rest, alongZ) * turn)
+		placeCentred(squishy, origin * CFrame.new(0, rest, alongZ) * turn)
 		print(`[Scene] tray {slot}: squishy in, {math.abs(grown.X)} long`)
 	end)
 end
@@ -334,7 +352,7 @@ local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 		end
 
 		basket.Parent = parent
-		basket:PivotTo(origin * CFrame.new(0, lift, side * along) * turn)
+		placeCentred(basket, origin * CFrame.new(0, lift, side * along) * turn)
 
 		-- Says it WORKED, not just that it did not crash. Two silent failures in
 		-- a row got past a function that only spoke up when it broke.
