@@ -215,11 +215,18 @@ function DuelPaperSkin.mount(
 			-- outline colour, which was legible only while the fill was pale --
 			-- the moment the fill got its real saturation, colour on colour
 			-- stopped reading at all.
-			-- Disabled turns GREY rather than fading. A faded colour keeps its
-			-- hue and reads as a badly chosen colour instead of as an
-			-- unavailable button, which is exactly how it was read.
-			face.BackgroundColor3 = if spec.enabled then scheme.fill else Theme.palette.off
-			face.TextColor3 = if spec.enabled then Theme.palette.paper else Theme.palette.offInk
+			-- ALWAYS THE COLOUR. Never grey, never faded.
+			--
+			-- Greying them out was mine and it was wrong. These three are the
+			-- visual signature of the game (§25), and the board BEFORE you
+			-- trade is the first thing anybody sees -- a grey one says "nothing
+			-- here works" at exactly the moment it has to say "play this".
+			--
+			-- Being unavailable is shown by the SYMBOL going quiet, not by the
+			-- button dying. And the server refuses regardless, so nothing here
+			-- is load-bearing for correctness -- only for wanting to press it.
+			face.BackgroundColor3 = scheme.fill
+			face.TextColor3 = Theme.palette.paper
 			face.BackgroundTransparency = 0
 		else
 			-- Theirs, and everything else: outline only, on bare paper.
@@ -227,9 +234,9 @@ function DuelPaperSkin.mount(
 			face.TextColor3 = if spec.enabled then Theme.palette.ink else Theme.palette.inkSoft
 		end
 
-		-- Opaque either way now: grey already says "not yet", and stacking
-		-- transparency on top of it only makes the board look faded.
-		face.TextTransparency = 0
+		-- The symbol is what dims when a button is not available yet. Light
+		-- enough to notice, nowhere near enough to make the board look dead.
+		face.TextTransparency = if spec.enabled then 0 else 0.5
 		-- Barely rounded. The reference is a row of boxes RULED on paper, and a
 		-- rounded rectangle reads as a UI button no matter what colour it is --
 		-- the corner is what says "drawn" or "designed".
