@@ -341,18 +341,23 @@ local tableSpec = {
 		--- decides where each of these ends up pointing.
 		size = Vector3.new(5.1, 3.2, 2.25),
 		--- Degrees. THE MODEL IS Z-UP AND ROBLOX IS Y-UP, so without this the
-		--- basket lies on its side.
+		--- basket lies on its side. Turning +90 about X sends the model's -Z to
+		--- the world's +Y, which stands it on its floor.
 		---
-		--- Not guessed and not eyeballed: measured off the source mesh. The
-		--- floor of a basket is the one face of its bounding box that is
-		--- actually a surface, and 78% of the face at Z-minimum is covered
-		--- while the face at Z-maximum is 18% -- a rim, which is what an
-		--- opening looks like. Blender's convention, exported straight through.
+		--- The AXIS was measured off the source mesh; the SIGN was not, and the
+		--- difference is worth remembering. Summing triangle area against each
+		--- face of the bounding box found one real surface -- 78% coverage at
+		--- Z-minimum against 18% at Z-maximum -- so the vertical axis was Z
+		--- beyond doubt. Reading the dense face as the floor was an assumption
+		--- riding along with the measurement, and it was wrong: -90 came out
+		--- upside down in Studio, which puts the floor at Z-maximum.
 		---
-		--- Turning -90 degrees about X sends the model's +Z to the world's +Y.
-		--- So on the table the basket ends up 5.1 wide, 2.25 tall and 3.2 deep:
+		--- The measurement narrowed six possibilities to two. Looking at it
+		--- picked between them. Neither step would have done on its own.
+		---
+		--- On the table the basket ends up 5.1 wide, 2.25 tall and 3.2 deep:
 		--- `size` above is in model axes, and this is what reorders them.
-		rotation = Vector3.new(-90, 0, 0),
+		rotation = Vector3.new(90, 0, 0),
 		--- How far out from the middle of the table, left and right.
 		offset = 9.5,
 		--- Clear plastic, from the model's own recommended settings.
