@@ -149,10 +149,10 @@ function DuelPaperSkin.mount(
 		return frame
 	end
 
-	local farActions = zone(0.04, 0.13)
+	local farActions = zone(0.025, 0.145)
 	local farSlots = zone(0.18, 0.22)
 	local nearSlots = zone(0.5, 0.22)
-	local nearActions = zone(0.76, 0.18)
+	local nearActions = zone(0.755, 0.225)
 
 	--- A line ruled all the way across the sheet.
 	---
@@ -189,10 +189,10 @@ function DuelPaperSkin.mount(
 	rule(0.745, Theme.palette.ruleNear)
 
 	-- Thirds, matching where the marks sit.
-	divider(0.353, 0.02, 0.155, Theme.palette.ruleFar)
-	divider(0.647, 0.02, 0.155, Theme.palette.ruleFar)
-	divider(0.353, 0.751, 0.21, Theme.palette.ruleNear)
-	divider(0.647, 0.751, 0.21, Theme.palette.ruleNear)
+	divider(0.353, 0.015, 0.162, Theme.palette.ruleFar)
+	divider(0.647, 0.015, 0.162, Theme.palette.ruleFar)
+	divider(0.353, 0.748, 0.24, Theme.palette.ruleNear)
+	divider(0.647, 0.748, 0.24, Theme.palette.ruleNear)
 
 	--- The accusation's own corner: bottom right of the sheet, clear of
 	--- everything. Its own frame so its position is stated once here instead of
@@ -432,17 +432,20 @@ function DuelPaperSkin.mount(
 
 		local count = math.max(#row, 1)
 		for index, spec in row do
+			-- The mark fills its third. TextScaled fits inside whatever it is
+			-- given, so the cell IS the size control -- a smaller box is the
+			-- only thing that was making these small.
 			local mine = cutout(spec, UDim2.fromScale(1 / count, 1), index * 11, true)
 			mine.Position = UDim2.fromScale((index - 1) / count, 0)
 			mine.Parent = nearActions
 
 			local theirs = cutout(
 				{ id = `mirror:{spec.id}`, label = spec.label, enabled = false, tone = spec.tone },
-				UDim2.fromScale(0.66 / count, 1),
+				UDim2.fromScale(0.86 / count, 1),
 				index * 5,
 				false
 			)
-			theirs.Position = UDim2.fromScale(0.17 + (index - 1) * (0.66 / count), 0)
+			theirs.Position = UDim2.fromScale(0.07 + (index - 1) * (0.86 / count), 0)
 			theirs.Parent = farActions
 		end
 
