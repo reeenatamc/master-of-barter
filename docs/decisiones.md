@@ -1184,3 +1184,47 @@ Al verificar `FilterStringAsync` saqué un tercer argumento, `Enum.TextFilterCon
 **Cómo quedó, y qué falta:** el look se arma con **colores solamente** —piel pálida, todo lo demás negro— sobre el `HumanoidDescription` que ya existía. Pelo, flequillo y ropa son **ids de catálogo**, y los ids escritos de memoria son exactamente el error que costó cuatro nombres de fuente inventados esta semana. La silueta se lee; el flequillo necesita que alguien busque los ids.
 
 **Queda abierto:** si aparecen los ids —de una cuenta hecha para los bots, o del catálogo— se los agrego y el look mejora sin tocar código, solo Config.
+
+---
+
+## 2026-08-05 · 🔒 §28 REEMPLAZADA — la hoja blanca y varios marcadores
+
+**Regla cerrada cambiada por decisión de Renata, con la foto del original sobre la mesa como referencia.**
+
+| | Antes (§28) | Ahora |
+|---|---|---|
+| Papel | Kraft cálido | **Blanco**, esquinas muy redondeadas |
+| Trazo | **Una sola birome azul** | **Varios marcadores**: rojo, azul, verde, rosa, ámbar |
+| Mesa | — | **Madera oscura**, material con veta |
+
+**Lo que NO cambió, y es lo que la regla realmente protegía:** que todo se vea **dibujado a mano**, con la misma herramienta física, sobre papel de verdad. La regla decía "una sola lapicera" pero lo que quería decir era "esto lo dibujó una persona". La foto del original —una hoja en un escritorio de oficina con fidget toys alrededor— cumple eso con cinco marcadores.
+
+### El error que se repitió cinco veces, y lo que lo destrabó
+
+Cada versión del tablero **encajonaba cada símbolo en su propio rectángulo relleno**. Se subieron los colores tres veces, se saturaron los rellenos, se cambió el símbolo a blanco — y seguía viéndose mal.
+
+**Era un problema de forma, no de color.** Renata lo dijo exacto: *"el símbolo es del color y lo que los separa son las divisiones"*. En la referencia no hay cajas: hay **una raya por fila y dos verticales**, y las marcas dibujadas en los huecos.
+
+> **Un bloque de color pelea contra el papel. Una marca de color se apoya encima.**
+
+Ningún ajuste de color iba a arreglar eso, y se gastaron varias rondas intentándolo.
+
+### Dos lapiceras, y para qué sirven
+
+Las líneas del lado cercano son **azules** y las del lejano **rosas**. Sale de la referencia y hace un trabajo que no esperaba: **qué mitad de la hoja es tuya se contesta por el color de la línea, antes de leer un solo símbolo.**
+
+### El techo de texto de Roblox
+
+Cuatro rondas de agrandar celdas, filas y cajas no movieron nada porque **Roblox no dibuja texto de fuente legada por encima de tamaño 100**. Las marcas ya estaban en su máximo.
+
+**El número que sí las mueve es `pixelsPerStud`**, la resolución de la superficie: menos píxeles por studs y esos 100 son una porción más grande de la hoja. Queda anotado ahí mismo, porque no es lo que nadie buscaría.
+
+### Fuera de la hoja, por ahora
+
+`showEmotes` y `showToken` en `false`: la tira de emotes y la ficha **existen y funcionan**, pero no se dibujan hasta que se decida dónde. Elegir un lugar apurado en un tablero que recién encontró su forma es cómo un dibujo limpio se vuelve a ensuciar.
+
+### Lo que la foto original dejó pendiente
+
+En la referencia **los objetos están sobre la mesa, alrededor del papel** — la hoja es solo para negociar, y por eso el centro está vacío. Hoy siguen dibujados en filas sobre el tablero, que es lo único que permite elegir qué ofertar.
+
+**Sacarlos es el próximo cambio grande y todavía no está decidido cómo se elige un objeto** si ya no está en la hoja.
