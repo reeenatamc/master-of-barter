@@ -1228,3 +1228,25 @@ Cuatro rondas de agrandar celdas, filas y cajas no movieron nada porque **Roblox
 En la referencia **los objetos están sobre la mesa, alrededor del papel** — la hoja es solo para negociar, y por eso el centro está vacío. Hoy siguen dibujados en filas sobre el tablero, que es lo único que permite elegir qué ofertar.
 
 **Sacarlos es el próximo cambio grande y todavía no está decidido cómo se elige un objeto** si ya no está en la hoja.
+
+## 2026-08-07 — Un `pcall` que devuelve `true` no prueba que la escritura ocurrió
+
+Las canastas no aparecían **y el Output no decía nada**. Ese silencio era el dato.
+
+`MeshPart.MeshId` no es asignable desde un script en ejecución. La primera versión la asignaba dentro de un `pcall`, y la escritura **ni se aplicó ni tiró error**: el `pcall` informó éxito, el aviso nunca se disparó, y quedaron dos MeshParts sin malla colgadas de la mesa — invisibles, y calladas sobre serlo.
+
+> **Un `pcall` que devuelve `true` solo prueba que nada tiró. Cuando lo que se quiere saber es "¿esto tuvo efecto?", hay que mirar el efecto, no la ausencia de excepción.**
+
+Es la misma familia que "un verde que nunca vio rojo no es evidencia", pero peor: acá el verde lo produjo mi propia defensa. El diagnóstico defensivo dio un falso OK.
+
+**Lo que se hizo:** `AssetService:CreateMeshPartAsync(Content.fromAssetId(id))`, verificado contra la doc oficial antes de escribirlo — firma, tipo del parámetro y que **cede**. Por eso corre fuera del camino de arranque del duelo (`task.spawn`) y **revuelve a comprobar que la mesa siga viva antes de colgarle nada**: un duelo que termina mientras la malla viaja dejaría una pieza que el Trove ya terminó de limpiar.
+
+**Alternativa descartada:** guardar la canasta como `.rbxm` en el repo y clonarla. Funciona y no tiene riesgo de API, pero obligaba a reimportar el modelo que ella ya había borrado, y `CreateMeshPartAsync` es la herramienta que existe justamente para esto.
+
+**Config cambió con el arreglo:** `meshId = "rbxassetid://…"` pasó a `assetId = 74562733627832`. `Content.fromAssetId` toma el número; guardar la cadena era guardar un formato que ya nadie usa.
+
+### Y el `LIMPIAROFERTAR` en medio de la hoja
+
+Cuando el inventario salió del tablero, el panel del borrador dejó de dibujarse **pero sus botones no**: iban en una fila que no lleva ningún objeto, así que aterrizaron pegados en el medio del papel.
+
+Ahora **las filas sin objeto no se dibujan**. La regla quedó explícita en el código: el medio de la hoja tiene objetos y nada más; una fila que no es una cosa es interfaz, y la interfaz ya se fue. No se perdió nada — una oferta entera está a una tecla (Q / E) y las celdas regladas se dibujan por su propio camino.
