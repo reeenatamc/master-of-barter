@@ -352,17 +352,22 @@ local function addFringe(body: Model, tint: Color3)
 		{ offset = Vector3.new(0, 0.24, 0.52), size = Vector3.new(1.16, 0.72, 0.26), tilt = 0 },
 	}
 
+	-- The numbers above are studs against a DEFAULT head, so they move with the
+	-- rig. Without this a scaled-up bot wears a fringe sized for somebody else:
+	-- too small, and floating where the old forehead used to be.
+	local scale = Theme.avatar.scale
+
 	for index, lock in locks do
 		local strand = Instance.new("Part")
 		strand.Name = `Hair{index}`
-		strand.Size = lock.size
+		strand.Size = lock.size * scale
 		strand.Color = tint
 		strand.Material = Enum.Material.SmoothPlastic
 		strand.CanCollide = false
 		strand.CanQuery = false
 		strand.CanTouch = false
 		strand.Massless = true
-		strand.CFrame = head.CFrame * CFrame.new(lock.offset) * CFrame.Angles(0, 0, lock.tilt)
+		strand.CFrame = head.CFrame * CFrame.new(lock.offset * scale) * CFrame.Angles(0, 0, lock.tilt)
 		strand.Parent = body
 
 		-- Welded rather than positioned once: the body is anchored today, but a
@@ -372,6 +377,54 @@ local function addFringe(body: Model, tint: Color3)
 		weld.Part1 = strand
 		weld.Parent = strand
 	end
+end
+
+--- Makes a rig bigger without making it a different shape.
+---
+--- All four scales move together on purpose -- see Theme.avatar for why, and
+--- for the two that are deliberately left alone.
+---
+--- It reports what it GOT rather than what it asked for. A place caps avatar
+--- scale in Game Settings, which lives outside this repo, and a request past the
+--- cap is clamped with no error. Reading the value back is the whole difference
+--- between "it did nothing" and "a setting nobody can see from here overrode
+--- it" -- two failures that look identical from a screenshot.
+local function scaleBody(body: Model, label: string)
+	local wanted = Theme.avatar.scale
+
+	local humanoid = body:FindFirstChildWhichIsA("Humanoid")
+	if not humanoid then
+		warn(`[Scene] {label}: no Humanoid, so nothing to scale`)
+		return
+	end
+
+	for _, knobName in { "BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale" } do
+		local knob = humanoid:FindFirstChild(knobName)
+		if knob and knob:IsA("NumberValue") then
+			knob.Value = wanted
+			if math.abs(knob.Value - wanted) > 0.001 then
+				warn(
+					`[Scene] {label}: asked {knobName} for {wanted}, got {knob.Value}. `
+						.. `The place's avatar scale range in Game Settings is capping it.`
+				)
+			end
+		end
+	end
+end
+
+--- How high the root has to sit for the feet to reach the ground.
+---
+--- Derived, where a flat 3 used to be written. 3 is what a DEFAULT R15 works out
+--- to, which is why it looked like a constant -- and a scaled rig does not work
+--- out to 3, so the number and the scale would have had to be kept in step by
+--- hand. Getting it wrong buries a character to the knees or floats it.
+local function standHeight(body: Model): number
+	local humanoid = body:FindFirstChildWhichIsA("Humanoid")
+	local root = body:FindFirstChild("HumanoidRootPart")
+	if humanoid and root and root:IsA("BasePart") then
+		return humanoid.HipHeight + root.Size.Y / 2
+	end
+	return 3
 end
 
 --- Stands a filler opponent at its side of the table, facing the sheet.
@@ -385,7 +438,10 @@ local function seatBot(displayName: string, origin: CFrame, slot: Slot, parent: 
 	local lookAt = origin.Position + Vector3.new(0, Theme.table.height, 0)
 
 	body.Parent = parent
-	body:PivotTo(CFrame.lookAt(spot.Position + Vector3.new(0, 3, 0), lookAt))
+	-- Scaled BEFORE it is placed: how high the root goes depends on how big the
+	-- rig is, so the order is not cosmetic.
+	scaleBody(body, displayName)
+	body:PivotTo(CFrame.lookAt(spot.Position + Vector3.new(0, standHeight(body), 0), lookAt))
 
 	-- After the pivot, so the strands are built against the head where it
 	-- actually ended up rather than where the rig was assembled.
@@ -421,7 +477,14 @@ local function seat(player: Player, origin: CFrame, slot: Slot)
 	local spot = origin * CFrame.new(standOffset(slot))
 	local lookAt = origin.Position + Vector3.new(0, Theme.table.height, 0)
 
-	character:PivotTo(CFrame.lookAt(spot.Position + Vector3.new(0, 3, 0), lookAt))
+	-- Scaled to match the bot, and before being placed: the root's height
+	-- depends on the rig's size.
+	--
+	-- The scale is NOT put back on the way out, and that is on purpose while
+	-- there is nowhere else to be: a duel is the whole game right now. When E1's
+	-- lobby lands, `release` is where it goes back to 1.
+	scaleBody(character, player.Name)
+	character:PivotTo(CFrame.lookAt(spot.Position + Vector3.new(0, standHeight(character), 0), lookAt))
 	root.Anchored = true
 end
 

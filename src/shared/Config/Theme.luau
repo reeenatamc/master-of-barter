@@ -495,7 +495,30 @@ local minTouchPixels = 44
 --- perfectly aligned grid of paper cards stops reading as paper immediately.
 local tiltDegrees = 2.5
 
+--- How big the two people at the table are.
+local avatar = {
+	--- Multiplies every body scale at once -- height, width, depth and head.
+	---
+	--- ALL FOUR TOGETHER IS THE POINT. Raising height alone is exactly what
+	--- "stretched" looks like: the same shoulders on longer legs. The two scales
+	--- deliberately NOT touched are body type and proportion, which change what
+	--- a body is shaped like rather than how big it is.
+	---
+	--- Why bigger at all: a tray of squishies sits on the head extension between
+	--- the two players, and a rival whose face is behind their own merchandise
+	--- cannot be read. Seeing the other person is half the information in a bluff
+	--- game (docs/gdd.md §11), so the head has to clear whatever is on the table.
+	---
+	--- A PLACE CAN CAP THIS AND THE CAP IS NOT IN THIS REPO. The avatar scale
+	--- range lives in Studio's Game Settings, and a request past it is clamped
+	--- with no error. The scene reads the value back and says so when that
+	--- happens, because "it did nothing" and "a setting you cannot see from here
+	--- overrode it" look identical otherwise.
+	scale = 1.3,
+}
+
 return {
+	avatar = avatar,
 	name = "Papelito",
 	palette = palette,
 	fonts = fonts,
