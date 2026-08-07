@@ -149,10 +149,14 @@ function DuelPaperSkin.mount(
 		return frame
 	end
 
-	local farActions = zone(0.015, 0.185)
-	local farSlots = zone(0.18, 0.22)
-	local nearSlots = zone(0.5, 0.22)
-	local nearActions = zone(0.735, 0.285)
+	-- Tight to the edges of the sheet, so everything between them belongs to
+	-- the middle. The empty centre is the largest thing on the reference and
+	-- the only place the objects can go -- margins are the one place there is
+	-- room to take space FROM.
+	local farActions = zone(0.02, 0.15)
+	local farSlots = zone(0.21, 0.24)
+	local nearSlots = zone(0.55, 0.24)
+	local nearActions = zone(0.83, 0.15)
 
 	--- A line ruled all the way across the sheet.
 	---
@@ -185,14 +189,14 @@ function DuelPaperSkin.mount(
 	-- ONE line per row, not a box around each row: under the far marks and
 	-- above the near ones. Blue is yours, pink is theirs -- which half of the
 	-- sheet belongs to whom is answered by the pen before any symbol is read.
-	rule(0.212, Theme.palette.ruleFar)
-	rule(0.725, Theme.palette.ruleNear)
+	rule(0.18, Theme.palette.ruleFar)
+	rule(0.82, Theme.palette.ruleNear)
 
 	-- Thirds, matching where the marks sit.
-	divider(0.353, 0.006, 0.206, Theme.palette.ruleFar)
-	divider(0.647, 0.006, 0.206, Theme.palette.ruleFar)
-	divider(0.353, 0.728, 0.266, Theme.palette.ruleNear)
-	divider(0.647, 0.728, 0.266, Theme.palette.ruleNear)
+	divider(0.353, 0.015, 0.168, Theme.palette.ruleFar)
+	divider(0.647, 0.015, 0.168, Theme.palette.ruleFar)
+	divider(0.353, 0.818, 0.168, Theme.palette.ruleNear)
+	divider(0.647, 0.818, 0.168, Theme.palette.ruleNear)
 
 	--- The accusation's own corner: bottom right of the sheet, clear of
 	--- everything. Its own frame so its position is stated once here instead of
