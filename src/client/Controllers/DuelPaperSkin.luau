@@ -215,18 +215,18 @@ function DuelPaperSkin.mount(
 			-- outline colour, which was legible only while the fill was pale --
 			-- the moment the fill got its real saturation, colour on colour
 			-- stopped reading at all.
-			-- ALWAYS THE COLOUR. Never grey, never faded.
+			-- THE SYMBOL IS THE COLOUR. The cell is paper.
 			--
-			-- Greying them out was mine and it was wrong. These three are the
-			-- visual signature of the game (§25), and the board BEFORE you
-			-- trade is the first thing anybody sees -- a grey one says "nothing
-			-- here works" at exactly the moment it has to say "play this".
+			-- Which is what the reference always was: white sheet, boxes ruled
+			-- on it, and the marks drawn inside in green, yellow and red. The
+			-- filled-rectangle version was me reading a UI where there was a
+			-- drawing -- and it is why the colours kept looking wrong no matter
+			-- how hard they were mixed.
 			--
-			-- Being unavailable is shown by the SYMBOL going quiet, not by the
-			-- button dying. And the server refuses regardless, so nothing here
-			-- is load-bearing for correctness -- only for wanting to press it.
-			face.BackgroundColor3 = scheme.fill
-			face.TextColor3 = Theme.palette.paper
+			-- The cell stays paper so the DIVISIONS do the separating, the way
+			-- ruled lines do on a sheet.
+			face.BackgroundColor3 = Theme.palette.paper
+			face.TextColor3 = scheme.fill
 			face.BackgroundTransparency = 0
 		else
 			-- Theirs, and everything else: outline only, on bare paper.
@@ -241,7 +241,11 @@ function DuelPaperSkin.mount(
 		-- rounded rectangle reads as a UI button no matter what colour it is --
 		-- the corner is what says "drawn" or "designed".
 		corner(face, 0.04)
-		stroke(face, if big then 3 else 2, if spec.enabled then 0 else 0.6)
+		-- The ruled line. Now that the cells are paper, this IS the division --
+		-- it is not trim around a coloured block any more, it is what tells one
+		-- box from the next. Solid whether the button is available or not,
+		-- because a line that fades makes the sheet look half-drawn.
+		stroke(face, if big then 3 else 2, 0)
 
 		local target = Instance.new("TextButton")
 		target.Size = UDim2.fromScale(pad, pad)
@@ -384,6 +388,11 @@ function DuelPaperSkin.mount(
 		-- The accusation is NOT one of them. It is a once-per-duel token, it
 		-- sits in a bottom corner on its own, and putting it in the row made it
 		-- look like a fourth ordinary choice.
+		-- X · + · ✓, with the plus in the MIDDLE. The order is fixed here rather
+		-- than taken from the view model: the row is a drawing with a shape,
+		-- and "no" on one side, "more" between them and "yes" on the other is
+		-- that shape.
+		local ORDER = { decline = 1, raise = 2, accept = 3 }
 		local row = {}
 		local token = nil
 		for _, spec in viewModel.actions do
@@ -393,6 +402,9 @@ function DuelPaperSkin.mount(
 				table.insert(row, spec)
 			end
 		end
+		table.sort(row, function(a, b)
+			return (ORDER[a.id] or 9) < (ORDER[b.id] or 9)
+		end)
 
 		local count = math.max(#row, 1)
 		for index, spec in row do
