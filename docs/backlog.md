@@ -394,3 +394,19 @@ Lista consolidada de lo que está escrito y type-clean pero **no ejercitado en S
 | ~~Watchdog por generación~~ | A2.2 | ✅ **2026-08-05, automatizado.** El reloj virtual pasa el deadline viejo y el nuevo en la misma corrida — imposible de hacer a mano sin esperar 30s reales. |
 
 **No agrupable** (regla de CLAUDE.md): nada que toque ProfileStore, guardado o `ProcessReceipt` entra en esta lista. Eso se prueba cuando se escribe.
+
+---
+
+## Deuda: `DuelSceneService` pasó las 300 líneas
+
+Son **618**. La regla del proyecto dice que a las 300 se divide, y esto lleva tres sesiones de escena creciendo encima: mesa, cabeceras, bandejas, cuerpos de bot, flequillo, escala de avatar y ahora squishies.
+
+**Corte natural cuando se salde** (tres responsabilidades, no una):
+
+- `DuelSceneService` — la mesa, la hoja y las cabeceras. Lo que hace el mueble.
+- `DuelBodies` — sentar gente: bots, jugadores, flequillo, escala, altura del root.
+- `DuelProps` — lo que se apoya encima: bandejas y squishies, carga de assets incluida.
+
+**Por qué no ahora:** la escena todavía se está diseñando a razón de un cambio por mensaje. Partir un archivo que muta cada diez minutos es garantizar hacerlo dos veces — y ninguno de los tres pedazos tiene todavía su forma final, en particular `DuelProps`, que hoy tiene UN squishy de demostración donde va a haber un modelo por ítem.
+
+**Condición de cierre:** en cuanto los squishies pasen de un modelo fijo a uno por ítem (o sea, cuando `Theme.table.basket.demo` deje de existir), se parte. Ese cambio toca justo el pedazo que hoy no tiene forma.
