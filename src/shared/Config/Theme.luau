@@ -52,6 +52,11 @@ local palette = {
 	--- Masking tape, and the strip a cut-out sits on.
 	tape = Color3.fromRGB(226, 206, 164),
 
+	--- The desk the sheet lies on. Wood, dark enough that a white card reads as
+	--- a card and not as a lighter patch of table -- the reference is a sheet
+	--- on an office desk and the contrast is doing half the work.
+	wood = Color3.fromRGB(104, 66, 40),
+
 	--- The three negotiation buttons. In the references they are pale FILLED
 	--- panels with a sketchy outline, not outlined cut-outs, and their colours
 	--- carry the meaning before the icon does: red refuses, green agrees, amber

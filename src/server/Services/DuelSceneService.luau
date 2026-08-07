@@ -54,8 +54,10 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	top.Size = Theme.table.topSize
 	top.CFrame = origin * CFrame.new(0, Theme.table.height, 0)
 	top.Anchored = true
-	top.Color = Theme.palette.tape
-	top.Material = Enum.Material.SmoothPlastic
+	top.Color = Theme.palette.wood
+	-- Wood, not plastic. The grain is most of what says "desk" from the camera
+	-- angle this is seen at, and a flat brown slab does not.
+	top.Material = Enum.Material.Wood
 	top.TopSurface = Enum.SurfaceType.Smooth
 	top.BottomSurface = Enum.SurfaceType.Smooth
 	top.Parent = model
