@@ -25,13 +25,15 @@ Quedó como la referencia: hoja blanca sobre madera, dos rayas —azul la tuya, 
 
 **Fuera de la hoja por ahora** (interruptores en `Theme.table`): la tira de emotes y la ficha ¡ES FAKE! (`showEmotes`, `showToken`), y el inventario de objetos.
 
-## Lo que está esperando una decisión tuya 🎨
+## La decisión de los objetos, ya tomada ✅
 
-**Cómo se eligen los objetos.** Hoy no se puede elegir tocando: el inventario salió de la hoja y todavía no está decidido con qué se reemplaza. Ofertar es tarea del teclado (**Q** y **E**) hasta entonces.
+**Salen de una canasta.** El modelo de la canasta trajo su propia nota de diseño y resolvió lo que estaba trabado:
 
-Lo que se sabe: los objetos van **sobre la mesa, alrededor del papel**, en 3D, y se van a poder achatar y estirar al tocarlos.
+> una canasta afuera de cada lado de la mesa · los squishies no elegidos se quedan adentro · solo los elegidos llegan al tablero
 
-**Estás sketcheando eso.**
+Las dos canastas ya se construyen por código en cada duelo (`DuelSceneService`), con la malla referenciada por id y el look en `Theme.table.basket`.
+
+**Falta:** meter los squishies adentro, poder sacarlos con el dedo, y el achatado al tocarlos.
 
 ## Listo y esperando
 

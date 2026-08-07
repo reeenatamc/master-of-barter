@@ -88,6 +88,45 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
+--- A basket beside the table.
+---
+--- Built here rather than placed in the map, like everything else in this
+--- scene: a duel can start anywhere and several can run at once, so a basket
+--- somebody positioned by hand would belong to one table and no others.
+---
+--- Failing to build one is not worth failing a duel over, so a mesh that will
+--- not load leaves a warning and no basket. The duel is still playable; it just
+--- looks poorer.
+local function buildBasket(origin: CFrame, side: number, parent: Instance)
+	local spec = Theme.table.basket
+
+	local basket = Instance.new("MeshPart")
+	basket.Name = if side < 0 then "BasketLeft" else "BasketRight"
+	basket.Size = spec.size
+	basket.Color = spec.color
+	basket.Material = Enum.Material.Glass
+	basket.Transparency = spec.transparency
+	basket.Reflectance = spec.reflectance
+	basket.CastShadow = false
+	basket.Anchored = true
+	basket.CanCollide = false
+	basket.CanQuery = true
+
+	local ok, err = pcall(function()
+		basket.MeshId = spec.meshId
+	end)
+	if not ok then
+		warn(`[Scene] the basket mesh would not load: {err}`)
+		basket:Destroy()
+		return
+	end
+
+	-- Sitting ON the table, not floating over it: half its own height above the
+	-- surface, out to the side by `offset`.
+	basket.CFrame = origin * CFrame.new(side * spec.offset, Theme.table.height + spec.size.Y / 2, 0)
+	basket.Parent = parent
+end
+
 --- Gives a filler opponent a body.
 ---
 --- A bot has no Roblox account, so nothing hands it an avatar -- and an empty
@@ -275,6 +314,11 @@ function DuelSceneService.open(duelId: string, participants: { Participant }): (
 	local origin = CFrame.new(nextIndex * SPACING, 0, 0)
 
 	local model = buildModel(duelId, origin)
+
+	-- One each side. They belong to the duel's model, so they go with the table
+	-- when it does.
+	buildBasket(origin, -1, model)
+	buildBasket(origin, 1, model)
 
 	for _, entry in participants do
 		local player = entry.player

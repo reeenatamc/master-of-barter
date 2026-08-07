@@ -320,6 +320,31 @@ local tableSpec = {
 	--- ever comes out sideways again, try 0, 180, 270 -- looking costs ten
 	--- seconds against an afternoon of deriving it wrong.
 	boardYaw = 90,
+
+	--- The baskets that hold the squishies, one outside each side of the table.
+	---
+	--- The mesh is referenced BY ID rather than carried as a file. It is already
+	--- uploaded -- importing it is what uploaded it -- so a copy in the repo
+	--- would only be a second pointer to the same asset, and the look lives here
+	--- where it can be tuned without reimporting anything.
+	---
+	--- Where the design came from: the model's own notes ask for one basket
+	--- outside the left of the table and one outside the right, with the
+	--- unselected squishies staying in them and only the chosen ones reaching
+	--- the sheet. That is also what answers "how do you pick an object" -- you
+	--- take it out of the basket.
+	basket = {
+		meshId = "rbxassetid://74562733627832",
+		--- Studs. The model is about 5.1 x 3.2 x 2.25 in its own units and this
+		--- is what it becomes on the table.
+		size = Vector3.new(5.1, 3.2, 2.25),
+		--- How far out from the middle of the table, left and right.
+		offset = 9.5,
+		--- Clear plastic, from the model's own recommended settings.
+		color = Color3.fromRGB(220, 245, 255),
+		transparency = 0.45,
+		reflectance = 0.05,
+	},
 	--- How much the scene's lighting tints the board, 0 to 1.
 	---
 	--- At 1 the surface is lit like real paper -- which is what it wanted to be
