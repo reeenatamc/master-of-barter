@@ -125,6 +125,9 @@ function DuelPaperSkin.mount(
 	page.Size = UDim2.fromScale(1, 1)
 	page.BackgroundColor3 = Theme.palette.paper
 	page.BorderSizePixel = 0
+	-- Generously rounded, like the card on the reference. A sharp-cornered
+	-- rectangle reads as a screen; a rounded one reads as something cut out.
+	corner(page, 0.035)
 	page.Rotation = if flip then 180 else 0
 	page.Parent = surface
 
@@ -157,29 +160,46 @@ function DuelPaperSkin.mount(
 	--- surface with widgets floating on it: the button rows sit BETWEEN ruled
 	--- lines, the way they do on the reference sheet, instead of hovering in
 	--- the middle of nothing.
-	local function rule(y: number)
+	local function rule(y: number, tint: Color3)
 		local line = Instance.new("Frame")
-		line.Size = UDim2.fromScale(0.94, 0.0035)
-		line.Position = UDim2.fromScale(0.03, y)
-		line.BackgroundColor3 = Theme.palette.ink
+		line.Size = UDim2.fromScale(0.96, 0.006)
+		line.Position = UDim2.fromScale(0.02, y)
+		line.BackgroundColor3 = tint
 		line.BorderSizePixel = 0
 		line.ZIndex = 0
 		line.Parent = page
 	end
 
-	-- Under the far row and above the near one, so each row is boxed in by the
-	-- sheet itself.
-	rule(0.02)
-	rule(0.175)
-	rule(0.745)
-	rule(0.945)
+	--- The verticals that divide one mark from the next. Two per row: the outer
+	--- edges are the edge of the sheet, exactly as on the reference.
+	local function divider(x: number, y: number, height: number, tint: Color3)
+		local line = Instance.new("Frame")
+		line.Size = UDim2.fromScale(0.0045, height)
+		line.Position = UDim2.fromScale(x, y)
+		line.BackgroundColor3 = tint
+		line.BorderSizePixel = 0
+		line.ZIndex = 0
+		line.Parent = page
+	end
+
+	-- ONE line per row, not a box around each row: under the far marks and
+	-- above the near ones. Blue is yours, pink is theirs -- which half of the
+	-- sheet belongs to whom is answered by the pen before any symbol is read.
+	rule(0.175, Theme.palette.ruleFar)
+	rule(0.745, Theme.palette.ruleNear)
+
+	-- Thirds, matching where the marks sit.
+	divider(0.353, 0.02, 0.155, Theme.palette.ruleFar)
+	divider(0.647, 0.02, 0.155, Theme.palette.ruleFar)
+	divider(0.353, 0.751, 0.21, Theme.palette.ruleNear)
+	divider(0.647, 0.751, 0.21, Theme.palette.ruleNear)
 
 	--- The accusation's own corner: bottom right of the sheet, clear of
 	--- everything. Its own frame so its position is stated once here instead of
 	--- being computed against whatever it was parented to.
 	local tokenCorner = Instance.new("Frame")
-	tokenCorner.Size = UDim2.fromScale(0.14, 0.07)
-	tokenCorner.Position = UDim2.fromScale(0.81, 0.925)
+	tokenCorner.Size = UDim2.fromScale(0.05, 0.068)
+	tokenCorner.Position = UDim2.fromScale(0.925, 0.905)
 	tokenCorner.BackgroundTransparency = 1
 	tokenCorner.Parent = page
 	-- Narrower than the rest, so it stops before the corner where the token
@@ -231,44 +251,25 @@ function DuelPaperSkin.mount(
 		face.Parent = container
 
 		if big and scheme then
-			-- Yours: filled, and the colour says what it does before the icon
-			-- gets read.
+			-- JUST THE MARK. No box, no fill, no outline.
 			--
-			-- The symbol goes WHITE on the fill. It used to be drawn in the
-			-- outline colour, which was legible only while the fill was pale --
-			-- the moment the fill got its real saturation, colour on colour
-			-- stopped reading at all.
-			-- THE SYMBOL IS THE COLOUR. The cell is paper.
-			--
-			-- Which is what the reference always was: white sheet, boxes ruled
-			-- on it, and the marks drawn inside in green, yellow and red. The
-			-- filled-rectangle version was me reading a UI where there was a
-			-- drawing -- and it is why the colours kept looking wrong no matter
-			-- how hard they were mixed.
-			--
-			-- The cell stays paper so the DIVISIONS do the separating, the way
-			-- ruled lines do on a sheet.
-			face.BackgroundColor3 = Theme.palette.paper
-			face.TextColor3 = scheme.fill
-			face.BackgroundTransparency = 0
-		else
-			-- Theirs, and everything else: outline only, on bare paper.
+			-- The reference is a sheet with two ruled lines and a couple of
+			-- verticals on it, and the symbols drawn in the gaps. Every version
+			-- before this one boxed each symbol in its own rectangle, which is
+			-- what made it look like an interface instead of a drawing -- and
+			-- no amount of colour was ever going to fix that.
 			face.BackgroundTransparency = 1
-			face.TextColor3 = if spec.enabled then Theme.palette.ink else Theme.palette.inkSoft
+			face.TextColor3 = scheme.fill
+		else
+			-- Theirs: the same marks, smaller, and not yours to press.
+			face.BackgroundTransparency = 1
+			face.TextColor3 = if scheme then scheme.fill else Theme.palette.ink
 		end
 
-		-- The symbol is what dims when a button is not available yet. Light
-		-- enough to notice, nowhere near enough to make the board look dead.
-		face.TextTransparency = if spec.enabled then 0 else 0.5
-		-- Barely rounded. The reference is a row of boxes RULED on paper, and a
-		-- rounded rectangle reads as a UI button no matter what colour it is --
-		-- the corner is what says "drawn" or "designed".
-		corner(face, 0.04)
-		-- The ruled line. Now that the cells are paper, this IS the division --
-		-- it is not trim around a coloured block any more, it is what tells one
-		-- box from the next. Solid whether the button is available or not,
-		-- because a line that fades makes the sheet look half-drawn.
-		stroke(face, if big then 6 else 3, 0)
+		-- Available or not, the mark is drawn. It fades a little when it cannot
+		-- be pressed and never more than that: a sheet with half its marks
+		-- missing reads as broken, not as waiting.
+		face.TextTransparency = if spec.enabled then 0 else 0.45
 
 		local target = Instance.new("TextButton")
 		target.Size = UDim2.fromScale(pad, pad)
@@ -446,14 +447,48 @@ function DuelPaperSkin.mount(
 		end
 
 		if token then
-			-- THE CORNER, and against the page rather than the action row.
-			-- Hung off the row it landed mid-board and on top of the emotes:
-			-- "esquina" means the corner of the sheet, so it is measured from
-			-- the sheet.
+			-- A CIRCLED "!", stamp-sized, in the corner of the sheet.
+			--
+			-- Not a fourth button and drawn so it cannot be mistaken for one:
+			-- the three marks are bare, this one is ringed. On the reference it
+			-- is the only thing on the sheet with a circle around it, which is
+			-- how a once-per-duel token should look next to three you press
+			-- every round.
 			clear(tokenCorner)
-			local mark = cutout(token, UDim2.fromScale(1, 1), 7, true)
-			mark.Position = UDim2.fromScale(0, 0)
-			mark.Parent = tokenCorner
+
+			local ring = Instance.new("TextButton")
+			ring.Size = UDim2.fromScale(1, 1)
+			ring.BackgroundTransparency = 1
+			ring.Text = token.label
+			ring.TextColor3 = Theme.palette.fakeCall
+			ring.TextScaled = true
+			ring.Font = Theme.fonts.marker
+			ring.TextTransparency = if token.enabled then 0 else 0.45
+			ring.AutoButtonColor = false
+			ring.Active = token.enabled
+			ring.Parent = tokenCorner
+
+			local round = Instance.new("UICorner")
+			round.CornerRadius = UDim.new(0.5, 0)
+			round.Parent = ring
+
+			local line = Instance.new("UIStroke")
+			line.Color = Theme.palette.fakeCall
+			line.Thickness = 4
+			line.Transparency = if token.enabled then 0 else 0.45
+			line.Parent = ring
+
+			-- Square, so the ring is a circle and not an oval.
+			local shape = Instance.new("UIAspectRatioConstraint")
+			shape.AspectRatio = 1
+			shape.Parent = ring
+
+			if token.enabled then
+				trove:Connect(ring.Activated, function()
+					SoundController.play("fakeCall")
+					onAction(token.id)
+				end)
+			end
 		end
 	end
 

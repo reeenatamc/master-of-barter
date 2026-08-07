@@ -38,7 +38,8 @@ local palette = {
 	--- The board itself: warm kraft paper, visibly crumpled. Browner than the
 	--- first guess -- the references are lit by afternoon sun, and pure white
 	--- would read as "screen" where this reads as "a thing on a table".
-	paper = Color3.fromRGB(228, 210, 176),
+	--- WHITE. The reference sheet is white card on an amber table, not kraft.
+	paper = Color3.fromRGB(248, 246, 242),
 	--- Squared ruling. Blue like everything else, and barely there: felt, not
 	--- read.
 	grid = Color3.fromRGB(178, 188, 204),
@@ -76,8 +77,10 @@ local palette = {
 	--- not the pen somebody had on the desk that day.
 	decline = Color3.fromRGB(196, 12, 20),
 	declineFill = Color3.fromRGB(240, 32, 34),
-	raise = Color3.fromRGB(220, 132, 0),
-	raiseFill = Color3.fromRGB(255, 182, 8),
+	--- BLUE. The + on the reference is drawn in blue marker, the same pen as
+	--- the near player's dividing lines.
+	raise = Color3.fromRGB(20, 78, 214),
+	raiseFill = Color3.fromRGB(28, 98, 240),
 
 	--- The accusation. Deliberately NOT the same red as Rechazar: they are
 	--- opposite moves and sharing a colour would make the loudest button in the
@@ -85,13 +88,23 @@ local palette = {
 	---
 	--- docs/gdd.md §29 wants this stamped rather than pressed, so this colour is
 	--- ink for a rubber stamp, and the shape it belongs on is still open.
-	fakeCall = Color3.fromRGB(120, 18, 92),
-	fakeCallFill = Color3.fromRGB(176, 32, 132),
+	--- AMBER, and small: on the reference it is a circled "!" in the bottom
+	--- right corner, the size of a stamp. It is a once-per-duel token, not a
+	--- fourth button, and the drawing says so before any rule does.
+	fakeCall = Color3.fromRGB(232, 152, 16),
+	fakeCallFill = Color3.fromRGB(232, 152, 16),
 
 	good = Color3.fromRGB(58, 132, 62),
 	bad = Color3.fromRGB(196, 60, 52),
 	--- Soft shadow under something resting on the board.
 	shadow = Color3.fromRGB(186, 168, 138),
+
+	--- The two pens the sheet is ruled with. Each side's lines are a different
+	--- colour on the reference -- blue near, pink far -- which is what tells
+	--- you at a glance which half of the sheet is yours, before you read a
+	--- single symbol.
+	ruleNear = Color3.fromRGB(28, 98, 240),
+	ruleFar = Color3.fromRGB(236, 40, 138),
 
 	--- A button that cannot be pressed yet.
 	---
