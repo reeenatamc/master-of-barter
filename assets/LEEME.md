@@ -55,3 +55,14 @@ Lo mismo para sonidos.
 ## Los ids no se inventan
 
 Un id escrito de memoria apunta al asset de otra persona o a nada, y lo segundo falla en runtime sin decir por qué. Por eso los huecos de sonido en `Theme.luau` están **vacíos** en vez de llenos de números plausibles: **un hueco vacío se ve; un id equivocado, no.**
+
+## Los originales NO se borran
+
+Un modelo simplificado no se puede des-simplificar. El original del pollito se
+perdió justamente así: se subió, se simplificó, y se borró el de entrada por
+parecer un intermedio. Cuando el simplificador resultó tener un error, ya no
+había desde dónde rehacerlo.
+
+**Todo archivo que llega de afuera va a `assets/fuentes/`** — ignorado por git,
+pero presente en el disco. El simplificado, que es el que el juego usa, sí entra
+al repo. Lo pesado se queda afuera; lo irrecuperable se queda.

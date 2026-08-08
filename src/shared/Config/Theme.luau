@@ -448,7 +448,7 @@ local tableSpec = {
 			--- than given studs, so a bigger model, a smaller tray or a changed
 			--- angle cannot leave one sticking out of the other. It is the same
 			--- reason the tray's own distance is computed and not written down.
-			fill = 0.6,
+			fill = 0.45,
 			--- Only used where a model's `tint` is set -- see the note there.
 			--- Why a tint is ever needed: the FIRST butter stored its yellow in
 			--- glTF vertex colours, which Roblox's importer drops, and its

@@ -26,6 +26,15 @@ import trimesh
 
 src, dst, limit = sys.argv[1], sys.argv[2], int(sys.argv[3])
 
+#: How finely the texture map is divided when deciding whether two vertices may
+#: merge. 1/64 means a 64x64 grid over the atlas: features further apart than
+#: that on the texture never collapse into each other.
+#:
+#: Finer keeps more detail and removes fewer triangles. If a model cannot reach
+#: its limit, this is the knob -- and the script says so rather than quietly
+#: handing back something too big.
+UV_CELL = 1.0 / 64.0
+
 mesh = trimesh.load(src, process=False, force="mesh")
 
 uv = None
@@ -46,6 +55,21 @@ if uv is None:
 
 def cluster(cell):
     keys = np.floor(mesh.vertices / cell).astype(np.int64)
+
+    if uv is not None:
+        # THE UV GOES IN THE KEY, not just into the average afterwards.
+        #
+        # This is the fix for a chick that came out uniformly cream. Two
+        # vertices can sit right next to each other in space and land far apart
+        # on the texture -- an eye and the fluff around it, a beak and the face
+        # behind it. Merging those and averaging their UVs walks the eye's UVs
+        # off the eye, and the small feature is gone. No error, no warning; the
+        # mesh is valid, the texture is untouched, and the bird has no face.
+        #
+        # With the UV in the key, vertices only merge when they are close in
+        # BOTH: same place, same patch of texture. Islands survive.
+        keys = np.concatenate([keys, np.floor(uv / UV_CELL).astype(np.int64)], axis=1)
+
     _, inverse, counts = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
 
     verts = np.zeros((counts.shape[0], 3))
@@ -89,10 +113,21 @@ for _ in range(40):
 
 best = best if best is not None else cluster(hi)
 
+# Keeping UV islands apart puts a FLOOR under how few triangles are reachable,
+# and handing back something over the limit for the uploader to reject is the
+# kind of quiet failure this whole toolchain exists to stop.
+if len(best.faces) > limit:
+    sys.exit(
+        f"Could not get under {limit} triangles without merging across the "
+        f"texture map.\nThe best was {len(best.faces)}. Raising UV_CELL "
+        f"(currently 1/{round(1 / UV_CELL)}) trades detail for triangles, but "
+        "re-exporting\nthe model at a lower density keeps both -- prefer that."
+    )
+
 best.export(dst)
 
 kept = 100 * len(best.faces) / len(mesh.faces)
 print(f"out: {len(best.faces)} triangles, {len(best.vertices)} vertices "
       f"({kept:.0f}% of the original) -> {dst}")
-print("     LOOK AT IT before uploading. Silhouette is what this preserves; "
-      "detail is what it spends.")
+print("     Now check the colours survived, which triangle counts do not show:")
+print(f"       python3 tools/sample-colors.py {src} {dst}")
