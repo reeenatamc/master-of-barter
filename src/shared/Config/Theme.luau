@@ -31,9 +31,9 @@ type ItemId = Types.ItemId
 -- Colour
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- [propuesta] A notebook page seen in warm light, drawn on with a few marker
---- colours. Deliberately few: §28 asks for flat colour, and a paper aesthetic
---- falls apart the moment it gains gradients and a dozen hues.
+-- [propuesta] A notebook page seen in warm light, drawn on with a few marker
+-- colours. Deliberately few: §28 asks for flat colour, and a paper aesthetic
+-- falls apart the moment it gains gradients and a dozen hues.
 local palette = {
 	--- The board itself: warm kraft paper, visibly crumpled. Browner than the
 	--- first guess -- the references are lit by afternoon sun, and pure white
@@ -125,9 +125,9 @@ local palette = {
 -- Type
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- Both fonts were checked against the real API before being used here: a
---- handful of plausible handwriting fonts (Caveat, Amatic, ArchitectsDaughter,
---- Schoolbell) do NOT exist in Roblox and would have failed only in Studio.
+-- Both fonts were checked against the real API before being used here: a
+-- handful of plausible handwriting fonts (Caveat, Amatic, ArchitectsDaughter,
+-- Schoolbell) do NOT exist in Roblox and would have failed only in Studio.
 local fonts = {
 	--- Headlines and the three buttons. It is literally a marker.
 	marker = Enum.Font.PermanentMarker,
@@ -140,14 +140,14 @@ local fonts = {
 -- Sound
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- Empty means "not chosen yet", and SoundController skips it rather than
---- erroring. Deliberately NOT filled with plausible-looking asset ids: a made
---- up rbxassetid points at somebody else's sound or at nothing, and both are
---- worse than silence.
----
---- §26 asks for deliberate homemade foley -- paper crumpling, tape, a marker
---- squeaking, kids going "ohhh" at the reveal. The names below describe what
---- each slot needs so filling them is shopping, not designing.
+-- Empty means "not chosen yet", and SoundController skips it rather than
+-- erroring. Deliberately NOT filled with plausible-looking asset ids: a made
+-- up rbxassetid points at somebody else's sound or at nothing, and both are
+-- worse than silence.
+--
+-- §26 asks for deliberate homemade foley -- paper crumpling, tape, a marker
+-- squeaking, kids going "ohhh" at the reveal. The names below describe what
+-- each slot needs so filling them is shopping, not designing.
 local SILENT = ""
 
 local sounds = {
@@ -180,8 +180,8 @@ local sounds = {
 -- Texture
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- Same rule as sounds: empty means unchosen, and whoever renders falls back to
---- flat colour. A paper texture is nice; an invented asset id is a bug.
+-- Same rule as sounds: empty means unchosen, and whoever renders falls back to
+-- flat colour. A paper texture is nice; an invented asset id is a bug.
 local textures = {
 	paper = SILENT,
 	tape = SILENT,
@@ -192,12 +192,12 @@ local textures = {
 -- Objects
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- [propuesta] How one object is drawn while there is no art.
----
---- `corner` is a fraction of the shape: 0 is a square, 0.5 a circle. Silhouette
---- matters as much as colour, because docs/gdd.md §37 forbids anything being
---- distinguishable by colour alone -- and because six coloured squares are six
---- squares, while six different shapes are six things.
+-- [propuesta] How one object is drawn while there is no art.
+--
+-- `corner` is a fraction of the shape: 0 is a square, 0.5 a circle. Silhouette
+-- matters as much as colour, because docs/gdd.md §37 forbids anything being
+-- distinguishable by colour alone -- and because six coloured squares are six
+-- squares, while six different shapes are six things.
 export type ItemLook = {
 	color: Color3,
 	corner: number,
@@ -218,8 +218,8 @@ local items: { [ItemId]: ItemLook } = {
 	last_empanada = { color = Color3.fromRGB(212, 158, 92), corner = 0.38 },
 }
 
---- Anything without its own entry shows up as a grey blob: visible enough to
---- notice and fix, rather than invisible.
+-- Anything without its own entry shows up as a grey blob: visible enough to
+-- notice and fix, rather than invisible.
 local defaultItem: ItemLook = {
 	color = Color3.fromRGB(150, 144, 136),
 	corner = 0.2,
@@ -229,13 +229,13 @@ local defaultItem: ItemLook = {
 -- Motion
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- [propuesta] Timings for the juice. They live in the theme rather than in the
---- code because how fast a thing snaps is part of how it feels, and a different
---- theme may well want a different rhythm.
----
---- The first play-test asked for feedback on every action, not only the reveal
---- (plan-etapas.md, Etapa 2): a duel where only the ending moves is a duel
---- that is silent for ninety percent of its length.
+-- [propuesta] Timings for the juice. They live in the theme rather than in the
+-- code because how fast a thing snaps is part of how it feels, and a different
+-- theme may well want a different rhythm.
+--
+-- The first play-test asked for feedback on every action, not only the reveal
+-- (plan-etapas.md, Etapa 2): a duel where only the ending moves is a duel
+-- that is silent for ninety percent of its length.
 local motion = {
 	--- A cut-out being taped down. Short and slightly overshooting.
 	place = 0.18,
@@ -252,14 +252,14 @@ local motion = {
 	snap = 0.15,
 }
 
---- [propuesta] The duel table, in studs. Dimensions live in the theme because
---- the scene is part of the look: a different theme may want a school desk, a
---- market stall or a cardboard box, and none of them should need code changes.
----
---- The sheet stands VERTICALLY on the table so both players read the same
---- object from opposite sides (docs/gdd.md §11), which is also what lets each
---- client draw its own face of it and never assemble the rival's view anywhere
---- the rival could reach.
+-- [propuesta] The duel table, in studs. Dimensions live in the theme because
+-- the scene is part of the look: a different theme may want a school desk, a
+-- market stall or a cardboard box, and none of them should need code changes.
+--
+-- The sheet stands VERTICALLY on the table so both players read the same
+-- object from opposite sides (docs/gdd.md §11), which is also what lets each
+-- client draw its own face of it and never assemble the rival's view anywhere
+-- the rival could reach.
 local tableSpec = {
 	--- The table the board rests on.
 	topSize = Vector3.new(16, 0.9, 12),
@@ -521,10 +521,10 @@ local tableSpec = {
 	markScale = 1.75,
 }
 
---- [propuesta] Where the camera sits during a duel. Over your own shoulder,
---- looking at the sheet with the rival's avatar visible past it -- the framing
---- of docs/gdd.md §11. Fixed, not orbiting: §11 says fija, and a camera the
---- player has to manage is one more thing between them and the game.
+-- [propuesta] Where the camera sits during a duel. Over your own shoulder,
+-- looking at the sheet with the rival's avatar visible past it -- the framing
+-- of docs/gdd.md §11. Fixed, not orbiting: §11 says fija, and a camera the
+-- player has to manage is one more thing between them and the game.
 local camera = {
 	--- Behind your own edge of the board.
 	---
@@ -557,34 +557,34 @@ local camera = {
 	settle = 0.8,
 }
 
---- How much bigger the invisible touch target is than the drawn button.
----
---- 1.5 means the hit area is half again as wide and tall as what you can see.
---- Buttons live in world space on the sheet, where a thumb is less precise than
---- a mouse and the surface is seen at an angle; the drawing can stay the size
---- the composition wants while the target stays the size a thumb needs.
----
---- Nothing about this is visible, which is the point: a button that looks right
---- and misses is worse than one that looks slightly wrong.
+-- How much bigger the invisible touch target is than the drawn button.
+--
+-- 1.5 means the hit area is half again as wide and tall as what you can see.
+-- Buttons live in world space on the sheet, where a thumb is less precise than
+-- a mouse and the surface is seen at an angle; the drawing can stay the size
+-- the composition wants while the target stays the size a thumb needs.
+--
+-- Nothing about this is visible, which is the point: a button that looks right
+-- and misses is worse than one that looks slightly wrong.
 local touchPadding = 1.5
 
---- Smallest a SCREEN-SPACE button may ever get, in pixels.
----
---- A different thing from `touchPadding`, and deliberately not the same number:
---- that one is a MULTIPLIER for world-space targets, where the drawing and the
---- target are separate objects. This is a FLOOR for flat UI, where they are the
---- same object and scale-based sizing shrinks with the screen -- a slip that
---- reads fine on a tablet becoming a smudge on a small phone.
----
---- 44 is the figure both platform guidelines land on for a fingertip.
+-- Smallest a SCREEN-SPACE button may ever get, in pixels.
+--
+-- A different thing from `touchPadding`, and deliberately not the same number:
+-- that one is a MULTIPLIER for world-space targets, where the drawing and the
+-- target are separate objects. This is a FLOOR for flat UI, where they are the
+-- same object and scale-based sizing shrinks with the screen -- a slip that
+-- reads fine on a tablet becoming a smudge on a small phone.
+--
+-- 44 is the figure both platform guidelines land on for a fingertip.
 local minTouchPixels = 44
 
---- How much a taped cut-out is rotated, in degrees. Nothing is ever perfectly
---- straight: §28 says the imperfection is the aesthetic, not a defect, and a
---- perfectly aligned grid of paper cards stops reading as paper immediately.
+-- How much a taped cut-out is rotated, in degrees. Nothing is ever perfectly
+-- straight: §28 says the imperfection is the aesthetic, not a defect, and a
+-- perfectly aligned grid of paper cards stops reading as paper immediately.
 local tiltDegrees = 2.5
 
---- How big the two people at the table are.
+-- How big the two people at the table are.
 local avatar = {
 	--- Multiplies every body scale at once -- height, width, depth and head.
 	---

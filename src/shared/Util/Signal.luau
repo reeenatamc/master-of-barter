@@ -20,9 +20,9 @@ export type Connection = {
 	disconnect: (self: Connection) -> (),
 }
 
---- Returns `...any` rather than `()` so that pcall's own return type carries
---- the error message. With a handler typed as returning nothing, `pcall` types
---- as returning only the boolean and the message is unreachable.
+-- Returns `...any` rather than `()` so that pcall's own return type carries
+-- the error message. With a handler typed as returning nothing, `pcall` types
+-- as returning only the boolean and the message is unreachable.
 type Handler = (...any) -> ...any
 
 type Fields = {
@@ -56,12 +56,12 @@ function Signal.connect(self: Signal, handler: Handler): Connection
 	return connection
 end
 
---- Calls every listener. A listener that errors is reported and skipped rather
---- than taking the rest down with it: one broken subscriber must not stop a
---- duel from ending.
----
---- Iterates a copy, so a handler that disconnects itself -- or connects another
---- -- cannot corrupt the loop it is running inside.
+-- Calls every listener. A listener that errors is reported and skipped rather
+-- than taking the rest down with it: one broken subscriber must not stop a
+-- duel from ending.
+--
+-- Iterates a copy, so a handler that disconnects itself -- or connects another
+-- -- cannot corrupt the loop it is running inside.
 function Signal.fire(self: Signal, ...: any)
 	for _, connection in table.clone(self._handlers) do
 		if connection.connected then

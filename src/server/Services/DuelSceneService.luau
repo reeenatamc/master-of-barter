@@ -159,15 +159,31 @@ local function loadTemplate(assetId: number): Model?
 		return nil
 	end
 
-	-- LoadAsset hands back a wrapper Model with the uploaded one inside it.
-	-- What we want is the thing itself, so the wrapper does not put a pivot of
-	-- its own between us and the model.
+	-- LoadAsset hands back a container with the uploaded model inside it, and
+	-- going down one level keeps the container's pivot from sitting between us
+	-- and the thing.
+	--
+	-- ONLY WHEN THERE IS EXACTLY ONE THING DOWN THERE. `FindFirstChildWhichIsA`
+	-- takes the first and leaves the rest to be destroyed with the container --
+	-- and the butter is TWO pieces, a body and a separate label plane carrying
+	-- the lettering. Descending blindly kept the body, threw away the wrapper,
+	-- and produced a plain cream brick with nothing to say it had been robbed.
 	local wrapper = result :: Model
-	local model = wrapper:FindFirstChildWhichIsA("Model") or wrapper
-	if model ~= wrapper then
+	local model = wrapper
+	local children = wrapper:GetChildren()
+	if #children == 1 and children[1]:IsA("Model") then
+		model = children[1] :: Model
 		model.Parent = nil
 		wrapper:Destroy()
 	end
+
+	local pieces = 0
+	for _, piece in model:GetDescendants() do
+		if piece:IsA("BasePart") then
+			pieces += 1
+		end
+	end
+	print(`[Scene] asset {assetId} loaded: {model.Name}, {pieces} part(s)`)
 
 	-- Kept in ServerStorage, which never replicates: a stencil costs nothing on
 	-- any client, and nothing in the world can reach it to modify it.

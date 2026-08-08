@@ -49,9 +49,9 @@ local itemNames: { [ItemId]: string } = {
 	last_empanada = "La Última Empanada",
 }
 
---- [propuesta] Una línea por objeto, para la inspección. El chiste es que son
---- cosas de tu casa tratadas como reliquias: el absurdo cotidiano elevado, que
---- es el tono de gdd.md §22 sin tomar prestado el personaje de nadie.
+-- [propuesta] Una línea por objeto, para la inspección. El chiste es que son
+-- cosas de tu casa tratadas como reliquias: el absurdo cotidiano elevado, que
+-- es el tono de gdd.md §22 sin tomar prestado el personaje de nadie.
 local itemFlavour: { [ItemId]: string } = {
 	golden_maruchan = "Sabor camarón. Nunca la vas a cocinar.",
 	potato_rock = "O una papa que parece piedra. Nadie mordió.",
@@ -138,9 +138,9 @@ local duelScreen = {
 	raisesLeft = "Pedidos restantes: %d",
 }
 
---- What each reaction of DuelRules.emotes looks like. Symbols rather than
---- words: they cross languages, they read at a glance, and they fit a button
---- a thumb can hit.
+-- What each reaction of DuelRules.emotes looks like. Symbols rather than
+-- words: they cross languages, they read at a glance, and they fit a button
+-- a thumb can hit.
 local emoteSymbols: { [string]: string } = {
 	hype = "🤩",
 	doubt = "🤨",
@@ -150,7 +150,7 @@ local emoteSymbols: { [string]: string } = {
 	fire = "🔥",
 }
 
---- Avisos que el servidor manda por el remoto `Notice`.
+-- Avisos que el servidor manda por el remoto `Notice`.
 local notices = {
 	--- Por qué no podés entrar a un duelo sin perfil. Dice la causa, no solo el
 	--- "no": un "no podés" sin motivo se lee como que el juego está roto.

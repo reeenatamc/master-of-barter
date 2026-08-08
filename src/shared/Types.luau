@@ -339,8 +339,8 @@ export type DuelState = {
 -- is a field that reads as missing on every existing save.
 -- ─────────────────────────────────────────────────────────────────────────────
 
---- One copy sitting on a table. `duelId` is what makes an entry identifiable
---- later, which is the difference between a report and a shrug.
+-- One copy sitting on a table. `duelId` is what makes an entry identifiable
+-- later, which is the difference between a report and a shrug.
 export type EscrowEntry = {
 	itemId: ItemId,
 	duelId: string,
@@ -469,8 +469,8 @@ export type Profile = {
 	escrow: { EscrowEntry },
 }
 
---- What one side earned from a duel, handed to EconomyService as a single
---- payout rather than four separate credits that could half-apply.
+-- What one side earned from a duel, handed to EconomyService as a single
+-- payout rather than four separate credits that could half-apply.
 export type DuelPayout = {
 	result: "win" | "draw" | "loss",
 	fakesSlipped: number,
