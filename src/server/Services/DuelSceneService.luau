@@ -137,6 +137,36 @@ local function placeCentred(model: Model, target: CFrame)
 	model:PivotTo(target * drift:Inverse())
 end
 
+--- Sticks a face onto a squishy, out of parts.
+---
+--- Same reasoning as the bot's fringe: geometry can be built, and this model's
+--- eyes and beak were lost from its TEXTURE MAP rather than from the file --
+--- repainting cannot put them back where they need to be.
+---
+--- Everything arrives as a fraction of the model's own bounding box and is
+--- turned into studs here, so a face cannot slide off a squishy that was scaled
+--- to a different tray. It is built after placing, against the box where the
+--- model actually ended up.
+local function addFeatures(model: Model, features: { any })
+	local box, size = model:GetBoundingBox()
+
+	for _, feature in features do
+		local part = Instance.new("Part")
+		part.Name = feature.name
+		part.Shape = if feature.shape == "ball" then Enum.PartType.Ball else Enum.PartType.Block
+		part.Size = size * feature.size
+		part.Color = feature.colour
+		part.Material = Enum.Material.SmoothPlastic
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Massless = true
+		part.CFrame = box * CFrame.new(size * feature.at)
+		part.Parent = model
+	end
+end
+
 --- Puts one squishy in a tray.
 ---
 --- Its own function, and its own failure: a squishy that will not load leaves a
@@ -213,7 +243,17 @@ local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: n
 		local rest = Theme.table.height + math.abs(grown.Y) / 2
 
 		squishy.Parent = tray
-		placeCentred(squishy, origin * CFrame.new(0, rest, alongZ) * turn)
+		-- Turned to face the middle of the table, so each player looks at the
+		-- FRONT of the other's squishy. The face is the point of building one.
+		local facing = if alongZ > 0 then CFrame.Angles(0, 0, 0) else CFrame.Angles(0, math.pi, 0)
+		placeCentred(squishy, origin * CFrame.new(0, rest, alongZ) * facing * turn)
+
+		-- After placing, so the parts are built against the box where the model
+		-- actually ended up rather than where it was assembled.
+		if spec.features then
+			addFeatures(squishy, spec.features)
+		end
+
 		print(`[Scene] tray {slot}: squishy in, {math.abs(grown.X)} long`)
 	end)
 end

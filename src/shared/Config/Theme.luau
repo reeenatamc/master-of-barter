@@ -435,11 +435,63 @@ local tableSpec = {
 				},
 				{
 					--- Chick. Arrived at 40,808 triangles, four times Roblox's
-					--- limit; `tools/simplify-glb.py` brought it to 9,499 with
-					--- its texture intact.
+					--- limit; `tools/simplify-glb.py` brought it to 9,499.
 					assetId = 98059337949622,
 					rotation = Vector3.new(0, 0, 0),
 					tint = nil :: Color3?,
+					--- A FACE, BUILT RATHER THAN PAINTED.
+					---
+					--- The model's beak and eyes are in its texture, and the
+					--- simplifier walked their UVs off them: sampling the
+					--- texture at every vertex found 3.3% orange and no black
+					--- at all. Repainting is not possible -- the colour is
+					--- gone from where it needs to be, not from the file.
+					---
+					--- So they are geometry, the same way the bot's fringe is
+					--- geometry (see `addFringe`): shapes can be built, and
+					--- what cannot be rebuilt is a texture that lost its map.
+					---
+					--- Every number is a FRACTION of the model's own bounding
+					--- box, never studs. The squishy is already scaled to its
+					--- tray, and a face measured in studs would slide off a
+					--- model of a different size. -Z is the front.
+					features = {
+						{
+							name = "EyeLeft",
+							shape = "ball",
+							colour = Color3.fromRGB(26, 22, 26),
+							size = Vector3.new(0.13, 0.15, 0.13),
+							at = Vector3.new(-0.17, 0.14, -0.36),
+						},
+						{
+							name = "EyeRight",
+							shape = "ball",
+							colour = Color3.fromRGB(26, 22, 26),
+							size = Vector3.new(0.13, 0.15, 0.13),
+							at = Vector3.new(0.17, 0.14, -0.36),
+						},
+						{
+							name = "Beak",
+							shape = "ball",
+							colour = Color3.fromRGB(238, 126, 30),
+							size = Vector3.new(0.16, 0.13, 0.18),
+							at = Vector3.new(0, -0.02, -0.42),
+						},
+						{
+							name = "FootLeft",
+							shape = "block",
+							colour = Color3.fromRGB(238, 126, 30),
+							size = Vector3.new(0.17, 0.05, 0.24),
+							at = Vector3.new(-0.16, -0.47, -0.16),
+						},
+						{
+							name = "FootRight",
+							shape = "block",
+							colour = Color3.fromRGB(238, 126, 30),
+							size = Vector3.new(0.17, 0.05, 0.24),
+							at = Vector3.new(0.16, -0.47, -0.16),
+						},
+					},
 				},
 			},
 			--- How much of the tray's inside length it takes, 0 to 1.
