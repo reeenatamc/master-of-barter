@@ -559,11 +559,28 @@ local tableSpec = {
 --- player has to manage is one more thing between them and the game.
 local camera = {
 	--- Behind your own edge of the board.
-	distance = 9,
+	---
+	--- These two were 9 and 9.5, and the head extensions moved the goalposts:
+	--- your own tray now sits at Z -8 with its squishy in it, and at 9/9.5 it
+	--- fell 83.7 degrees below the horizon while the frame only reaches 77.1.
+	--- Six degrees off the bottom of the screen -- close enough to look like a
+	--- rendering bug rather than a framing one.
+	---
+	--- 12 and 11.5 put everything that matters inside a 70-degree vertical
+	--- frame, aim pitched 40.4 degrees down:
+	---
+	---     your tray      70.0 deg   (limit 75.4, so 5.4 to spare)
+	---     their tray     28.8 deg
+	---     their head     19.7 deg
+	---
+	--- Further back than is ideal for reading the marks, and that is the trade:
+	--- three more studs of distance buys seeing what you are holding. If the
+	--- marks ever get too small again, `pixelsPerStud` is the knob, not this.
+	distance = 12,
 	--- Eye height. High enough to read the whole board at a glance, low enough
 	--- that the rival's avatar still stands above the far edge -- seeing them is
 	--- part of reading them (§11).
-	height = 9.5,
+	height = 11.5,
 	--- Where it aims: just past the middle of the board, so your own half sits
 	--- comfortably in the lower screen and theirs in the upper.
 	aimOffset = 1.5,

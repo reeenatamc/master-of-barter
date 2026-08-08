@@ -19,6 +19,7 @@
 ]]
 
 local InsertService = game:GetService("InsertService")
+local ServerStorage = game:GetService("ServerStorage")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -119,6 +120,62 @@ local function buildModel(duelId: string, origin: CFrame): Model
 	return model
 end
 
+--- Fetches an uploaded model ONCE and hands out clones after that.
+---
+--- `LoadAsset` is a network call, and the scene makes four per duel: two trays
+--- and two squishies. On the first duel that is the price of not shipping the
+--- models inside the place. On every duel after, it is the same four models
+--- fetched again -- and it shows as a table that furnishes itself slowly while
+--- somebody watches.
+---
+--- Keyed by asset id, so two trays of the same model cost one fetch between
+--- them, not one each.
+local templates: { [number]: Model } = {}
+local fetching: { [number]: boolean } = {}
+
+local function loadTemplate(assetId: number): Model?
+	local ready = templates[assetId]
+	if ready then
+		return ready
+	end
+
+	-- Both trays start in the same instant. Without this they would both fetch
+	-- the same asset and one of the two results would be thrown away.
+	if fetching[assetId] then
+		repeat
+			task.wait()
+		until not fetching[assetId]
+		return templates[assetId]
+	end
+
+	fetching[assetId] = true
+	local ok, result = pcall(function()
+		return InsertService:LoadAsset(assetId)
+	end)
+	fetching[assetId] = nil
+
+	if not ok then
+		warn(`[Scene] asset {assetId} would not load: {result}`)
+		return nil
+	end
+
+	-- LoadAsset hands back a wrapper Model with the uploaded one inside it.
+	-- What we want is the thing itself, so the wrapper does not put a pivot of
+	-- its own between us and the model.
+	local wrapper = result :: Model
+	local model = wrapper:FindFirstChildWhichIsA("Model") or wrapper
+	if model ~= wrapper then
+		model.Parent = nil
+		wrapper:Destroy()
+	end
+
+	-- Kept in ServerStorage, which never replicates: a stencil costs nothing on
+	-- any client, and nothing in the world can reach it to modify it.
+	model.Parent = ServerStorage
+	templates[assetId] = model
+	return model
+end
+
 --- Places a model so its MIDDLE lands on `target`, instead of its pivot.
 ---
 --- `PivotTo` moves the PIVOT, and a model's pivot is wherever its exporter left
@@ -184,20 +241,11 @@ local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: n
 	local spec = shared.models[(slot - 1) % #shared.models + 1]
 
 	task.spawn(function()
-		local ok, result = pcall(function()
-			return InsertService:LoadAsset(spec.assetId)
-		end)
-		if not ok then
-			warn(`[Scene] tray {slot}: squishy {spec.assetId} would not load: {result}`)
+		local template = loadTemplate(spec.assetId)
+		if not template then
 			return
 		end
-
-		local wrapper = result :: Model
-		local squishy = wrapper:FindFirstChildWhichIsA("Model") or wrapper
-		if squishy ~= wrapper then
-			squishy.Parent = nil
-			wrapper:Destroy()
-		end
+		local squishy = template:Clone()
 
 		-- The tray is what it belongs to, so the tray going away is what decides
 		-- whether there is anywhere to put it.
@@ -308,24 +356,11 @@ local function buildBasket(origin: CFrame, slot: Slot, parent: Instance)
 	local side = if slot == 1 then -1 else 1
 
 	task.spawn(function()
-		local ok, result = pcall(function()
-			return InsertService:LoadAsset(spec.assetId)
-		end)
-
-		if not ok then
-			warn(`[Scene] basket {slot}: asset {spec.assetId} would not load: {result}`)
+		local template = loadTemplate(spec.assetId)
+		if not template then
 			return
 		end
-
-		-- LoadAsset hands back a wrapper Model with the uploaded model inside
-		-- it. What we want is the thing itself, so the wrapper does not add a
-		-- pivot of its own between us and the tray.
-		local wrapper = result :: Model
-		local basket = wrapper:FindFirstChildWhichIsA("Model") or wrapper
-		if basket ~= wrapper then
-			basket.Parent = nil
-			wrapper:Destroy()
-		end
+		local basket = template:Clone()
 
 		-- The duel can have ended while the asset was in flight. The Trove has
 		-- already run by then, so parenting into the dead model would leak
