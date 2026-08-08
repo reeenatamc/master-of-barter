@@ -439,59 +439,27 @@ local tableSpec = {
 					assetId = 98059337949622,
 					rotation = Vector3.new(0, 0, 0),
 					tint = nil :: Color3?,
-					--- A FACE, BUILT RATHER THAN PAINTED.
+					--- NO hand-built face here, and that is the point.
 					---
-					--- The model's beak and eyes are in its texture, and the
-					--- simplifier walked their UVs off them: sampling the
-					--- texture at every vertex found 3.3% orange and no black
-					--- at all. Repainting is not possible -- the colour is
-					--- gone from where it needs to be, not from the file.
+					--- There was one: eyes, beak and feet as parts, with every
+					--- number a fraction of the bounding box. It worked and it
+					--- did not belong. A face per squishy in Config is a chore
+					--- per model, and the whole reason for the upload pipeline
+					--- is that a model arrives complete.
 					---
-					--- So they are geometry, the same way the bot's fringe is
-					--- geometry (see `addFringe`): shapes can be built, and
-					--- what cannot be rebuilt is a texture that lost its map.
+					--- It cannot be painted into THIS one either, and that is
+					--- measured: its triangles cover 174x its texture atlas, so
+					--- every texel serves about 174 places on the bird at once.
+					--- An eye painted there appears a hundred and seventy times.
+					--- The orange and black already in that texture are a tiled
+					--- noise pattern, not features -- there was never a beak in
+					--- it to lose.
 					---
-					--- Every number is a FRACTION of the model's own bounding
-					--- box, never studs. The squishy is already scaled to its
-					--- tray, and a face measured in studs would slide off a
-					--- model of a different size. -Z is the front.
-					features = {
-						{
-							name = "EyeLeft",
-							shape = "ball",
-							colour = Color3.fromRGB(26, 22, 26),
-							size = Vector3.new(0.13, 0.15, 0.13),
-							at = Vector3.new(-0.17, 0.14, -0.36),
-						},
-						{
-							name = "EyeRight",
-							shape = "ball",
-							colour = Color3.fromRGB(26, 22, 26),
-							size = Vector3.new(0.13, 0.15, 0.13),
-							at = Vector3.new(0.17, 0.14, -0.36),
-						},
-						{
-							name = "Beak",
-							shape = "ball",
-							colour = Color3.fromRGB(238, 126, 30),
-							size = Vector3.new(0.16, 0.13, 0.18),
-							at = Vector3.new(0, -0.02, -0.42),
-						},
-						{
-							name = "FootLeft",
-							shape = "block",
-							colour = Color3.fromRGB(238, 126, 30),
-							size = Vector3.new(0.17, 0.05, 0.24),
-							at = Vector3.new(-0.16, -0.47, -0.16),
-						},
-						{
-							name = "FootRight",
-							shape = "block",
-							colour = Color3.fromRGB(238, 126, 30),
-							size = Vector3.new(0.17, 0.05, 0.24),
-							at = Vector3.new(0.16, -0.47, -0.16),
-						},
-					},
+					--- So the chick shows plain until a model with a UNIQUE
+					--- unwrap arrives, like the butter's (0.35 of its atlas).
+					--- Then `tools/paint-features.py` puts the face in the
+					--- texture where it travels with the model, and nothing
+					--- about it lives here.
 				},
 			},
 			--- How much of the tray's inside length it takes, 0 to 1.
