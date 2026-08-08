@@ -137,6 +137,27 @@ def main():
 
             if "TEXCOORD_0" not in prim["attributes"]:
                 print("  -> NO UVs: an image texture cannot be applied to this.")
+            else:
+                # CAN THIS MODEL BE PAINTED ON? Add up the area the triangles
+                # take on the texture map. An atlas is one unit square, so a
+                # total near or below 1 means every scrap of surface has its own
+                # place in the picture -- paint a spot and one spot changes.
+                #
+                # Well above 1 means the map is REUSED: the same texel serves
+                # many places at once, which is how a noise or fur pattern is
+                # tiled cheaply. The chick came in at 174, so painting an eye
+                # would have put that eye in a hundred and seventy-odd places.
+                # Worth knowing before trying, not after.
+                tex = accessor(meta, blob, prim["attributes"]["TEXCOORD_0"], "<ff")
+                total_uv = 0.0
+                for i in range(0, len(idx), 3):
+                    (ax, ay), (bx, by), (cx, cy) = (tex[idx[i]], tex[idx[i + 1]], tex[idx[i + 2]])
+                    total_uv += abs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) / 2
+                if total_uv > 2:
+                    print(f"  -> the texture map is SHARED, not unique: the triangles cover "
+                          f"{total_uv:.0f}x the atlas.")
+                    print("     One texel serves many places at once, so features cannot be "
+                          "painted into it -- they would appear everywhere at once.")
 
     print(f"\n=== the whole file ===")
     print(f"{total_tris} triangles against Roblox's limit of {TRIANGLE_LIMIT}: "
