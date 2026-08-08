@@ -18,5 +18,10 @@
 		"assetId": "97748453184802",
 		"source": "assets/squishies/butter_squishy_v3_top_label.glb",
 		"note": "squishy: mantequilla v3, etiqueta arriba"
+	},
+	{
+		"assetId": "98059337949622",
+		"source": "assets/squishies/fluffy_chick.glb",
+		"note": "squishy: pollito de peluche"
 	}
 ]

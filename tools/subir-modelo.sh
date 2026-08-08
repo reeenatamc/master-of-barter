@@ -74,8 +74,23 @@ found="$(grep -oE '^[A-Za-z_]+' "$ROOT/.env" | tr '\n' ' ')"
 # Cheaper to find a broken model here than to find it three screenshots later.
 case "$LOWER" in *.glb)
 	say "── what is in the file ──"
-	python3 "$ROOT/tools/inspect-glb.py" "$FILE" || die "Could not read $FILE as a .glb."
-	echo
+	report="$(python3 "$ROOT/tools/inspect-glb.py" "$FILE")" || die "Could not read $FILE as a .glb."
+	printf '%s\n\n' "$report"
+
+	# REFUSE rather than let the API refuse. Roblox rejects a mesh over 10,000
+	# triangles, so uploading one spends a round trip to be told something this
+	# script already knew -- and the rejection arrives as an opaque error rather
+	# than as "your model is four times too big".
+	case "$report" in
+		*"OVER, it will be rejected"*)
+			die "This model is over Roblox's triangle limit, so the upload would be
+refused. Bring it down first, texture and all:
+
+  python3 tools/simplify-glb.py \"$FILE\" \"${FILE%.glb}_simple.glb\" 9500
+
+Then look at the result before uploading it."
+			;;
+	esac
 ;; esac
 
 readonly NAME="$(basename "${FILE%.*}")"

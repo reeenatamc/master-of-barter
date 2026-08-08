@@ -147,7 +147,11 @@ end
 --- right with, and the models are going to keep arriving at whatever size their
 --- exporter felt like. Same reason the tray's own distance is computed.
 local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: number, alongZ: number)
-	local spec = Theme.table.basket.demo
+	local shared = Theme.table.basket.demo
+	-- One model per tray, in slot order, wrapping if there are fewer models than
+	-- seats. Wrapping rather than erroring: running out of placeholder squishies
+	-- is not a reason for a tray to be empty.
+	local spec = shared.models[(slot - 1) % #shared.models + 1]
 
 	task.spawn(function()
 		local ok, result = pcall(function()
@@ -185,7 +189,7 @@ local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: n
 				-- by reflex would throw it away.
 				if spec.tint then
 					piece.Color = spec.tint
-					piece.Material = spec.material
+					piece.Material = shared.material
 				end
 			end
 		end
@@ -193,7 +197,7 @@ local function fillTray(tray: Model, slot: Slot, origin: CFrame, insideLength: n
 		local natural = squishy:GetExtentsSize()
 		local longest = math.max(natural.X, natural.Y, natural.Z)
 		if longest > 0 then
-			squishy:ScaleTo(insideLength * spec.fill / longest)
+			squishy:ScaleTo(insideLength * shared.fill / longest)
 		end
 
 		local turn = CFrame.Angles(
